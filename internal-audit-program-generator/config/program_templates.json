@@ -1,0 +1,135 @@
+{
+  "schema_version": "1.0.0",
+  "description": "审计程序模板配置 - 支持多轨道（控制/舞弊/系统/边界/效率/合规）",
+  "tracks": {
+    "A": {
+      "name": "轨道A-控制有效性测试",
+      "description": "验证关键控制点是否有效执行",
+      "sheet_name": "轨道A-控制测试",
+      "columns": [
+        {"name": "序号", "width": 8},
+        {"name": "风险编号", "width": 12},
+        {"name": "风险名称", "width": 25},
+        {"name": "来源标注", "width": 15},
+        {"name": "测试程序", "width": 45},
+        {"name": "取数来源", "width": 20},
+        {"name": "样本量", "width": 10},
+        {"name": "测试结果", "width": 15},
+        {"name": "执行人", "width": 12},
+        {"name": "执行日期", "width": 12},
+        {"name": "备注", "width": 20}
+      ],
+      "default_row_height": 60,
+      "instructions": [
+        "获取指定期间的控制执行记录",
+        "检查审批签章完整性",
+        "核对系统与实物一致性",
+        "验证职责分离执行情况"
+      ]
+    },
+    "B": {
+      "name": "轨道B-舞弊实质性测试",
+      "description": "针对舞弊风险点的深入测试",
+      "sheet_name": "轨道B-舞弊测试",
+      "columns": [
+        {"name": "序号", "width": 8},
+        {"name": "风险编号", "width": 12},
+        {"name": "舞弊情景", "width": 30},
+        {"name": "来源标注", "width": 15},
+        {"name": "测试程序", "width": 45},
+        {"name": "取数来源", "width": 20},
+        {"name": "样本量", "width": 10},
+        {"name": "测试结果", "width": 15},
+        {"name": "执行人", "width": 12},
+        {"name": "执行日期", "width": 12},
+        {"name": "证据索引", "width": 20}
+      ],
+      "default_row_height": 60,
+      "instructions": [
+        "识别异常交易模式",
+        "检查大额/频繁交易",
+        "验证关联方交易",
+        "分析趋势异常"
+      ],
+      "high_risk_tags": ["权限集中", "机会窗口", "动机因素"]
+    },
+    "C": {
+      "name": "轨道C-系统类实质性测试",
+      "description": "基于系统数据的实质性抽样测试",
+      "sheet_name": "轨道C-系统测试",
+      "columns": [
+        {"name": "序号", "width": 8},
+        {"name": "测试项目", "width": 20},
+        {"name": "测试程序", "width": 40},
+        {"name": "系统查询语句", "width": 35},
+        {"name": "样本量", "width": 10},
+        {"name": "账面金额", "width": 15},
+        {"name": "核实金额", "width": 15},
+        {"name": "差异金额", "width": 15},
+        {"name": "结论", "width": 12},
+        {"name": "备注", "width": 20}
+      ],
+      "default_row_height": 50
+    },
+    "D": {
+      "name": "轨道D-边界探测",
+      "description": "测试系统边界和控制边界",
+      "sheet_name": "轨道D-边界测试",
+      "columns": [
+        {"name": "序号", "width": 8},
+        {"name": "边界类型", "width": 15},
+        {"name": "测试场景", "width": 30},
+        {"name": "测试程序", "width": 40},
+        {"name": "预期结果", "width": 25},
+        {"name": "实际结果", "width": 25},
+        {"name": "是否通过", "width": 12},
+        {"name": "备注", "width": 20}
+      ],
+      "default_row_height": 50,
+      "boundary_types": ["审批阈值", "金额上限", "周期限制", "数量限制"]
+    },
+    "E": {
+      "name": "轨道E-运营效率专项",
+      "description": "针对运营效率的专项测试",
+      "sheet_name": "轨道E-效率测试",
+      "columns": [
+        {"name": "序号", "width": 8},
+        {"name": "效率指标", "width": 20},
+        {"name": "测试程序", "width": 40},
+        {"name": "基准值", "width": 15},
+        {"name": "实测值", "width": 15},
+        {"name": "偏差率", "width": 12},
+        {"name": "原因分析", "width": 30},
+        {"name": "改进建议", "width": 30}
+      ],
+      "default_row_height": 45
+    },
+    "F": {
+      "name": "轨道F-合规专项",
+      "description": "针对内外部合规要求的测试",
+      "sheet_name": "轨道F-合规测试",
+      "columns": [
+        {"name": "序号", "width": 8},
+        {"name": "合规要求", "width": 25},
+        {"name": "来源文件", "width": 20},
+        {"name": "测试程序", "width": 40},
+        {"name": "符合性", "width": 12},
+        {"name": "偏差描述", "width": 35},
+        {"name": "整改建议", "width": 30},
+        {"name": "优先级", "width": 12}
+      ],
+      "default_row_height": 50,
+      "compliance_sources": ["内部制度", "会计准则", "上市规则", "行业规范"]
+    }
+  },
+  "common_settings": {
+    "freeze_first_row": true,
+    "alt_row_colors": true,
+    "header_color": "2F5496",
+    "high_risk_color": "FFE699",
+    "default_font_size": 10
+  },
+  "output_columns_template": {
+    "all_tracks": ["序号", "风险编号", "风险名称", "来源标注", "测试程序", "取数来源", "样本量", "测试结果", "执行人", "执行日期", "备注"]
+  }
+}

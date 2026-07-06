@@ -1,0 +1,106 @@
+{
+  "skill_name": "document-organizer",
+  "evals": [
+    {
+      "id": 1,
+      "name": "mixed-documents-folder",
+      "prompt": "帮我整理一下 D:\\TestDocs\\MixedDocs 这个文件夹，里面有各种文档混杂在一起，我需要知道有哪些类型的文档，并按类型分类",
+      "expected_output": "生成文档整理报告，识别出PDF、Word、Markdown等不同类型的文档，并按技术文档、商务文档、个人笔记等类别分类",
+      "files": ["test_data/mixed_docs/"],
+      "assertions": [
+        {
+          "name": "report_generated",
+          "description": "生成了Markdown格式的整理报告"
+        },
+        {
+          "name": "document_types_identified",
+          "description": "识别出至少3种文档类型"
+        },
+        {
+          "name": "classification_complete",
+          "description": "所有文档都被分类到相应类别"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "name": "trigger-keyword-detection",
+      "prompt": "我电脑上有一堆文件乱七八糟的，帮我整理一下",
+      "expected_output": "识别模糊触发词，询问具体文件夹路径，然后执行文档整理",
+      "files": [],
+      "assertions": [
+        {
+          "name": "vague_trigger_recognized",
+          "description": "从模糊指令中识别出整理意图"
+        },
+        {
+          "name": "path_requested",
+          "description": "主动询问文件夹路径"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "name": "knowledge-base-creation",
+      "prompt": "把我这个笔记文件夹整理成知识库，D:\\Notes\\MyKnowledge",
+      "expected_output": "扫描笔记文件夹，按主题自动分类，生成知识库索引，支持快速检索",
+      "files": ["test_data/knowledge_base/"],
+      "assertions": [
+        {
+          "name": "knowledge_base_structure",
+          "description": "生成了知识库结构"
+        },
+        {
+          "name": "index_created",
+          "description": "创建了可检索的索引文件"
+        },
+        {
+          "name": "tags_extracted",
+          "description": "为文档提取了标签"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "name": "edge-cases-handling",
+      "prompt": "分析 D:\\TestDocs\\EdgeCases 文件夹，里面有一些特殊的文件需要处理",
+      "expected_output": "正确处理加密文件、损坏文件、空文件、重复文件等边界情况，并生成问题报告",
+      "files": ["test_data/edge_cases/"],
+      "assertions": [
+        {
+          "name": "encrypted_skipped",
+          "description": "跳过加密文件并记录"
+        },
+        {
+          "name": "duplicates_detected",
+          "description": "检测到重复文件"
+        },
+        {
+          "name": "errors_logged",
+          "description": "记录了所有问题文件"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "name": "large-folder-performance",
+      "prompt": "整理这个很大的文件夹 D:\\TestDocs\\LargeFolder，里面有1000多个文档",
+      "expected_output": "分批处理大量文件，提供进度反馈，最终生成完整的整理报告",
+      "files": ["test_data/large_folder/"],
+      "assertions": [
+        {
+          "name": "progress_reported",
+          "description": "提供了进度反馈"
+        },
+        {
+          "name": "all_documents_scanned",
+          "description": "扫描了所有文档"
+        },
+        {
+          "name": "performance_acceptable",
+          "description": "处理时间在合理范围内"
+        }
+      ]
+    }
+  ]
+}

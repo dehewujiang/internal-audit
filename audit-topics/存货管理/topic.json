@@ -1,0 +1,28 @@
+{
+  "schema_version": "1.0.0",
+  "topic_name": "存货管理",
+  "topic_description": "覆盖原材料、在制品、产成品、废料的全生命周期存货管理审计",
+  "audit_defaults": {
+    "focus": ["舞弊调查", "效率", "合规"],
+    "warehouses": ["成品仓库", "材料仓库", "物流仓库"],
+    "processes": ["入库", "出库", "盘点", "呆滞物料管理", "计划管理"],
+    "departments": ["仓库", "物流", "生产计划", "采购"],
+    "risk_areas": [
+      "inventory_movement",
+      "obsolete_inventory",
+      "planning_accuracy",
+      "auxiliary_materials",
+      "waste_disposal"
+    ]
+  },
+  "typical_documents": [
+    "NXM003_物流仓库管理标准",
+    "NPM019_低值易耗品及辅材管理标准",
+    "NPM015常用物料管理标准",
+    "NPM014计划管理标准",
+    "NPM011呆滞物料管理标准",
+    "NPM007材料仓库管理标准",
+    "NPM001成品仓库管理标准",
+    "NXM003一般可回收废弃物资处置管理标准"
+  ]
+}

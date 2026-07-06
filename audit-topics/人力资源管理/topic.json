@@ -1,0 +1,65 @@
+{
+  "schema_version": "1.0.0",
+  "topic_name": "人力资源管理",
+  "topic_description": "汽车零部件企业人力资源管理全维度审计，涵盖招聘、薪酬、考勤、培训、绩效、干部管理、劳动关系、工伤、职业健康、员工激励等十个模块，覆盖四家子公司的HR制度健全性、执行合规性、内控有效性及运营效率",
+  "audit_defaults": {
+    "focus": ["舞弊调查", "内控效果评估", "合规性审计", "运营效率审计"],
+    "warehouses": ["长华（紧固件/宁波）", "长源（冲焊件/宁波）", "长盛（冲焊件/广东）"],
+    "processes": [
+      "招聘与任用管理",
+      "薪酬福利管理",
+      "考勤与休假管理",
+      "培训与发展管理",
+      "绩效管理",
+      "干部培养与选拔管理",
+      "劳动关系管理",
+      "工伤管理",
+      "职业健康与安全管理",
+      "员工激励管理"
+    ],
+    "departments": ["人力资源部", "各生产车间", "行政部", "安全环保部"],
+    "risk_areas": [
+      "recruitment_compliance",
+      "compensation_accuracy",
+      "attendance_integrity",
+      "training_effectiveness",
+      "performance_fairness",
+      "cadre_selection_transparency",
+      "labor_contract_compliance",
+      "work_injury_management",
+      "occupational_health_safety",
+      "employee_motivation"
+    ]
+  },
+  "reference_framework": {
+    "mandatory": [
+      {"id": "org_structure", "name": "组织架构与岗位管理",
+       "cover_content": "编制计划、岗位设立/变更/撤销、JD标准、定编方法论、超编预警"},
+      {"id": "recruitment", "name": "招聘与任用管理"},
+      {"id": "compensation", "name": "薪酬福利管理"},
+      {"id": "attendance", "name": "考勤与休假管理"},
+      {"id": "training", "name": "培训与发展管理"},
+      {"id": "performance", "name": "绩效管理"},
+      {"id": "labor_relation", "name": "劳动关系管理"},
+      {"id": "work_injury", "name": "工伤管理"}
+    ],
+    "recommended": [
+      {"id": "cadre", "name": "干部培养与选拔管理"},
+      {"id": "occupational_health", "name": "职业健康与安全管理"},
+      {"id": "incentive", "name": "员工激励管理"}
+    ]
+  },
+  "typical_documents": [
+    "人力资源管理总纲/程序文件",
+    "招聘管理制度/流程",
+    "薪酬管理制度",
+    "考勤休假管理制度",
+    "培训管理制度",
+    "绩效管理制度",
+    "干部选拔与任命制度",
+    "劳动关系管理制度",
+    "工伤管理制度",
+    "职业健康管理制度",
+    "员工激励制度"
+  ]
+}
