@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# System
+Thumbs.db
+Desktop.ini
+
+# IDE
+.vscode/
+.idea/
+
+# Binary artifacts
+*.docx
+*.xlsx
+*.pdf
+*.png
+*.jpg
+*.jpeg
+*.bmp
+
+# Node (if any)
+node_modules/
+
+# Logs
+*.log
+
+# OS
+.DS_Store
