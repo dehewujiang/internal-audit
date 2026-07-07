@@ -325,7 +325,23 @@ EXPOSED（风险敞口）：
 
 ## Step 5: 质量评估（引用评估框架）
 
-**执行前加载**：`D:/Nut/00_my_digital/12_AGI/skills/internal-audit/internal-audit-evaluator/SKILL.md`，定位 **audit_program** 的检查清单。以下检查项与框架定义一致。
+**执行前加载**：
+- `D:/Nut/00_my_digital/12_AGI/skills/internal-audit/internal-audit-evaluator/SKILL.md`，定位 **audit_program** 的检查清单
+- `D:/Nut/00_my_digital/12_AGI/skills/internal-audit/program-quality-evaluator/SKILL.md`，程序质量深度评估
+
+### 5.0 格式硬校验（validate-program.py，不可跳过）
+
+在所有推理检查之前，先用确定性脚本做格式校验：
+
+```bash
+python D:/Nut/00_my_digital/12_AGI/skills/internal-audit/_shared/scripts/validate-program.py audit-programs/ --json
+```
+
+| 输出 | 处理 |
+|------|------|
+| action=block | 根据 blockers 逐项修正，重新运行直到通过 |
+| action=warn | 标记 warnings，可接受则继续，不接受则修正 |
+| action=pass | 继续进入 5.1 |
 
 ### 5.1 格式检查
 
@@ -422,6 +438,20 @@ python D:/Nut/00_my_digital/12_AGI/skills/internal-audit/internal-audit-evaluato
 # 如果 quality_gate.py 输出 action="regenerate" → 回到 Step 1 重新生成
 # 如果 quality_gate.py 输出 action="pass" → 继续输出
 ```
+
+### 5.7 程序质量深度评估（program-quality-evaluator，不可跳过）
+
+evaluator 的 5.0-5.6 只管"格式对不对"。本步骤管"程序能不能用"。
+
+**执行**：读取 `D:/Nut/00_my_digital/12_AGI/skills/internal-audit/program-quality-evaluator/SKILL.md`，按四层评估体系（覆盖度+检测力+可执行性+防绕过声明）逐项评估。
+
+**重写触发**：
+- 层级 1 覆盖率 <80% → 🔴 重写缺失覆盖的轨道
+- 层级 1 mandatory 模块遗漏 → 🔴 立即补齐
+- 层级 2 判定标准为开关型 → 🔴 重写该程序
+- 层级 3 >30% 步骤无数据来源 → 🔴 重写
+
+**存储**：评估结果通过 `record_evaluation.py --content-type program_quality` + `quality_gate.py` 写入历史库。
 
 ---
 
