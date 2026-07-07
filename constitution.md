@@ -61,3 +61,66 @@ Step 4: 在展示方案时，附上工具检查结果清单：
 8. **【状态快照】每次执行可能修改审计状态的操作前，自动备份当前 `audit_state` 到快照。快照保留最近 20 次，确保任何错误或用户否决都能回滚到操作前的状态。**
 9. **【用户否决权】用户可以通过自然语言表达撤销/回退诉求。中央大脑必须支持按快照恢复状态，将已撤销的操作在 `audit_trail` 中标记为 `vetoed`，并告知用户回滚结果。**
 10. **【错误容忍】工具调用失败时，自动切换替代方案或记录问题到 `uncertainties`。任何错误都不应导致数据丢失——`audit_state` 的完整性高于任务完成度。**
+
+## 阶段流转规则（地铁闸机模型）
+
+**核心原则**：阶段转换由确定性代码（`_shared/scripts/phase_gate.py`）管理，不依赖 LLM 记忆。每个阶段之间有"闸机"，满足退出条件才能前进。
+
+**阶段顺序**：
+```
+phase_0_init → phase_1_document_analysis → phase_1_5_interview → phase_2_program_generation → phase_3_execution → phase_4_report
+```
+
+**前进规则**：
+- 每次准备进入下一阶段前，运行 `python phase_gate.py check`
+- action=pass → 可以前进，运行 `python phase_gate.py advance`
+- action=block → 退出条件未满足，列出缺失项，等用户决定
+
+**回退规则**：
+- 回退必须用户确认（用户说"回退到 Phase 1 补分析"）
+- AI 不得自行决定回退——回退意味着前面的工作成果可能要重做，需要用户审批
+- 运行 `python phase_gate.py rollback --to <phase> --reason "<原因>"`
+
+**闸机与自由区**：
+- 闸机（phase_gate.py 检查）= 确定性的代码检查，AI 不能改
+- 闸机之间（每个 phase 内部）= AI 的自由决策空间（选什么方法、生成什么内容）
+- AI 不能跳闸机，不能绕闸机，不能自己把闸机搬开
+
+**工具分域**：每个阶段只暴露该阶段需要的 skill，详见 CLAUDE.md 的 skill 注册表 `phases` 字段。当前阶段不可用的 skill，AI 不得调用。跨阶段回退时，用户确认后临时开放目标阶段的 skill。
+
+## 启动协议（每次对话开始必须执行）
+
+每次对话开始时，中央大脑必须执行以下步骤：
+
+```
+Step 1: 读取 current-audit.json → 提取 status（当前阶段）、audit_topic、audit_state
+Step 2: 读取 CLAUDE.md 的工具清单 → 根据当前 status 过滤出可用 skill 列表
+Step 3: 扫描 workspace 各目录 → 统计已产出的文件（policy-analyses/*.json, findings/*.json 等）
+Step 4: 输出启动汇报：
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📋 项目状态
+主题：[audit_topic]
+阶段：[current_phase]
+进度：Phase 1 ✅ → Phase 1.5 ✅ → Phase 2 ⬅️ 当前 → Phase 3 ○ → Phase 4 ○
+
+已产出：
+  - 制度分析：3 份
+  - 审计程序：1 份
+  - Findings：0 个
+  - 报告：0 份
+
+当前可用工具：
+  ✅ program-generator
+  ✅ queries
+  ❌ execution-assistant（Phase 4 才可用）
+  ❌ report-generator（Phase 5 才可用）
+
+下一步建议：[基于当前状态判断]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+**禁止行为**：
+- ❌ 不读取 current-audit.json 就开始工作
+- ❌ 在启动汇报中使用过时信息（必须每次重新读取）
+- ❌ 跳过启动汇报直接执行任务
