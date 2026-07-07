@@ -1,0 +1,50 @@
+{
+  "name": "case-5-gaps",
+  "description": "制度缺口覆盖——验证程序覆盖了制度分析发现的控制缺口",
+  "schema_version": "1.0",
+  "inputs": {
+    "audit_topic": "存货管理",
+    "audit_purpose": "内控效果评估",
+    "trigger": "例行审计",
+    "company_data_file": "audit-topics/about-me.md",
+    "policy_analysis": {
+      "control_gaps": [
+        {
+          "id": "GAP-001",
+          "title": "成品丝超期无系统预警",
+          "severity": "高",
+          "description": "成品丝存储超过30天系统无自动预警，依赖人工台账发现",
+          "verification_status": "已确认"
+        },
+        {
+          "id": "GAP-002",
+          "title": "废料处置无定期盘点",
+          "severity": "中",
+          "description": "废料处置未建立定期盘点机制，处置量与产生量无核对",
+          "verification_status": "已确认"
+        },
+        {
+          "id": "GAP-003",
+          "title": "呆滞物料认定标准缺失",
+          "severity": "高",
+          "description": "未建立呆滞物料的统一认定标准和分级处置流程",
+          "verification_status": "已确认"
+        }
+      ]
+    }
+  },
+  "expected": {
+    "activated_tracks": ["A", "C", "D"],
+    "must_have": [
+      "超期预警",
+      "废料盘点",
+      "呆滞物料"
+    ],
+    "must_not_have": [
+      "轨道B",
+      "轨道E",
+      "_X_占位符"
+    ],
+    "gap_coverage_required": ["GAP-001", "GAP-002", "GAP-003"]
+  }
+}
