@@ -3,6 +3,11 @@
 queries.py — 审计数据查询工具
 
 读取 findings/index.json + evaluator JSONL 历史，提供查询和分析能力。
+在任何阶段都可调用，支持按风险/状态/关键词/年度/来源筛选 findings。
+
+[INPUT]:  findings/index.json + findings/F-YYYY-NNN.json + evaluator JSONL
+[OUTPUT]: 结构化查询结果（文本/JSON）
+[POS]:    _shared/scripts 的通用查询工具，被 CLAUDE.md 注册为全局可用
 
 用法：
     python queries.py findings --risk high
