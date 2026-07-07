@@ -14,13 +14,15 @@ queries.py — 审计数据查询工具
     python queries.py findings --keyword 废料 --year 2026
     python queries.py findings --status 待整改
     python queries.py findings --by-origin design
-    
+
     python queries.py trend --content-type audit_program
     python queries.py trend --days 90
-    
+
     python queries.py compare --topic 存货管理 --from 2025 --to 2026
-    
+
     python queries.py summary
+
+    python queries.py search "SAP 权限"
 """
 import json
 import os
@@ -318,28 +320,99 @@ def cmd_summary(args):
     index = load_index()
     if not index:
         return
-    
+
     total = index.get("total_findings", 0)
     print(f"📊  Finding 汇总\n")
     print(f"    总数: {total}")
-    
+
     by_risk = index.get("by_risk", {})
     print(f"    风险分布: 高={by_risk.get('高', 0)} 中={by_risk.get('中', 0)} 低={by_risk.get('低', 0)}")
-    
+
     by_status = index.get("by_status", {})
     print(f"    状态分布: ", ", ".join(f"{k}={len(v)}" for k,v in by_status.items() if v))
-    
+
     by_origin = index.get("by_origin", {})
     print(f"    来源分布: design={len(by_origin.get('design', []))} execution={len(by_origin.get('execution', []))}")
-    
+
     by_year = index.get("by_year", {})
     print(f"    年度分布: ", ", ".join(f"{y}={d['count']}" for y,d in sorted(by_year.items())))
-    
+
     # evaluator 历史
     evals = load_evaluations(days=90)
     if evals:
         avg = sum(e.get("overall_score", 0) for e in evals) / len(evals)
         print(f"\n    📈 评估历史（90天）: {len(evals)} 条记录，平均分 {avg:.1f}/10")
+
+
+# ── 全文搜索 ──────────────────────────────────────────────
+
+def search_in_json(obj, term, path=""):
+    """递归搜索 JSON 对象中所有包含 term 的字符串字段，返回 [(field_path, context)]"""
+    matches = []
+    if isinstance(obj, str):
+        if term in obj:
+            # 截取匹配周围的上下文
+            idx = obj.index(term)
+            start = max(0, idx - 30)
+            end = min(len(obj), idx + len(term) + 30)
+            context = obj[start:end]
+            if start > 0:
+                context = "..." + context
+            if end < len(obj):
+                context = context + "..."
+            matches.append((path, context))
+    elif isinstance(obj, dict):
+        for k, v in obj.items():
+            matches.extend(search_in_json(v, term, f"{path}.{k}" if path else k))
+    elif isinstance(obj, list):
+        for i, v in enumerate(obj):
+            matches.extend(search_in_json(v, term, f"{path}[{i}]"))
+    return matches
+
+
+def cmd_search(args):
+    """全文搜索 finding 正文"""
+    findings_dir = get_findings_dir()
+    if not findings_dir.exists():
+        print("📂 findings/ 目录不存在")
+        return
+
+    term = args.term
+    files = sorted(findings_dir.glob("F-*.json"))
+    if not files:
+        print("📂 findings/ 中无 finding 文件")
+        return
+
+    results = []
+    for fpath in files:
+        try:
+            with open(fpath, "r", encoding="utf-8") as f:
+                data = json.load(f)
+        except json.JSONDecodeError:
+            continue
+
+        matches = search_in_json(data, term)
+        if matches:
+            fid = data.get("finding_id", fpath.stem)
+            title = data.get("finding_title", data.get("title", ""))
+            rc = data.get("risk_classification", {})
+            risk = rc.get("risk_level", data.get("risk_level", "-"))
+            results.append({"file": fpath.name, "finding_id": fid, "title": title, "risk": risk, "matches": matches})
+
+    if not results:
+        print(f"🔍 未找到包含「{term}」的 finding")
+        return
+
+    print(f"🔍 全文搜索「{term}」: {len(results)} 个 finding 匹配\n")
+    for r in results:
+        print(f"  📌 {r['finding_id']} [{r['risk']}] {r['title'][:50]}")
+        for field_path, context in r["matches"][:5]:  # 每个 finding 最多显示 5 个匹配
+            print(f"     {field_path}: {context[:80]}")
+        if len(r["matches"]) > 5:
+            print(f"     ... 还有 {len(r['matches']) - 5} 个匹配")
+        print()
+
+    print(f"共 {len(results)} 个 finding 匹配「{term}」")
 
 
 # ── 主入口 ──────────────────────────────────────────
@@ -371,14 +444,19 @@ def main():
     
     # summary
     sub.add_parser("summary", help="汇总统计")
-    
+
+    # search
+    p_search = sub.add_parser("search", help="全文搜索 finding 正文")
+    p_search.add_argument("term", help="搜索关键词")
+
     args = parser.parse_args()
-    
+
     commands = {
         "findings": cmd_findings,
         "trend": cmd_trend,
         "compare": cmd_compare,
         "summary": cmd_summary,
+        "search": cmd_search,
     }
     
     commands[args.command](args)

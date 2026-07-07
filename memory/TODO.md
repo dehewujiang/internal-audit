@@ -4,7 +4,6 @@
 - 无
 
 ## #待办
-- 🟡 P2：queries.py 全文搜索 finding 正文
 - 🟢 P3：queries.py 制度分析查询
 - 🟢 P3：queries.py 跨实体追溯
 
@@ -26,3 +25,4 @@
 - 更新各 SKILL.md Step 5 引用新的 validate 脚本和 program-quality-evaluator
 - 更新 report-generator SKILL.md 删除「功能1：管理审计发现」
 - 🟢 P2：为关键决策点（风险评级、finding 定级）加决策理由记录（decision_rationale）
+- 🟡 P2：queries.py 全文搜索 finding 正文（search 子命令，递归搜索所有 JSON 字段）

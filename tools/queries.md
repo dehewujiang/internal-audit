@@ -2,6 +2,7 @@
 
 ## 能力
 - 按风险等级/状态/关键词/年度/来源查询 findings
+- 全文搜索 finding 正文（递归搜索所有 JSON 字段，显示匹配上下文）
 - 展示评估趋势（最近 N 天各内容类型的质量波动）
 - 跨年份 finding 对比（相似度检测）
 - 汇总统计（总数、风险分布、状态分布、来源分布、年度分布）
@@ -15,6 +16,7 @@ python queries.py findings --by-origin design
 python queries.py trend --content-type audit_program --days 90
 python queries.py compare --topic 存货管理 --from 2025 --to 2026
 python queries.py summary
+python queries.py search "SAP 权限"
 ```
 
 ## 限制
