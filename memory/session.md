@@ -1,23 +1,22 @@
 # 最近一次工作记录
 
 ## 完成了什么
-1. 通读 8 个 skill 的 SKILL.md，建立对项目完整流水线的理解
-2. 读取 `参考文件/AI Aagent 标准.md`（19 条原则），逐条对照项目现状进行架构评审
-3. 评审结果：综合 3.2/5，最强项 F5（状态管理），最弱项 F8（控制流）
-4. 识别出 P0/P1/P2 改进项并排定优先级
-5. 创建 `.claude/rules/` junction 链接到母仓库 `D:\Nut\00_my_digital\12_AGI\rules\`
-6. 配置 `.claude/settings.json` 注入 memory_rules + project-doctrine
-7. 更新 `CLAUDE.md` 新增"全局编码与文档规则"段
-8. 创建项目 `memory/` 目录及全部记忆文件
+1. P0-1: 创建 `phase_gate.py` 阶段状态机（地铁闸机模型），6 个阶段 + 前进/回退/快照
+2. P0-2: 创建 3 个 validate 脚本（validate-program.py, validate-policy-analysis.py, validate-report.py）
+3. P1-1: 更新 CLAUDE.md 工具清单增加 phases 字段，constitution.md 新增阶段流转规则和启动协议
+4. queries.py 重构: 从 evaluator/ 搬到 _shared/scripts/，report-generator 的发现管理功能整合进来
+5. program-quality-evaluator 新增: 四层评估体系（覆盖度+检测力+可执行性+防绕过），SKILL.md 写好
+6. P1-2: 创建 5 个 eval cases + run_evals.py 运行器
+7. 启动协议: constitution.md 新增每次对话开始必须执行的启动协议
 
 ## 为什么这样做
-- 架构评审是为了让 Flan 知道系统在 AI Agent 工程标准下的成熟度，决定下一步方向
-- 规则链接是因为母仓库 rules/ 是所有 AGI 项目共享的编码规范，必须通过路径匹配机制在 internal-audit 中生效
-- Memory 创建是因为 memory_rules.md 要求项目记忆在项目根目录而非 Auto Memory 目录
+基于 19 条 AI Agent 标准架构评审（2026-07-06，综合 3.2/5），识别出控制流（F8）、硬规则代码化（F17）、工具分域（F14）、prompt 测试（F2）、程序质量评估五个关键缺口。7 项任务按依赖关系顺序执行。
 
 ## 遇到什么问题
-- 初次创建 memory 时写错了位置（写到了 Auto Memory 目录而非项目目录），系统层面的 Auto Memory 指令和 memory_rules.md 的指令在动手时没做交叉检查。已纠正。
-- Windows junction 需要在 cmd 环境下执行，不能用 Bash 直接创建
+- phase_gate.py 首版因中文全角字符导致 Windows Python 解析失败（U+FF0C full-width comma），重写为纯 ASCII 版本
+- report-generator SKILL.md 的"功能1：管理审计发现"尚未删除（需要更仔细地处理，避免破坏现有 SKILL.md 结构）
 
 ## 下一步建议
-从 P0-1（阶段状态机）开始，性价比最高——半天工作量，解决最大的架构风险
+- commit 全部变更
+- 验证 P0-1 状态机在真实审计项目上能正常工作
+- 考虑是否需要更新各 SKILL.md 的 Step 5 以引用新的 validate 脚本
