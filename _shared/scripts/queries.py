@@ -23,6 +23,11 @@ queries.py — 审计数据查询工具
     python queries.py summary
 
     python queries.py search "SAP 权限"
+
+    python queries.py analyses --topic 存货管理 --gaps
+    python queries.py analyses --verbose
+
+    python queries.py trace F-2026-001
 """
 import json
 import os
@@ -55,6 +60,18 @@ def get_findings_dir() -> Path:
 
 def get_eval_dir() -> Path:
     return Path.home() / ".claude" / "skills" / "internal-audit" / "data" / "evaluations"
+
+
+def get_policy_analyses_dir() -> Path:
+    return find_workspace() / "policy-analyses"
+
+
+def get_design_assessments_dir() -> Path:
+    return find_workspace() / "design-assessments"
+
+
+def get_audit_programs_dir() -> Path:
+    return find_workspace() / "audit-programs"
 
 
 # ── 数据读取 ──────────────────────────────────────────
@@ -415,6 +432,160 @@ def cmd_search(args):
     print(f"共 {len(results)} 个 finding 匹配「{term}」")
 
 
+def cmd_analyses(args):
+    """查询制度分析结果"""
+    analyses_dir = get_policy_analyses_dir()
+    if not analyses_dir.exists():
+        print("📂 policy-analyses/ 目录不存在")
+        return
+
+    files = sorted(analyses_dir.glob("*.json"))
+    if not files:
+        print("📂 policy-analyses/ 中无分析结果")
+        return
+
+    topic_filter = args.topic
+    total_cp = 0
+    total_gaps = 0
+    total_risks = 0
+
+    print(f"📋  制度分析查询（{len(files)} 份分析结果）\n")
+
+    for fpath in files:
+        try:
+            with open(fpath, "r", encoding="utf-8") as f:
+                data = json.load(f)
+        except json.JSONDecodeError:
+            print(f"  ⚠️ {fpath.name}: JSON 格式错误，跳过")
+            continue
+
+        # 按主题筛选
+        if topic_filter and topic_filter not in fpath.stem:
+            continue
+
+        cps = data.get("control_points", [])
+        gaps = data.get("control_gaps", [])
+        risks = data.get("risk_points", [])
+        summary = data.get("summary", {})
+
+        total_cp += len(cps)
+        total_gaps += len(gaps)
+        total_risks += len(risks)
+
+        print(f"  📄 {fpath.stem}")
+        print(f"     控制点: {len(cps)} | 控制缺口: {len(gaps)} | 风险点: {len(risks)}")
+
+        # 显示缺口详情
+        if gaps and (args.gaps or args.verbose):
+            for g in gaps:
+                if isinstance(g, dict):
+                    title = g.get("title", g.get("name", ""))
+                    status = g.get("verification_status", "-")
+                    severity = g.get("severity", g.get("risk_level", "-"))
+                    print(f"       缺口: {title[:40]} [{severity}] 状态:{status}")
+
+        # 显示高风险点
+        if risks and args.verbose:
+            high_risks = [r for r in risks if isinstance(r, dict)
+                          and r.get("severity", r.get("risk_level", "")) in ("高", "high")]
+            if high_risks:
+                for r in high_risks:
+                    print(f"       🔴 高风险: {r.get('title', r.get('name', ''))[:40]}")
+        print()
+
+    print(f"汇总: 控制点 {total_cp} 个, 控制缺口 {total_gaps} 个, 风险点 {total_risks} 个")
+
+
+def cmd_trace(args):
+    """跨实体追溯：finding ↔ design observation ↔ control point"""
+    finding_id = args.finding_id
+    findings_dir = get_findings_dir()
+    assessments_dir = get_design_assessments_dir()
+
+    # 读取目标 finding
+    finding = load_finding(finding_id)
+    if not finding:
+        print(f"❌ 未找到 {finding_id}")
+        return
+
+    title = finding.get("finding_title", finding.get("title", ""))
+    origin = finding.get("finding_metadata", {}).get("origin", finding.get("origin", "-"))
+    obs_id = finding.get("design_observation_id", "")
+    related_ctrl = finding.get("related_control", "")
+    related_procs = finding.get("related_procedures", [])
+
+    print(f"🔗 追溯: {finding_id} — {title[:50]}\n")
+
+    # 基本关联
+    print(f"  来源: {origin}")
+    if obs_id:
+        print(f"  关联设计观察: {obs_id}")
+    if related_ctrl:
+        print(f"  关联控制点: {related_ctrl}")
+    if related_procs:
+        print(f"  关联审计程序: {', '.join(related_procs)}")
+
+    # 追溯设计观察
+    if obs_id and assessments_dir.exists():
+        for fpath in assessments_dir.glob("*.json"):
+            try:
+                with open(fpath, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+            except json.JSONDecodeError:
+                continue
+            observations = data.get("design_observations", data.get("observations", []))
+            for obs in observations:
+                if isinstance(obs, dict) and obs.get("id") == obs_id:
+                    obs_title = obs.get("title", "")
+                    obs_source = obs.get("source", "")
+                    obs_status = obs.get("status", "")
+                    print(f"\n  📋 设计观察 {obs_id}:")
+                    print(f"     标题: {obs_title[:60]}")
+                    print(f"     来源: {obs_source}")
+                    print(f"     状态: {obs_status}")
+                    break
+
+    # 反向追溯：哪些 finding 关联了同一个控制点
+    if related_ctrl:
+        related_findings = []
+        for fpath in findings_dir.glob("F-*.json"):
+            if fpath.name == f"{finding_id}.json":
+                continue
+            try:
+                with open(fpath, "r", encoding="utf-8") as f:
+                    other = json.load(f)
+            except json.JSONDecodeError:
+                continue
+            if other.get("related_control") == related_ctrl:
+                other_id = other.get("finding_id", fpath.stem)
+                other_title = other.get("finding_title", other.get("title", ""))[:40]
+                related_findings.append((other_id, other_title))
+        if related_findings:
+            print(f"\n  🔁 同一控制点 {related_ctrl} 的其他 finding:")
+            for fid, ft in related_findings:
+                print(f"     {fid}: {ft}")
+
+    # 反向追溯：哪些 finding 来自同一个设计观察
+    if obs_id:
+        related_findings = []
+        for fpath in findings_dir.glob("F-*.json"):
+            if fpath.name == f"{finding_id}.json":
+                continue
+            try:
+                with open(fpath, "r", encoding="utf-8") as f:
+                    other = json.load(f)
+            except json.JSONDecodeError:
+                continue
+            if other.get("design_observation_id") == obs_id:
+                other_id = other.get("finding_id", fpath.stem)
+                other_title = other.get("finding_title", other.get("title", ""))[:40]
+                related_findings.append((other_id, other_title))
+        if related_findings:
+            print(f"\n  🔁 同一设计观察 {obs_id} 的其他 finding:")
+            for fid, ft in related_findings:
+                print(f"     {fid}: {ft}")
+
+
 # ── 主入口 ──────────────────────────────────────────
 
 def main():
@@ -449,6 +620,16 @@ def main():
     p_search = sub.add_parser("search", help="全文搜索 finding 正文")
     p_search.add_argument("term", help="搜索关键词")
 
+    # analyses
+    p_analyses = sub.add_parser("analyses", help="查询制度分析结果")
+    p_analyses.add_argument("--topic", help="按主题筛选")
+    p_analyses.add_argument("--gaps", action="store_true", help="显示缺口详情")
+    p_analyses.add_argument("--verbose", action="store_true", help="显示高风险点详情")
+
+    # trace
+    p_trace = sub.add_parser("trace", help="跨实体追溯")
+    p_trace.add_argument("finding_id", help="Finding ID (如 F-2026-001)")
+
     args = parser.parse_args()
 
     commands = {
@@ -457,6 +638,8 @@ def main():
         "compare": cmd_compare,
         "summary": cmd_summary,
         "search": cmd_search,
+        "analyses": cmd_analyses,
+        "trace": cmd_trace,
     }
     
     commands[args.command](args)

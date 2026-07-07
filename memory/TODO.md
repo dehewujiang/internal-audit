@@ -4,8 +4,7 @@
 - 无
 
 ## #待办
-- 🟢 P3：queries.py 制度分析查询
-- 🟢 P3：queries.py 跨实体追溯
+- 无
 
 ## #搁置
 - 🟢 P2：模型分级——制度分析用便宜模型，辩论用强模型。已搁置（2026-07-07）：当前架构下 Skill 工具不支持 model 参数，且单人使用 token 成本可控。待以下条件满足后重新评估：(1) 多人协作上线，成本上升；(2) Claude Code 支持 skill 级 model 覆盖。
@@ -26,3 +25,5 @@
 - 更新 report-generator SKILL.md 删除「功能1：管理审计发现」
 - 🟢 P2：为关键决策点（风险评级、finding 定级）加决策理由记录（decision_rationale）
 - 🟡 P2：queries.py 全文搜索 finding 正文（search 子命令，递归搜索所有 JSON 字段）
+- 🟢 P3：queries.py 制度分析查询（analyses 子命令）
+- 🟢 P3：queries.py 跨实体追溯（trace 子命令：finding ↔ design observation ↔ control point）
