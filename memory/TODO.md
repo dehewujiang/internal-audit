@@ -4,8 +4,6 @@
 - 无
 
 ## #待办
-- 更新各 SKILL.md 的 Step 5 引用新的 validate 脚本和 program-quality-evaluator
-- 更新 report-generator SKILL.md 删除"功能1：管理审计发现"
 - 🟢 P2：为关键决策点（风险评级、finding 定级）加决策理由记录
 - 🟢 P2：模型分级——制度分析用便宜模型，辩论用强模型
 - 🔵 P3：每个 skill 返回结构化摘要给 LLM 做下一步决策
@@ -24,3 +22,5 @@
 - 🔴 program-quality-evaluator 新增：四层评估体系 ✅
 - 🟡 P1-2：建 5 个 eval cases + run_evals.py ✅
 - 🔴 启动协议：constitution.md 新增启动协议节 ✅
+- 更新各 SKILL.md Step 5 引用新的 validate 脚本和 program-quality-evaluator ✅
+- 更新 report-generator SKILL.md 删除「功能1：管理审计发现」✅
