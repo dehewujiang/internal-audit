@@ -147,13 +147,13 @@
 
 **目的**：记录 LLM 做出关键判断时的理由，使审计报告可追溯、可辩护。
 
-| 字段 | 内容要求 | 必填条件 |
-|------|---------|---------|
-| risk_level | 为什么评为此风险等级，引用具体事实（金额/影响范围/系统性特征） | 高风险必填 |
-| category | 为什么归为此类别，引用 CCEER 中 criteria 或 condition 的具体依据 | 所有 finding |
-| cause_category | 为什么选此根因类别，引用根因追溯链路的关键节点 | 所有 finding |
-| evidence_grade_summary | 证据等级判定依据，每份关键证据为什么评为该等级 | 高风险必填 |
-| key_judgment | 本次 finding 中最核心的一个判断点 | 所有 finding |
+| 字段                     | 内容要求                                           | 必填条件       |
+| ---------------------- | ---------------------------------------------- | ---------- |
+| risk_level             | 为什么评为此风险等级，引用具体事实（金额/影响范围/系统性特征）               | 高风险必填      |
+| category               | 为什么归为此类别，引用 CCEER 中 criteria 或 condition 的具体依据 | 所有 finding |
+| cause_category         | 为什么选此根因类别，引用根因追溯链路的关键节点                        | 所有 finding |
+| evidence_grade_summary | 证据等级判定依据，每份关键证据为什么评为该等级                        | 高风险必填      |
+| key_judgment           | 本次 finding 中最核心的一个判断点                          | 所有 finding |
 
 **示例**：
 ```json

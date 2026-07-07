@@ -2,7 +2,6 @@
 name: topic-wizard
 description: 引导用户创建新的审计主题配置。用户输入"新建审计主题""配置审计主题""创建主题配置"时触发。逐步引导创建 topic.json、about-me.md、my-config.md。
 ---
-
 # 审计主题配置向导
 
 ## 核心原则
