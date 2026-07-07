@@ -89,6 +89,13 @@
     "management_action_plan": "管理层整改计划",
     "target_completion_date": "计划完成日期",
     "auditor_assessment": "充分|不充分|需补充证据"
+  },
+  "decision_rationale": {
+    "risk_level": "为什么评为此风险等级（引用具体事实：金额/影响范围/系统性特征）",
+    "category": "为什么归为此类别（引用 CCEER 中 criteria 或 condition 的具体依据）",
+    "cause_category": "为什么选此根因类别（引用根因追溯链路的关键节点）",
+    "evidence_grade_summary": "证据等级判定依据（每份证据为什么评为 A/B/C/D/E）",
+    "key_judgment": "本次 finding 中最核心的一个判断点（如：为什么认定是系统性问题而非孤立事件）"
   }
 }
 ```
@@ -135,3 +142,26 @@
 | management_action_plan | 管理层整改计划 |
 | target_completion_date | 计划完成日期 |
 | auditor_assessment | 审计师评估：充分/不充分/需补充证据 |
+
+### decision_rationale
+
+**目的**：记录 LLM 做出关键判断时的理由，使审计报告可追溯、可辩护。
+
+| 字段 | 内容要求 | 必填条件 |
+|------|---------|---------|
+| risk_level | 为什么评为此风险等级，引用具体事实（金额/影响范围/系统性特征） | 高风险必填 |
+| category | 为什么归为此类别，引用 CCEER 中 criteria 或 condition 的具体依据 | 所有 finding |
+| cause_category | 为什么选此根因类别，引用根因追溯链路的关键节点 | 所有 finding |
+| evidence_grade_summary | 证据等级判定依据，每份关键证据为什么评为该等级 | 高风险必填 |
+| key_judgment | 本次 finding 中最核心的一个判断点 | 所有 finding |
+
+**示例**：
+```json
+"decision_rationale": {
+  "risk_level": "评为高风险：涉及金额约200万元（占年营收0.1%），且问题在3个仓库均存在，属系统性控制失效",
+  "category": "归为舞弊风险：废料处置未经竞标，回收商由仓管员单方面指定（criteria: 废料处置管理办法第5条）",
+  "cause_category": "选择DES-02：制度设计缺陷——未建立回收商准入机制和处置价格参考体系",
+  "evidence_grade_summary": "SAP物料移动记录评为A级（系统原生导出含时间戳），回收商对账单评为E级（第三方原件），访谈记录评为D级（口头描述，经交叉验证）",
+  "key_judgment": "认定为系统性问题而非孤立事件的依据：3个独立仓库（宁波、武汉、广东）均存在相同模式的处置异常"
+}
+```

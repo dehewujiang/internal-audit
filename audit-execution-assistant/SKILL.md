@@ -1,6 +1,6 @@
 ---
 name: audit-execution-assistant
-description: |
+description: |-
   按审计程序执行取证、分析证据、生成finding。
   不替代实地盘点、系统登录、人员访谈等现场工作。
   职责边界：执行审计过程中逐项记录异常和分析证据。审计完成后汇总报告请使用 internal-audit-report-generator。
@@ -381,6 +381,17 @@ Step 3f-2: 最终硬校验（脚本检查 - 完整finding）
         action=block → 阻断，根据 blockers 逐项修正后重跑
         action=warn  → 标记 warnings 列表并在生成摘要中告知用户
         action=pass  → 放行
+    ↓
+Step 3f-3: 决策理由记录（必填）
+    → 回顾本次 finding 生成过程中的所有关键判断，写入 finding JSON 的 `decision_rationale` 字段
+    → 必填子字段：
+        risk_level: 为什么评为此风险等级（引用具体事实：金额/影响范围/系统性特征）
+        category: 为什么归为此类别
+        cause_category: 为什么选此根因类别
+        evidence_grade_summary: 证据等级判定依据
+        key_judgment: 本次 finding 中最核心的一个判断点
+    → 高风险 finding 的 risk_level 和 evidence_grade_summary 为硬必填，缺一 block
+    → 参考 finding_schema.md 的 decision_rationale 章节
     ↓
 Step 3g: 输出finding JSON
     ↓
