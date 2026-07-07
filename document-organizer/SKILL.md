@@ -283,6 +283,20 @@ OCR 会自动检测并标记以下需要人工核对的内容：
 
 **时机**：批量分析完成，输出全部 JSON 后自动执行。
 
+### 5.0 格式硬校验（validate-policy-analysis.py，不可跳过）
+
+在所有推理检查之前，先用确定性脚本做结构校验：
+
+```bash
+python D:/Nut/00_my_digital/12_AGI/skills/internal-audit/_shared/scripts/validate-policy-analysis.py policy-analyses/ --json
+```
+
+| 输出 | 处理 |
+|------|------|
+| action=block | 根据 blockers 逐项修正，重新运行直到通过 |
+| action=warn | 标记 warnings，可接受则继续 |
+| action=pass | 继续进入 5.1 |
+
 ### 5.1 格式检查
 
 | 检查项 | 执行方式 | 自动修正？ |
