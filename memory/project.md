@@ -4,7 +4,7 @@
 AI 驱动的内部审计辅助流水线，帮 Flan（汽车零部件企业审计经理）覆盖从制度分析到报告生成的全过程。
 
 ## 当前状态
-✅ 架构改进计划全部 7 项任务已完成（2026-07-07）
+✅ 全部架构改进任务完成（2026-07-07），TODO 已清空。下次可按需新增任务或跑端到端测试。
 
 ## 已完成功能
 - 8 个 skill 各自可以独立运作（document-organizer、interview-designer、program-generator、execution-assistant、finding-debate、report-generator、project-init、topic-wizard）
