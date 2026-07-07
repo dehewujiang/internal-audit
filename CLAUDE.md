@@ -7,15 +7,43 @@
 
 以下工具注册在中央大脑调度范围内：
 
-| 工具名 | 能力 | 授权级别 | 能力声明位置 |
-|--------|------|---------|-------------|
-| document-organizer | 分析制度文件，提取控制点和风险点 | level_0 | `skills/internal-audit/document-organizer/SKILL.md` |
-| audit-interview-designer | 基于设计观察生成访谈问卷并回填结果 | level_0 | `skills/internal-audit/audit-interview-designer/SKILL.md` |
-| program-generator | 基于审计目的和风险生成审计程序 | level_0 | `skills/internal-audit/internal-audit-program-generator/SKILL.md` |
-| execution-assistant | 执行程序、分析证据、生成 finding | level_0 | `skills/internal-audit/audit-execution-assistant/SKILL.md` |
-| finding-debate | 对 finding 进行业务审视和攻防演练 | level_1 | `skills/internal-audit/audit-finding-debate/SKILL.md` |
-| report-generator | 汇总 finding 生成结构化审计报告 | level_0 | `skills/internal-audit/internal-audit-report-generator/SKILL.md` |
-| validate-finding | 对 finding 做确定性质量校验 | level_0 | `skills/internal-audit/_shared/scripts/validate-finding.py` |
+| 工具名 | 能力 | 授权级别 | 能力声明位置 | 适用阶段 |
+|--------|------|---------|-------------|---------|
+| document-organizer | 分析制度文件，提取控制点和风险点 | level_0 | `skills/internal-audit/document-organizer/SKILL.md` | Phase 1 |
+| audit-interview-designer | 基于设计观察生成访谈问卷并回填结果 | level_0 | `skills/internal-audit/audit-interview-designer/SKILL.md` | Phase 1-4 |
+| program-generator | 基于审计目的和风险生成审计程序 | level_0 | `skills/internal-audit/internal-audit-program-generator/SKILL.md` | Phase 2-3 |
+| execution-assistant | 执行程序、分析证据、生成 finding | level_0 | `skills/internal-audit/audit-execution-assistant/SKILL.md` | Phase 4-5 |
+| finding-debate | 对 finding 进行业务审视和攻防演练 | level_1 | `skills/internal-audit/audit-finding-debate/SKILL.md` | Phase 4-5 |
+| report-generator | 汇总 finding 生成结构化审计报告 | level_0 | `skills/internal-audit/internal-audit-report-generator/SKILL.md` | Phase 5 |
+| queries | 审计数据查询（findings 筛选/统计/趋势/对比） | level_0 | `skills/internal-audit/_shared/scripts/queries.py` | 全阶段 |
+| program-quality-evaluator | 独立评估审计程序实质质量（覆盖度/检测力/可执行性） | level_0 | `skills/internal-audit/program-quality-evaluator/SKILL.md` | Phase 2-3 |
+| validate-finding | 对 finding 做确定性质量校验 | level_0 | `skills/internal-audit/_shared/scripts/validate-finding.py` | Phase 4-5 |
+| validate-program | 对审计程序做格式/结构硬校验 | level_0 | `skills/internal-audit/_shared/scripts/validate-program.py` | Phase 2-3 |
+| validate-policy-analysis | 对制度分析 JSON 做结构硬校验 | level_0 | `skills/internal-audit/_shared/scripts/validate-policy-analysis.py` | Phase 1 |
+| validate-report | 对审计报告做格式/结构硬校验 | level_0 | `skills/internal-audit/_shared/scripts/validate-report.py` | Phase 5 |
+| phase_gate | 阶段状态机：检查退出条件、执行前进/回退 | level_0 | `skills/internal-audit/_shared/scripts/phase_gate.py` | 全阶段 |
+
+## 阶段流转移（地铁闸机）
+
+**阶段顺序**：`phase_0_init → phase_1 → phase_1_5 → phase_2 → phase_3 → phase_4`
+
+**进入下一阶段前**：运行 `python phase_gate.py check`，action=pass 才前进，action=block 列出缺失项等用户决定。
+
+**回退**：必须用户确认，运行 `python phase_gate.py rollback --to <phase> --reason "<原因>"`。
+
+**工具分域规则**（constitution.md 详细说明）：
+| 工具 | Phase 1 | Phase 1.5 | Phase 2-3 | Phase 4 | Phase 5 |
+|------|:--:|:--:|:--:|:--:|:--:|
+| document-organizer | ✅ | ✅ | ❌ | ❌ | ❌ |
+| interview-designer | ✅ | ✅ | ✅ | ✅ | ❌ |
+| program-generator | ❌ | ❌ | ✅ | ❌ | ❌ |
+| execution-assistant | ❌ | ❌ | ❌ | ✅ | ✅ |
+| finding-debate | ❌ | ❌ | ❌ | ✅ | ✅ |
+| report-generator | ❌ | ❌ | ❌ | ✅* | ✅ |
+| phase_gate | ✅ | ✅ | ✅ | ✅ | ✅ |
+| evaluator/queries | ✅ | ✅ | ✅ | ✅ | ✅ |
+
+> *Phase 4 暴露 report-generator 的发现管理功能，完整报告生成在 Phase 5
 
 ## 关键文件
 
