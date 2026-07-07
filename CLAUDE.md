@@ -23,7 +23,7 @@
 | validate-report | 对审计报告做格式/结构硬校验 | level_0 | `skills/internal-audit/_shared/scripts/validate-report.py` | Phase 5 |
 | phase_gate | 阶段状态机：检查退出条件、执行前进/回退 | level_0 | `skills/internal-audit/_shared/scripts/phase_gate.py` | 全阶段 |
 
-## 阶段流转移（地铁闸机）
+## 阶段流转（地铁闸机）
 
 **阶段顺序**：`phase_0_init → phase_1 → phase_1_5 → phase_2 → phase_3 → phase_4`
 
@@ -39,11 +39,9 @@
 | program-generator | ❌ | ❌ | ✅ | ❌ | ❌ |
 | execution-assistant | ❌ | ❌ | ❌ | ✅ | ✅ |
 | finding-debate | ❌ | ❌ | ❌ | ✅ | ✅ |
-| report-generator | ❌ | ❌ | ❌ | ✅* | ✅ |
+| report-generator | ❌ | ❌ | ❌ | ❌ | ✅ |
 | phase_gate | ✅ | ✅ | ✅ | ✅ | ✅ |
 | evaluator/queries | ✅ | ✅ | ✅ | ✅ | ✅ |
-
-> *Phase 4 暴露 report-generator 的发现管理功能，完整报告生成在 Phase 5
 
 ## 关键文件
 

@@ -86,7 +86,7 @@ phase_0_init → phase_1_document_analysis → phase_1_5_interview → phase_2_p
 - 闸机之间（每个 phase 内部）= AI 的自由决策空间（选什么方法、生成什么内容）
 - AI 不能跳闸机，不能绕闸机，不能自己把闸机搬开
 
-**工具分域**：每个阶段只暴露该阶段需要的 skill，详见 CLAUDE.md 的 skill 注册表 `phases` 字段。当前阶段不可用的 skill，AI 不得调用。跨阶段回退时，用户确认后临时开放目标阶段的 skill。
+**工具分域**：每个阶段只暴露该阶段需要的 skill，详见 CLAUDE.md 的「阶段流转」章节中的工具分域规则表。当前阶段不可用的 skill，AI 不得调用。跨阶段回退时，用户确认后临时开放目标阶段的 skill。
 
 ## 启动协议（每次对话开始必须执行）
 
