@@ -1,13 +1,13 @@
 # 技术上下文
-更新时间：2026-07-06
+更新时间：2026-07-08
 
 ## 核心模块关系
 ```
 internal-audit/
-├── constitution.md           ← 全局硬约束，所有 skill 必须遵守
+├── constitution.md           ← 全局硬约束 + 闸机规则（含 prompt_program_update）
 ├── CLAUDE.md                 ← 工具清单 + 规则说明
 ├── .claude/rules/            ← junction → D:\Nut\00_my_digital\12_AGI\rules\
-├── _shared/scripts/          ← validate-finding.py 等公共脚本
+├── _shared/scripts/          ← phase_gate.py + 5 个 validate-*.py + project_init.py + queries.py
 ├── audit-topics/             ← about-me.md + my-config.md（公司/系统配置）
 ├── [8 个 skill 目录]/        ← 各含 SKILL.md + references/
 └── memory/                   ← 项目记忆（本目录）
