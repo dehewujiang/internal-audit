@@ -51,3 +51,43 @@
 - 当前系统"Flan 不在就跑不起来"，人工编排是最大的单点故障
 - 状态机和硬规则代码化的改造成本低（各半天），收益高
 影响：P0 阶段状态机 + P0 硬规则代码化排到最高优先级
+
+## ADR-005
+日期：2026-07-08
+背景：系统审计发现全系统 28 个用户提示点中有 11 个依赖 LLM 自觉执行，遗忘即灾难。需要决定用代码还是文档来保证关键流程不被遗漏。
+备选方案：
+- A) 在 SKILL.md 中加强硬性描述（MANDATORY_OUTPUT/GATE 标记）
+- B) 用代码闸机替代 LLM 记忆（phase_gate exit code、validate --strict exit 1、project_init.py exit 1）
+最终选择：B
+原因：
+- LLM 会忘记、会跳过、会被 compact 压缩丢失上下文
+- 代码的 exit code 是确定性行为，不依赖 LLM 自觉
+- phase_gate 的闸机模型（地铁闸机）已经存在，只需扩展条件即可
+- SKILL.md 标记（MANDATORY_OUTPUT）作为辅助增强，不作为唯一保证
+影响：phase_gate 新增 7 个检查条件 + prompt_program_update action；5 个 validate 脚本全部接入 --strict；project_init.py 硬安全检查取代 SKILL.md 软性描述
+
+## ADR-006
+日期：2026-07-08
+背景：访谈（Phase 1.5）在程序生成（Phase 2-3）之前执行，但程序生成器不消费访谈结果。实际工作中程序初稿和访谈准备应该并行。
+备选方案：
+- A) 调整阶段顺序，把访谈移到程序生成之后
+- B) 程序生成器增加增量更新模式，v1.0（初稿）→ 访谈 → v1.1（补充）
+最终选择：B
+原因：
+- 现实中审计组长写程序的同时审计员已在约人访谈，不可能等访谈全做完再动笔
+- 程序初稿基于制度分析生成，访谈后做增量补充（第十章/十一章），不推翻初稿
+- 举报材料同理，在任意阶段到达时增量补充
+影响：program-generator 新增 Step 6 增量更新模式；phase_gate 支持 Phase 2-3 重入；访谈回写后 design_observations_consumed flag 触发闸机提示
+
+## ADR-007
+日期：2026-07-08
+背景：project-init 涉及两个不可逆操作——覆盖已有项目（数据丢失）和缺失配置时强行创建（下游全报错）。需要决定用 SKILL.md 还是 Python 脚本保证安全。
+备选方案：
+- A) 在 SKILL.md 中加强硬性检查步骤描述
+- B) 写 project_init.py 脚本，在 mkdir/写文件前做硬检查
+最终选择：B
+原因：
+- 覆盖已有项目是数据丢失场景，不能靠 LLM 自觉
+- Python 脚本的 exit 1 是确定性行为，LLM 无法绕过
+- 与 phase_gate、validate --strict 形成一致的"代码闸机"模式
+影响：_shared/scripts/project_init.py 创建；project-init SKILL.md 在 Step 3 前强制调用该脚本
