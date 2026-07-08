@@ -455,6 +455,16 @@ evaluator 的 5.0-5.6 只管"格式对不对"。本步骤管"程序能不能用"
 
 ---
 
+## Step 6：增量更新模式（条件触发）
+触发条件：phase_gate.py 返回 action=prompt_program_update 时进入。
+前置确认：展示待补充线索清单，用户逐条确认是否纳入。
+执行：按 references/incremental_update.md 执行增量生成。
+输出后：更新 current-audit.json (design_observations_consumed/whistleblower_pending/program_version/program_update_history)
+
+**详细规范**：见 [references/incremental_update.md](./references/incremental_update.md)
+
+---
+
 ## 上下文管理原则（CRITICAL）
 
 **硬性限制**：

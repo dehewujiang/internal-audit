@@ -73,7 +73,10 @@ description: |
 ```
 用户：把最近的3个发现汇总成一份报告
 
-Step 1: 列出可用 findings（让用户选择）
+### Step 1：选择 findings（强制）
+1. 运行 `python ~/.claude/skills/internal-audit/_shared/scripts/queries.py list --status all`
+2. 展示 findings 列表，用户选择后存入 current-audit.json audit_state.selected_findings
+<!-- MANDATORY_GATE: 未完成 findings 选择前不得进入 Step 2 -->
 Step 2: 询问报告类型
 Step 3: 询问基本信息（审计期间、被审计部门、审计组长）
 Step 4: 读取模板 → 填充变量 → 生成报告
@@ -324,6 +327,8 @@ F-2024-015 = 2024年第15号发现
 读取 about-me.md 和 my-config.md，获取公司信息和操作配置。
 
 ### Step 1：查询审计发现（使用 queries.py）
+
+<!-- 注意：此详细 Step 1 的强制流程定义在场景层上方（场景1），见 MANDATORY_GATE -->
 
 > Finding 的查询、筛选、统计功能已迁移至 `_shared/scripts/queries.py`。查询 findings 请直接使用 queries.py（触发词："查询 findings""列出高风险发现""汇总统计"）。
 

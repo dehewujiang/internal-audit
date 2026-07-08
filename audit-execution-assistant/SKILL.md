@@ -50,6 +50,9 @@ description: |-
 | `references/analysis_patterns.md` | 数据分析模式（金额阈值、时间序列、分布异常等） | Step 2（证据数据分析时） |
 | `references/finding_rules.md` | Finding判定规则（重要性水平、风险级别判定） | Step 3（判定是否生成Finding时） |
 
+## MANDATORY_OUTPUT 标记说明
+本文档中所有 MANDATORY_OUTPUT 标记的段落，在对应步骤中必须输出，不可省略或简化。
+
 ## 工作流程
 
 ### Step 0：读取审计程序
@@ -137,6 +140,7 @@ interview 来源的验证需额外处理（详见 document-organizer/references/
 
 ⚠️ 注意事项：[如有]
 
+<!-- MANDATORY_OUTPUT -->
 操作选项：
 - "完成" → 我去读取 evidence 目录中的文件
 - "跳过" → 进入下一程序
@@ -148,6 +152,15 @@ interview 来源的验证需额外处理（详见 document-organizer/references/
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
+**未消费设计观察提醒**（如有）：若 Step 0 读取的 design-assessments 中存在 pending risk_clue，必须在程序清单下方展示：
+
+| 来源编号 | 线索摘要 | 来源岗位 | 建议操作 |
+|---------|---------|---------|---------|
+| (从 design-assessments 动态生成) | ... | ... | 输入"新增"补充测试 |
+
+如无未消费线索 → 不展示此段落。
+
+<!-- MANDATORY_OUTPUT -->
 ### Step 1a：程序变更管理
 
 当用户选择"替代"、"新增"或"删除"时，进入程序变更流程。详见 [references/program_change.md](./references/program_change.md)。
@@ -285,6 +298,7 @@ interview 来源的验证需额外处理（详见 document-organizer/references/
 
 ### Step 3：异常判定与Finding生成
 
+<!-- MANDATORY_OUTPUT -->
 **发现异常时**：
 
 ```

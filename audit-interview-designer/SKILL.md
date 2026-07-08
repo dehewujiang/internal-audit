@@ -202,6 +202,10 @@ description: |
   - 3月份盘点表（请放入对应目录）
 ```
 
+**分流后更新 consumed 标记**：
+
+若本次分流产生了新的 risk_clue 或有 contradiction 标记，更新 current-audit.json: audit_state.design_observations_consumed = false。若仅配置更新或流程事实，不修改 flag。
+
 ## Excel 生成技术规范
 
 使用 Python 的 `openpyxl` 库生成 Excel 文件：
