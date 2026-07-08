@@ -136,6 +136,7 @@ C) 取消
 │   ├── interview-materials/       # Phase 1.5 输出
 │   ├── audit-programs/            # Phase 3 输出
 │   ├── findings/                  # Phase 4 输出
+│   ├── evidence/                  # Phase 4 证据存放（执行时由用户放入）
 │   ├── debates/                   # Phase 4.5 输出
 │   └── reports/                   # Phase 5 输出
 ```
@@ -225,6 +226,7 @@ C) 取消
 ✓ internal-audit-workspace/interview-materials/
 ✓ internal-audit-workspace/audit-programs/
 ✓ internal-audit-workspace/findings/
+✓ internal-audit-workspace/evidence/
 ✓ internal-audit-workspace/debates/
 ✓ internal-audit-workspace/reports/
 ✓ CLAUDE.md
