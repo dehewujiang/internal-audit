@@ -35,8 +35,17 @@
 - Boulder 触发循环：方案使用 `#### T0.1` 标题格式而非 `- [ ]` checkbox，导致 boulder 找不到已完成任务反复触发。最终删除 boulder.json 解决。
 - T0.1/T0.2 和 T0.3 实际已预先存在——原方案引用的 bug 已在此前修复。
 - validate-policy-analysis OCR 检查依赖上游填充 total_controls/analyzed_controls 字段（当前可能不产出），闸可能不触发。
+- project-init 缺少 evidence/ 目录——收工复查时发现并补上。
+- memory 更新多次反复——首次更新时 project.md 内容为半成品，context.md 风险表未更新，均被用户指出后逐一补正。
+
+## 未完成事项
+- 🟡 工具分时段硬拦截：当前 CLAUDE.md 有 phases 字段但无代码级强制，LLM 可能在不同阶段调用不对的工具
+- 🟡 决策追溯体系：无统一的证据日志或裁决记录，出问题后查不清决策链路
 
 ## 下一步建议
 - 跑一次端到端测试：完整走一遍 Phase 1→5，验证闸机在真实场景下正确触发
 - 确认 document-organizer 输出是否包含 total_controls/analyzed_controls（否则 OCR 闸永远不触发）
 - 考虑为 finding-debate 补 Step 5 + validate-finding.py 引用
+- 🟡 解决工具分时段硬拦截——在闸机层面做 tool 白名单校验
+- 🟡 建设决策追溯体系——跨阶段证据日志 + 裁决记录
+- 跑 /init 刷新 CLAUDE.md（本次有架构级改动）
