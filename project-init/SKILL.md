@@ -65,6 +65,19 @@ description: 一键创建新审计项目目录和配置文件。自动创建 int
 
 ---
 
+### Step 2.5：安全检查（强制）
+
+在创建任何文件之前，运行：
+
+```bash
+python _shared/scripts/project_init.py --workspace <workspace_path> --skills-dir <skills_dir>
+```
+
+若 exit code != 0 → 展示错误信息给用户，停止创建。用户修正后重试。
+若 exit code = 0 → 继续 Step 3。
+
+---
+
 ## Step 3：确认项目位置
 
 ### 3.1 默认位置
@@ -158,7 +171,13 @@ C) 取消
     "signals": [], "uncertainties": [], "backlog": [], "scope_changes": [],
     "summary": {"last_updated": "", "programs": "", "findings": "", "signals": "", "evidence": "", "pending_decisions": ""},
     "audit_trail": [],
-    "current_focus": ""
+    "current_focus": "",
+    "audit_purpose": "",
+    "report_type": "",
+    "program_version": "v1.0",
+    "design_observations_consumed": true,
+    "whistleblower_pending": false,
+    "program_update_history": []
   }
 }
 ```

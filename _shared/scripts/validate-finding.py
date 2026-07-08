@@ -579,6 +579,7 @@ def main():
     parser.add_argument("--exit-on-error", action="store_true", help="发现阻断时立即退出")
     parser.add_argument("--json", action="store_true", help="输出 JSON 格式")
     parser.add_argument("--verbose", action="store_true", help="详细信息")
+    parser.add_argument("--strict", action="store_true", help="严格模式：存在阻断时打印到 stderr 并 exit(1)")
 
     args = parser.parse_args()
 
@@ -599,7 +600,7 @@ def main():
             sys.exit(2)
         for root, dirs, fnames in os.walk(dir_path):
             for fn in sorted(fnames):
-                if fn.startswith("FIND-") and fn.endswith(".json"):
+                if fn.startswith("F-") and fn.endswith(".json"):
                     files.append(os.path.join(root, fn))
 
     if args.index:
@@ -666,6 +667,12 @@ def main():
                 "blocked": sum(1 for r in results if r["action"] == "block"),
             }
         }, ensure_ascii=False, indent=2))
+
+    if args.strict and has_blocker:
+        for r in results:
+            if r["action"] == "block":
+                print(f"[BLOCK] {r['finding_id']}: {', '.join(b['message'] for b in r['summary']['blockers'])}", file=sys.stderr)
+        sys.exit(1)
 
     sys.exit(2 if has_blocker else 1 if any(r["action"] == "warn" for r in results) else 0)
 

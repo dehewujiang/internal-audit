@@ -34,6 +34,18 @@ PHASES = [
 ]
 
 
+def resolve_skills_dir(args) -> Path:
+    """Resolve skills directory: CLI arg > env var > workspace.parent.parent inference."""
+    if args is not None and getattr(args, "skills_dir", None):
+        return Path(args.skills_dir)
+    env_val = os.environ.get("INTERNAL_AUDIT_SKILLS_DIR")
+    if env_val:
+        return Path(env_val)
+    ws = find_workspace()
+    inferred = ws.parent.parent
+    return inferred
+
+
 def find_workspace() -> Path:
     """Find internal-audit-workspace/ from CWD upwards"""
     cwd = Path.cwd()
@@ -62,42 +74,81 @@ def save_audit(data: dict, ws: Path):
         json.dump(data, f, ensure_ascii=False, indent=2)
 
 
-def check_exit_conditions(ws: Path, current_phase: str, data: dict) -> dict:
-    """Check exit conditions for current phase. Returns {ready: bool, missing: []}"""
-    missing = []
+def check_exit_conditions(ws: Path, current_phase: str, data: dict, args=None) -> list:
+    """Check exit conditions for current phase. Returns list of issue dicts."""
+    issues = []
 
     if current_phase == "phase_1_document_analysis":
         analyses = list((ws / "policy-analyses").glob("*.json")) if (ws / "policy-analyses").exists() else []
         if len(analyses) == 0:
-            missing.append("policy-analyses/ 无 JSON (需 >=1 份制度分析)")
+            issues.append({"type": "block", "msg": "policy-analyses/ 无 JSON (需 >=1 份制度分析)"})
         if not data.get("audit_topic"):
-            missing.append("audit_topic 未设置")
+            issues.append({"type": "block", "msg": "audit_topic 未设置"})
 
     elif current_phase == "phase_1_5_interview":
-        pass  # human decision point, no auto condition
+        state = data.get("audit_state", {})
+        known = state.get("known_facts", {})
+        audit_purpose = (
+            state.get("audit_purpose")
+            or known.get("audit_purpose")
+            or data.get("audit_purpose")
+        )
+        if not audit_purpose:
+            issues.append({"type": "block", "msg": "审计目的未选择。请返回 program-generator Step 1 完成目的选择。"})
+
+        skills_dir = resolve_skills_dir(args)
+        about_me = skills_dir / "audit-topics" / "about-me.md"
+        if not about_me.exists():
+            issues.append({"type": "block", "msg": "about-me.md 不存在。请先完成公司背景配置。"})
 
     elif current_phase == "phase_2_program_generation":
         progs = list((ws / "audit-programs").glob("*")) if (ws / "audit-programs").exists() else []
         if len(progs) == 0:
-            missing.append("audit-programs/ 无文件 (需 >=1 份审计程序)")
+            issues.append({"type": "block", "msg": "audit-programs/ 无文件 (需 >=1 份审计程序)"})
         state = data.get("audit_state", {})
         known = state.get("known_facts", {})
-        if not known.get("audit_purpose") and not data.get("audit_purpose"):
-            missing.append("audit_purpose 未设置")
+        audit_purpose = (
+            state.get("audit_purpose")
+            or known.get("audit_purpose")
+            or data.get("audit_purpose")
+        )
+        if not audit_purpose:
+            if len(progs) > 0:
+                issues.append({"type": "prompt_update", "msg": "audit_purpose 未设置"})
+            else:
+                issues.append({"type": "block", "msg": "audit_purpose 未设置"})
+
+        if not data.get("audit_state", {}).get("design_observations_consumed", True):
+            design_dir = ws / "design-assessments"
+            if design_dir.exists():
+                for f in design_dir.glob("*_设计观察.json"):
+                    try:
+                        content = json.loads(f.read_text(encoding="utf-8"))
+                        clues = [obs for obs in content.get("design_observations", [])
+                                 if obs.get("type") == "risk_clue" and obs.get("status") == "pending"]
+                        if clues:
+                            issues.append({"type": "prompt_update", "msg": f"{len(clues)}条访谈线索尚未纳入审计程序", "suggested_skill": "internal-audit-program-generator", "trigger": "interview"})
+                    except Exception:
+                        pass
+
+        if data.get("audit_state", {}).get("whistleblower_pending"):
+            issues.append({"type": "prompt_update", "msg": "举报材料尚未纳入审计程序", "suggested_skill": "internal-audit-program-generator", "trigger": "whistleblower"})
 
     elif current_phase == "phase_3_execution":
+        if not data.get("audit_state", {}).get("report_type"):
+            issues.append({"type": "block", "msg": "报告类型未选择。请返回 report-generator 选择报告类型（标准/专项/舞弊/跟踪）。"})
         findings_dir = ws / "findings"
         findings = [f for f in findings_dir.glob("F-*.json")] if findings_dir.exists() else []
         if len(findings) == 0:
-            missing.append("findings/ 无 F-*.json (需 >=1 个审计发现)")
+            issues.append({"type": "block", "msg": "findings/ 无 F-*.json (需 >=1 个审计发现)"})
 
     elif current_phase == "phase_4_report":
         reports_dir = ws / "reports"
         reports = list(reports_dir.glob("*")) if reports_dir.exists() else []
         if len(reports) == 0:
-            missing.append("reports/ 无报告 (需 >=1 份审计报告)")
+            issues.append({"type": "block", "msg": "reports/ 无报告 (需 >=1 份审计报告)"})
 
-    return {"ready": len(missing) == 0, "missing": missing}
+    return issues
 
 
 def snapshot_audit_state(data: dict, ws: Path):
@@ -144,10 +195,11 @@ def cmd_status(args):
 
     if idx >= 0 and idx < len(PHASES) - 1:
         next_phase = PHASES[idx + 1]
-        gate = check_exit_conditions(ws, current, data)
+        issues = check_exit_conditions(ws, current, data)
+        blocks = [i for i in issues if i["type"] == "block"]
         result["next_phase"] = next_phase
-        result["exit_ready"] = gate["ready"]
-        result["exit_missing"] = gate["missing"]
+        result["exit_ready"] = len(blocks) == 0
+        result["exit_missing"] = [i["msg"] for i in issues]
     elif idx == len(PHASES) - 1:
         result["next_phase"] = None
         result["exit_ready"] = True
@@ -175,10 +227,17 @@ def cmd_check(args):
         print(json.dumps({"action": "pass", "reason": "已是最终阶段", "phase": current}, ensure_ascii=False))
         sys.exit(0)
 
-    gate = check_exit_conditions(ws, current, data)
+    issues = check_exit_conditions(ws, current, data, args)
     next_phase = PHASES[idx + 1]
 
-    if gate["ready"]:
+    if any(i["type"] == "block" for i in issues):
+        action = "block"
+    elif any(i["type"] == "prompt_update" for i in issues):
+        action = "prompt_program_update"
+    else:
+        action = "pass"
+
+    if action == "pass":
         print(json.dumps({
             "action": "pass",
             "reason": f"可从 {current} 切换到 {next_phase}",
@@ -186,11 +245,29 @@ def cmd_check(args):
             "next": next_phase,
         }, ensure_ascii=False, indent=2))
         sys.exit(0)
+    elif action == "prompt_program_update":
+        if getattr(args, "force", False):
+            print(json.dumps({
+                "action": "pass",
+                "reason": f"--force 已指定, 强制通过 {current} -> {next_phase}",
+                "current": current,
+                "next": next_phase,
+                "forced": True,
+            }, ensure_ascii=False, indent=2))
+            sys.exit(0)
+        print(json.dumps({
+            "action": "prompt_program_update",
+            "reason": "存在未完成的提示更新, 建议处理后再前进",
+            "current": current,
+            "next": next_phase,
+            "issues": issues,
+        }, ensure_ascii=False, indent=2))
+        sys.exit(2)
     else:
         print(json.dumps({
             "action": "block",
             "reason": f"退出条件未满足, 无法从 {current} 切换到 {next_phase}",
-            "missing": gate["missing"],
+            "issues": issues,
         }, ensure_ascii=False, indent=2))
         sys.exit(1)
 
@@ -210,14 +287,15 @@ def cmd_advance(args):
         print(json.dumps({"action": "pass", "reason": "已是最终阶段"}, ensure_ascii=False))
         sys.exit(0)
 
-    gate = check_exit_conditions(ws, current, data)
+    issues = check_exit_conditions(ws, current, data)
     next_phase = PHASES[idx + 1]
+    blocks = [i for i in issues if i["type"] == "block"]
 
-    if not gate["ready"]:
+    if blocks:
         print(json.dumps({
             "action": "block",
             "reason": "退出条件未满足, 无法前进",
-            "missing": gate["missing"],
+            "issues": blocks,
         }, ensure_ascii=False, indent=2))
         sys.exit(1)
 
@@ -283,8 +361,13 @@ def main():
     sub = parser.add_subparsers(dest="command")
 
     sub.add_parser("status", help="显示当前阶段和退出条件")
-    sub.add_parser("check", help="检查能否进入下一阶段")
-    sub.add_parser("advance", help="执行阶段切换")
+
+    p_check = sub.add_parser("check", help="检查能否进入下一阶段")
+    p_check.add_argument("--skills-dir", default=None, help="技能目录路径 (默认: env INTERNAL_AUDIT_SKILLS_DIR 或 workspace.parent.parent)")
+    p_check.add_argument("--force", action="store_true", help="强制通过 prompt_program_update 提示")
+
+    p_advance = sub.add_parser("advance", help="执行阶段切换")
+    p_advance.add_argument("--skills-dir", default=None, help="技能目录路径 (默认: env INTERNAL_AUDIT_SKILLS_DIR 或 workspace.parent.parent)")
 
     rb = sub.add_parser("rollback", help="回退到指定阶段")
     rb.add_argument("--to", required=True, choices=PHASES, help="目标阶段")

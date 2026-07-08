@@ -39,6 +39,18 @@ def check_schema(data):
     return len(missing) == 0, "; ".join(issues) if issues else None
 
 
+def check_ocr_completeness(data, filename=""):
+    """[O] OCR 完整性——total_controls>0 但 analyzed_controls==0 说明 PDF 未 OCR"""
+    total = data.get("total_controls", 0)
+    analyzed = data.get("analyzed_controls", 0)
+    if not isinstance(total, int) or not isinstance(analyzed, int):
+        return True, "total_controls/analyzed_controls 非数字，跳过"
+    if total > 0 and analyzed == 0:
+        return False, (f"total_controls={total} 但 analyzed_controls=0"
+                       "，疑似 PDF 未 OCR，请先运行 OCR 工具后重新分析")
+    return True, None
+
+
 def check_schema_version(data):
     """[V] schema_version 存在"""
     sv = data.get("schema_version")
@@ -111,6 +123,9 @@ def validate_policy_analysis(data, filename=""):
     passed, msg = check_schema(data)
     checks["schema"] = {"passed": passed, "message": msg}
 
+    passed, msg = check_ocr_completeness(data, filename)
+    checks["ocr_completeness"] = {"passed": passed, "message": msg}
+
     passed, msg = check_schema_version(data)
     checks["schema_version"] = {"passed": passed, "message": msg}
 
@@ -124,9 +139,9 @@ def validate_policy_analysis(data, filename=""):
     checks["gaps_resolution"] = {"passed": passed, "message": msg}
 
     blockers = [k for k, v in checks.items() if not v["passed"]
-                and k in ("schema", "schema_version")]
+                and k in ("schema", "schema_version", "ocr_completeness")]
     warnings = [k for k, v in checks.items() if not v["passed"]
-                and k not in ("schema", "schema_version")]
+                and k not in ("schema", "schema_version", "ocr_completeness")]
 
     action = "block" if blockers else ("warn" if warnings else "pass")
 
@@ -192,7 +207,7 @@ def main():
             emoji = {"pass": "✅", "warn": "⚠️", "block": "🔴"}
             print(f"\n  {emoji[report['action']]} {os.path.basename(fpath)} — {report['action'].upper()}")
             for name, d in report["checks"].items():
-                status = "✅" if d["passed"] else "🔴" if name in ("schema", "schema_version") else "⚠️"
+                status = "✅" if d["passed"] else "🔴" if name in ("schema", "schema_version", "ocr_completeness") else "⚠️"
                 msg = d.get("message") or "通过"
                 print(f"    {status} [{name}] {msg[:100]}")
 

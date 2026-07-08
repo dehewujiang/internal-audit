@@ -139,6 +139,7 @@ def main():
     parser = argparse.ArgumentParser(description="审计程序硬校验工具")
     parser.add_argument("path", help="审计程序 Markdown 文件路径（或目录）")
     parser.add_argument("--json", action="store_true", help="输出 JSON 格式")
+    parser.add_argument("--strict", action="store_true", help="block时exit 1而非exit 0")
     args = parser.parse_args()
 
     files = []
@@ -189,6 +190,12 @@ def main():
         print(f"{'='*60}\n")
     else:
         print(json.dumps(results, ensure_ascii=False, indent=2))
+
+    if args.strict and has_blocker:
+        for r in results:
+            if r["action"] == "block":
+                print(f"[BLOCK] {r['file']}: {', '.join(b['message'] for b in r['summary']['blockers'])}", file=sys.stderr)
+        sys.exit(1)
 
     sys.exit(2 if has_blocker else 1 if has_warn else 0)
 

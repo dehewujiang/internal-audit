@@ -75,6 +75,7 @@ phase_0_init → phase_1_document_analysis → phase_1_5_interview → phase_2_p
 - 每次准备进入下一阶段前，运行 `python phase_gate.py check`
 - action=pass → 可以前进，运行 `python phase_gate.py advance`
 - action=block → 退出条件未满足，列出缺失项，等用户决定
+- action=prompt_program_update → 程序未覆盖所有风险线索，需先执行 program-generator 增量模式补齐。补齐后重新运行 phase_gate.py check。不可跳过。--force 可降级为 warning（放行但提示），不可降级 block。
 
 **回退规则**：
 - 回退必须用户确认（用户说"回退到 Phase 1 补分析"）
