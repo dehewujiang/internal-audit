@@ -29,16 +29,16 @@ description: |
 
 ## 核心功能
 
-| 功能模块 | 说明 |
-|---------|------|
-| **文档类型识别** | 自动识别管理制度、流程文件、操作手册、岗位职责、表单模板、内控手册 |
-| **批量扫描** | 扫描文件夹，建立"文件-章节-业务领域"索引 |
-| **控制点提取** | 识别审批权限控制、职责分离控制、定期检查控制、文档记录控制 |
-| **风险点识别** | 发现流程断裂点、权限集中点、监督盲区、信息不对称点 |
-| **跨文件验证** | 追踪制度间引用关系，检测冲突，确认缺失（verification_status） |
-| **版本对比** | 识别同一制度的不同版本，自动对比差异 |
+| 功能模块       | 说明                                                     |
+| ---------- | ------------------------------------------------------ |
+| **文档类型识别** | 自动识别管理制度、流程文件、操作手册、岗位职责、表单模板、内控手册                      |
+| **批量扫描**   | 扫描文件夹，建立"文件-章节-业务领域"索引                                 |
+| **控制点提取**  | 识别审批权限控制、职责分离控制、定期检查控制、文档记录控制                          |
+| **风险点识别**  | 发现流程断裂点、权限集中点、监督盲区、信息不对称点                              |
+| **跨文件验证**  | 追踪制度间引用关系，检测冲突，确认缺失（verification_status）               |
+| **版本对比**   | 识别同一制度的不同版本，自动对比差异                                     |
 | **程序基线输出** | 为每个控制点输出baseline_audit_program模板（供program-generator消费） |
-| **JSON输出** | 结构化输出，供internal-audit-program-generator消费 |
+| **JSON输出** | 结构化输出，供internal-audit-program-generator消费              |
 
 ## 支持的文档类型
 
@@ -65,6 +65,12 @@ description: |
 - 用户说"帮我看看这份管理制度"
 - 用户要求"根据制度提取控制点"
 
+## 方法论总纲
+
+详见 [references/document_analysis_guide.md](./references/document_analysis_guide.md)
+
+**前置参考**：分析方法论总纲，包含制度文档类型、分析基本原则、以及如何将制度内容转化为审计程序。LLM 在进入具体工作流程前应先了解此总纲。
+
 ## 工作流程
 
 详见 [references/workflow.md](./references/workflow.md)
@@ -88,6 +94,8 @@ Phase C：汇总（只读JSON，不读原文）
 → 上下文占用：N × 800 tokens（10个文件 = 8,000 tokens）
 ```
 
+**多文件交叉验证规则**：详见 [references/cross_doc_rules.md](./references/cross_doc_rules.md)，避免因单文件分析而误判"缺失控制"。
+
 ## 流程重建（提取隐含控制）
 
 详见 [references/process_reconstruction.md](./references/process_reconstruction.md)
@@ -99,6 +107,8 @@ Phase C：汇总（只读JSON，不读原文）
 ## 控制点提取
 
 详见 [references/control-points.md](./references/control-points.md)
+
+**控制点分类标准**：详见 [references/control_taxonomy.md](./references/control_taxonomy.md)，定义了审批(AP)、检查(RC)、记录(DR)、职责分离(SS)等控制类型的标准代码和命名规则。
 
 **双通道提取机制**：
 
@@ -133,6 +143,8 @@ Phase C：汇总（只读JSON，不读原文）
 ## 行业专项分析
 
 详见 [references/industry-specific.md](./references/industry-specific.md)
+
+**汽车零部件行业基准**：详见 [references/industry_benchmarks.md](./references/industry_benchmarks.md)，定义了紧固件/冲焊件企业各业务领域"应该建立什么制度"——用于在 Phase 1 启动时与 topic.json 的 mandatory 模块对照，判断某领域是否制度缺失。
 
 ## 输出格式规范
 
