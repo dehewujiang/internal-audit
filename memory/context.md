@@ -49,6 +49,8 @@ evaluator (*): 各 skill Step 5 引用，质量评估框架
 2. 🟢 ~~🔴 硬规则靠 LLM 记忆~~ —— 已修复。phase_gate exit code 2、validate --strict exit 1、project_init.py exit 1，三段代码闸机替代 LLM 自觉。
 3. 🟡 工具未按 phase 分域——LLM 可能调错 skill。CLAUDE.md 已有 phases 字段但无代码级拦截。（未解决）
 4. 🟡 无可观测性——决策理由、证据链追溯不完整。phase_gate 输出了结构化 issues list，但系统性可观测性框架未建设。（未解决）
+5. 🟡 document-organizer 跨段落隐含控制无法拼接——控制点的完整规则分散在多章多段时，LLM 逐段提取会丢失完整上下文。program-generator 的下游处理也无法弥补（它只读 JSON 碎片，没有原文）。
+6. 🟡 document-organizer 输出一致性不可靠——同份文档两次分析结果可能不同，无跨次差异对比机制。
 
 ## 用户长期目标
 Flan 希望这套系统不只是他自己的辅助工具，而是能让他从"操作员"变成"审核员"——系统自己管流程，他只做关键决策。
