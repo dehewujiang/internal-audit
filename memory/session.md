@@ -27,6 +27,11 @@
 - 4 个原子提交 + 1 个 boulder 清理提交
 - memory 文件全面更新
 
+**document-organizer 精准度修复（2026-07-09）**：
+- document-organizer 行业基准表全面重写：94行→结构化控制维度清单，15个P0/P1/P2域，52处AP/SS/RC/DR标签，5个Flan特有遗漏领域补齐
+- document-organizer 工作流新增两遍法（业务对象索引→逐对象分析）
+- document-organizer SKILL.md 引用两遍法分析模式
+
 ## 为什么这样做
 系统审计发现全系统 28 个用户提示点中有 11 个依赖 LLM 自觉执行，遗忘即灾难。用代码闸机（phase_gate.py exit code、validate --strict exit 1、project_init.py exit 1）替代 LLM 记忆。
 

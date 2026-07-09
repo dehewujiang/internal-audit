@@ -23,6 +23,7 @@ AI 驱动的内部审计辅助流水线，帮 Flan（汽车零部件企业审计
 - **report-generator 重构**: 强制 queries.py 列出 findings
 - **document-organizer**: OCR 检测 + verification 状态机
 - **interview-designer**: 回写时设置 design_observations_consumed flag
+- **document-organizer 行业基准表重写（2026-07-09）**：15域控制维度清单 + 两遍法分析模式
 
 ## 正在开发
 - （无）
@@ -37,11 +38,7 @@ AI 驱动的内部审计辅助流水线，帮 Flan（汽车零部件企业审计
 🟢 无阻塞级风险。主要风险已通过闸机加固消除。剩余为 SKILL.md 软提示的 LLM 遵从性问题（非代码级）。
 
 ## 下一步
-1. 跑一次端到端测试验证流水线
-2. （可选）为 finding-debate 补 Step 5 + validate-finding.py 引用
-3. （可选）为 interview-designer 写 validate-interview.py
-4. 🟡 工具分时段拦截：现在只是纸面上写了哪些阶段能用哪些工具，没有代码硬拦截——LLM 可能在不对的阶段用不对的工具
-5. 🟡 决策记录本：没有统一的证据追溯体系，出了问题查不清"谁在哪个环节怎么判的"
+1. 跑一次端到端测试验证两遍法的实际效果
 
 ## 系统结构
 - 核心仓库：`D:\Nut\00_my_digital\12_AGI\skills\internal-audit\`
