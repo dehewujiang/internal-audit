@@ -203,7 +203,7 @@ C) 取消
 
 - 将 `D:/Nut/00_my_digital/12_AGI/skills/internal-audit/constitution.md`（全局共享宪法）复制到项目 `internal-audit-workspace/constitution.md`。如全局宪法尚不存在，先生成初始版本再复制。
 - 将 `D:/Nut/00_my_digital/12_AGI/skills/internal-audit/tools/*.md`（工具能力声明）复制到项目 `internal-audit-workspace/tools/`。
-  ⚠️ 只复制以下 7 个能力声明文件，忽略全局 tools/ 中的其他文件：document-organizer.md、interview-designer.md、program-generator.md、execution-assistant.md、finding-debate.md、report-generator.md、validate-finding.md
+  ⚠️ 复制全部 13 个能力声明文件，忽略 tools/ 中的非能力说明文件（pdf_ocr_extractor.py、PDF_OCR_README.md）：document-organizer.md、execution-assistant.md、finding-debate.md、interview-designer.md、phase_gate.md、program-generator.md、program-quality-evaluator.md、queries.md、report-generator.md、validate-finding.md、validate-policy-analysis.md、validate-program.md、validate-report.md
 
 ---
 
@@ -218,7 +218,7 @@ C) 取消
 
 已创建：
 ✓ constitution.md（中央大脑运行宪法）
-✓ tools/（7个工具能力声明）
+✓ tools/（13个工具能力声明）
 ✓ internal-audit-workspace/current-audit.json（含 audit_state）
 ✓ internal-audit-workspace/documents/
 ✓ internal-audit-workspace/policy-analyses/
