@@ -7,7 +7,8 @@
 #   tools/           pdf_ocr_extractor.py + 13 capability declarations
 #
 # Copy (snapshot at setup time — re-run this script to sync):
-#   CLAUDE.md, constitution.md
+#   CLAUDE.md ← CLAUDE-project.md (project version, stripped dev-only noise)
+#   constitution.md
 #
 # Mkdir (empty, project-owned data):
 #   audit-topics/  memory/  internal-audit-workspace/
@@ -83,21 +84,37 @@ Write-Host "── tools/ ──" -ForegroundColor Cyan
 New-Junction -Link (Join-Path $ProjectDir "tools") -Target (Join-Path $GOLD "tools")
 
 # ════════════════════════════════════════════════════════
-# 4. Root files — copy (CLAUDE.md, constitution.md)
+# 4. Root files — copy (CLAUDE-project.md → CLAUDE.md, constitution.md)
 # ════════════════════════════════════════════════════════
 Write-Host "── Config ──" -ForegroundColor Cyan
 
-$ROOT_FILES = @("CLAUDE.md", "constitution.md")
-foreach ($name in $ROOT_FILES) {
-    $dest = Join-Path $ProjectDir $name
-    $src  = Join-Path $GOLD $name
-    if (Test-Path $dest) { Write-Host "  [SKIP] $name" -ForegroundColor DarkGray; $ok++; continue }
+# CLAUDE-project.md → CLAUDE.md (project edition, stripped of dev-only content)
+$claudeSrc  = Join-Path $GOLD "CLAUDE-project.md"
+$claudeDest = Join-Path $ProjectDir "CLAUDE.md"
+if (Test-Path $claudeDest) {
+    Write-Host "  [SKIP] CLAUDE.md" -ForegroundColor DarkGray; $ok++
+} else {
     try {
-        Copy-Item -Path $src -Destination $dest -Force -ErrorAction Stop
-        Write-Host "  [OK]   $name" -ForegroundColor Green; $ok++
+        Copy-Item -Path $claudeSrc -Destination $claudeDest -Force -ErrorAction Stop
+        Write-Host "  [OK]   CLAUDE.md (from CLAUDE-project.md)" -ForegroundColor Green; $ok++
     }
     catch {
-        Write-Host "  [FAIL] $name -- $_" -ForegroundColor Red; $fail++
+        Write-Host "  [FAIL] CLAUDE.md -- $_" -ForegroundColor Red; $fail++
+    }
+}
+
+# constitution.md
+$constDest = Join-Path $ProjectDir "constitution.md"
+$constSrc  = Join-Path $GOLD "constitution.md"
+if (Test-Path $constDest) {
+    Write-Host "  [SKIP] constitution.md" -ForegroundColor DarkGray; $ok++
+} else {
+    try {
+        Copy-Item -Path $constSrc -Destination $constDest -Force -ErrorAction Stop
+        Write-Host "  [OK]   constitution.md" -ForegroundColor Green; $ok++
+    }
+    catch {
+        Write-Host "  [FAIL] constitution.md -- $_" -ForegroundColor Red; $fail++
     }
 }
 
