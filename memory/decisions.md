@@ -92,8 +92,45 @@
 - 与 phase_gate、validate --strict 形成一致的"代码闸机"模式
 影响：_shared/scripts/project_init.py 创建；project-init SKILL.md 在 Step 3 前强制调用该脚本
 
-## ADR-008
-日期：2026-07-08
+## ADR-009
+日期：2026-07-10
+背景：系统在多处文档引用"工具分域规则表"但该表从未存在，LLM 可在任何阶段调用任何工具。
+备选方案：
+- A) 在 CLAUDE.md 补上那张软性表格，靠 LLM 自觉
+- B) 用代码闸机（phase_gate tool-check + exit 1）硬阻断跨阶段工具调用
+最终选择：B（+ A 作为辅助）
+原因：
+- 与 phase_gate check、validate --strict 形成统一的"代码闸机"模型
+- 数据结构设计（PHASE_TOOLS dict + GLOBAL_TOOLS set + EVALUATOR_TOOLS set）消除分支，每个阶段只维护 1-2 个专属工具名
+- --force 留逃生门（回退场景），写入 audit_trail 永久可追溯
+影响：phase_gate.py 新增 tool-check 子命令 + 82 行代码；CLAUDE.md 新增 Tool domain table 节
+
+## ADR-010
+日期：2026-07-10
+背景：CLAUDE.md 过去被直接拷贝到审计项目，但它包含大量开发专用内容（rules junction、architecture gotchas、key files），对审计运行时是噪音。
+备选方案：
+- A) 继续用同一个 CLAUDE.md，在文件内用注释区分"开发用"和"运行用"
+- B) 拆分 CLAUDE.md（开发版）和 CLAUDE-project.md（运行版），setup-project.ps1 拷贝后者
+最终选择：B
+原因：
+- 一个文件两个读者 = 两边都不满意。开发需要知道 rules 怎么 junction，运行需要知道闸机怎么用——这不是同一份文档
+- setup-project.ps1 已经处理拷贝逻辑，拆分成本为零
+- 运行版砍了 4 节（~40%内容），更聚焦
+影响：新建 CLAUDE-project.md；setup-project.ps1 改为拷贝 CLAUDE-project.md → CLAUDE.md
+
+## ADR-011
+日期：2026-07-10
+背景：setup-project.ps1 最初只 junction skills 和拷贝两个配置文件，漏了 _shared/、tools/、audit-topics/、memory/ 四条血管。
+备选方案：
+- A) 在文档里写"记得手动创建这些目录"
+- B) 脚本一站式完成所有 junction/copy/mkdir + 末尾自检
+最终选择：B
+原因：
+- 部署遗漏是灾难性的——缺 _shared/ 闸机全瘫，缺 tools/ OCR 失败，缺 memory/ session 协议中断
+- 脚本末尾自检 8 个关键路径，部署完立即知道缺了什么
+- 与 project_init.py 形成"部署安全 + 运行时安全"的里外两层
+影响：setup-project.ps1 重写（24行→140行）；明确区分 junction（不改动源码）和 copy（可独立定制）和 mkdir（项目专属数据）
+
 背景：评估 document-organizer 提取完整性的四个弱点及下游弥补能力。四个弱点：1) 提取完整性无法保证（漏控制点）；2) 跨段落隐含控制无法拼接；3) 风险判断依赖主观推理；4) 两次分析结果不一致。
 评估结论：
 - 弱点1：被 program-generator 的三条独立风险来源（经验/系统/公司）有效兜底，残余风险低

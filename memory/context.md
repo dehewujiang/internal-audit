@@ -1,56 +1,59 @@
 # 技术上下文
-更新时间：2026-07-08
+更新时间：2026-07-10
 
 ## 核心模块关系
+
 ```
 internal-audit/
-├── constitution.md           ← 全局硬约束 + 闸机规则（含 prompt_program_update）
-├── CLAUDE.md                 ← 工具清单 + 规则说明
+├── CLAUDE.md                 ← 开发版（含 architecture gotchas, rules loading）
+├── CLAUDE-project.md         ← 运行版（精简，setup-project.ps1 拷贝为审计项目 CLAUDE.md）
+├── constitution.md           ← 全局硬约束 + 闸机规则
+├── setup-project.ps1         ← 一键部署：junction(skills/_shared_/tools_) + copy + mkdir + 自检
 ├── .claude/rules/            ← junction → D:\Nut\00_my_digital\12_AGI\rules\
-├── _shared/scripts/          ← phase_gate.py + 5 个 validate-*.py + project_init.py + queries.py
-├── audit-topics/             ← about-me.md + my-config.md（公司/系统配置）
-├── [8 个 skill 目录]/        ← 各含 SKILL.md + references/
+├── _shared/scripts/          ← phase_gate + 5 个 validate-* + project_init + queries
+├── tools/                    ← pdf_ocr_extractor.py + 13 个能力声明
+├── audit-topics/             ← 审计主题模板
+├── [10 个 skill 目录]/        ← 各含 SKILL.md + references/
 └── memory/                   ← 项目记忆（本目录）
 ```
 
-## 8 个 Skill 流水线
+## 三重闸机体系
+
 ```
-project-init / topic-wizard  (Phase 0: 项目初始化)
-        ↓
-document-organizer           (Phase 1: 制度分析 → policy-analyses/ + design-assessments/)
-        ↓
-audit-interview-designer     (Phase 1.5: 访谈问卷 + 回填 → interview-materials/)
-        ↓
-program-generator            (Phase 2-3: 六轨道审计程序 → audit-programs/)
-        ↓
-execution-assistant          (Phase 4: 执行程序 → findings/)
-        ↓ (可选)
-finding-debate               (Phase 4.5: 攻防辩论)
-        ↓
-report-generator             (Phase 5: 汇总报告 → reports/)
-evaluator (*): 各 skill Step 5 引用，质量评估框架
+流程闸机:  phase_gate check/advance          → exit 0/1/2（阶段转换）
+质量闸机:  validate-*.py --strict             → exit 0/1（产物校验）
+授权闸机:  phase_gate tool-check <script>     → exit 0/1（工具分域）
+```
+
+## 10 个 Skill 流水线（+ 2 evaluators）
+
+```
+project-init / topic-wizard  (Phase 0)
+document-organizer           (Phase 1 → policy-analyses/ + design-assessments/)
+audit-interview-designer     (Phase 1.5 → interview-materials/)
+program-generator            (Phase 2-3 → audit-programs/)
+execution-assistant          (Phase 4 → findings/)
+finding-debate               (Phase 4.5, 可选)
+report-generator             (Phase 5 → reports/)
+evaluator (*): quality_gate + record_evaluation
+program-quality-evaluator: 四层评估（program-generator Step 5.7 独有）
 ```
 
 ## 关键技术约束
-- 状态传递：全部通过文件系统（JSON/Markdown），不通过内存
-- current-audit.json：同时承载业务状态和审计执行状态，支持快照回滚
-- 证据等级：A-E 五级，高风险 finding 必须有 A 或 E 级证据
-- 制度分析：双通道并行（规则型关键词 + 流程型重建）
-- 审计程序：六轨道按目的动态激活
-
-## 技术决策摘要
-- 选择多 skill 而非单体 agent（ADR-001）
-- 选择六轨道动态激活而非模板套用（ADR-002）
-- 选择区分"设计观察 vs 审计发现"（ADR-003）
-- 选择优先架构修补再优化 skill（ADR-004）
+- 状态传递：全部通过文件系统，不通过内存
+- 工具分域：每个 Python 脚本调用前必须过 phase_gate tool-check
+- current-audit.json：业务状态 + 审计执行状态 + 快照回滚
+- 证据等级：A-E 五级，高风险 finding 必须 A 或 E
+- 部署：setup-project.ps1 一键初始化审计项目（junction + copy + mkdir + 自检）
+- 双 CLADE.md：开发版（CLAUDE.md，含架构细节）、运行版（CLAUDE-project.md，砍掉噪音）
 
 ## 当前活跃风险
-1. 🟢 ~~🔴 无阶段状态机~~ —— 已修复。phase_gate.py 6 阶段流转 + 7 个代码级检查条件 + prompt_program_update action，闸机由代码控制。
-2. 🟢 ~~🔴 硬规则靠 LLM 记忆~~ —— 已修复。phase_gate exit code 2、validate --strict exit 1、project_init.py exit 1，三段代码闸机替代 LLM 自觉。
-3. 🟢 ~~🟡 工具未按 phase 分域~~ — 已修复。phase_gate.py 新增 `tool-check` 子命令 + PHASE_TOOLS/GLOBAL_TOOLS/EVALUATOR_TOOLS 三级白名单，exit 1 硬阻断 + --force 逃生门。
-4. 🟡 无可观测性——决策理由、证据链追溯不完整。phase_gate 输出了结构化 issues list，但系统性可观测性框架未建设。（未解决）
-5. 🟢 ~~🟡 document-organizer 跨段落隐含控制~~ — 已修复。采用两遍法（LLM先建业务对象索引归类，再拿完整上下文逐对象分析），行业基准表已全面重写为结构化控制维度清单。
-6. 🟡 document-organizer 输出一致性不可靠——同份文档两次分析结果可能不同，无跨次差异对比机制。
+1. 🟢 ~~🔴 无阶段状态机~~ — 已修复
+2. 🟢 ~~🔴 硬规则靠 LLM 记忆~~ — 已修复
+3. 🟢 ~~🟡 工具未按 phase 分域~~ — 已修复（tool-check + 三级白名单）
+4. 🟡 无可观测性——决策追溯体系未建设
+5. 🟢 ~~🟡 document-organizer 跨段落隐含控制~~ — 已修复（两遍法）
+6. 🟡 document-organizer 输出一致性——同份文档两次分析结果可能不同
 
 ## 用户长期目标
-Flan 希望这套系统不只是他自己的辅助工具，而是能让他从"操作员"变成"审核员"——系统自己管流程，他只做关键决策。
+Flan 从"操作员"变成"审核员"——系统自己管流程，他只做关键决策。

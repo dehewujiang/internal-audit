@@ -4,49 +4,43 @@
 AI 驱动的内部审计辅助流水线，帮 Flan（汽车零部件企业审计经理）覆盖从制度分析到报告生成的全过程。
 
 ## 当前状态
-✅ **控制流闸机加固完成（2026-07-08）**。phase_gate 新增 7 个检查条件 + prompt_program_update action，全部 5 个 validate 脚本接入 --strict 写入前阻断，project_init.py 硬安全检查，program-generator 支持增量更新模式。全系统 16 项 P0+P1 改动全部就位。
+✅ **三重闸机体系就绪（2026-07-10）**。流程闸机（phase_gate check/advance）、质量闸机（validate --strict）、授权闸机（tool-check）三层覆盖。setup-project.ps1 一键部署到审计项目。
 
 ## 已完成功能
-- 8 个 skill 各自可以独立运作（document-organizer、interview-designer、program-generator、execution-assistant、finding-debate、report-generator、project-init、topic-wizard）
-- evaluator 质量评估框架（各 skill Step 5 引用）
-- 母仓库 rules/ 通过 junction 链接到本项目 `.claude/rules/`
-- Memory 系统就绪
-- **phase_gate**: 阶段状态机 + 7 新检查（audit_purpose/about-me/report_type/findings/访谈线索/举报/OCR）
-- **5 个 validate 脚本** + --strict 写入前阻断
-- **project_init.py**: 覆盖检测 + 配置检测
-- **program-generator 增量更新**: 访谈回写/举报材料 → 程序 v1.1+ 补充章节
-- **queries.py**: 独立查询工具
-- **program-quality-evaluator**: 四层评估体系
-- **RP/CF 编号跨引用**: 来源标注支持全部四类 ID
-- **constitution.md**: 闸机规则新增 prompt_program_update 处理条款
-- **3 个 SKILL.md**: MANDATORY_OUTPUT/GATE 强制标记
-- **report-generator 重构**: 强制 queries.py 列出 findings
-- **document-organizer**: OCR 检测 + verification 状态机
-- **interview-designer**: 回写时设置 design_observations_consumed flag
-- **工具分时段硬拦截（2026-07-10）**：phase_gate.py 新增 `tool-check` 子命令 + 三级白名单（PHASE_TOOLS/GLOBAL_TOOLS/EVALUATOR_TOOLS），exit 1 硬阻断 + --force 逃生门 + audit_trail 记录
+- 8 个 skill + evaluator + program-quality-evaluator，全可独立运作
+- **流程闸机**: phase_gate 6 阶段流转 + 7 检查条件 + prompt_program_update
+- **质量闸机**: 5 个 validate 脚本 + --strict 写入前阻断
+- **授权闸机（2026-07-10）**: phase_gate tool-check + 三级白名单（PHASE_TOOLS/GLOBAL_TOOLS/EVALUATOR_TOOLS），exit 1 硬阻断 + --force 逃生门
+- **双重身份协议（2026-07-10）**: CLAUDE.md Workflow discipline 新增 Dual-role thinking 拦截，审计业务问题必须先走审计总监视角
+- project_init.py: 覆盖检测 + 配置检测
+- program-generator: 增量更新模式
+- queries.py: 独立查询工具（findings/trend/compare/summary/search/analyses/trace）
+- **setup-project.ps1 重写（2026-07-10）**: 三 junction（skills/_shared_/tools_）+ 拷贝 CLAUDE-project.md + mkdir 三个数据目录 + 末尾自检
+- **CLAUDE-project.md（2026-07-10）**: 审计项目专用精简版 CLAUDE.md，砍掉开发专用四节（rules junction、architecture gotchas、key files、what this repo is）
+- **缺口补齐（2026-07-10）**: interview-designer Step 5.0 validate 调用、finding-debate Step 5 辩论充分性自检
 
 ## 正在开发
-- （无）
+- 🟡 部署流程优化：开发环境→运行环境快速切换方案讨论中
 
 ## 已知缺口（非阻塞）
-| 缺口                       | 说明                                  |
-| ------------------------ | ----------------------------------- |
-| finding-debate 缺 evaluator 引用  | 已有 Step 5 辩论充分性自检，但未引用 evaluator 的 record_evaluation / quality_gate（辩论产物是 finding 字段追加，非独立文件，不适用 validate 脚本） |
-| interview-designer 缺 validate 调用 | ✅ 已修复（2026-07-10）：SKILL.md 新增 Step 5.0，强制调用 validate-interview.py --strict |
+| 缺口 | 说明 |
+|------|------|
+| finding-debate 缺 evaluator 引用 | 已有 Step 5 自检，但辩论产物是 finding 字段追加非独立文件，不适用 validate 脚本 |
 
 ## 最大风险
-🟢 无阻塞级风险。主要风险已通过闸机加固消除。剩余为 SKILL.md 软提示的 LLM 遵从性问题（非代码级）。
+🟢 无阻塞级风险。三门闸机 + 双重身份协议构成了多层防御。
 
 ## 下一步
-1. 跑一次端到端测试验证两遍法的实际效果
+1. 完成部署流程优化（开发→运行切换方案）
+2. 跑一次端到端测试验证全链路
+3. 决策追溯体系（跨阶段证据日志）
 
 ## 系统结构
 - 核心仓库：`D:\Nut\00_my_digital\12_AGI\skills\internal-audit\`
-- 规则来源：`.claude/rules/` → 通过 junction 链接 `D:\Nut\00_my_digital\12_AGI\rules\`
-- 公司背景：`audit-topics/about-me.md` + `audit-topics/my-config.md`
-- 工具脚本：`_shared/scripts/`（validate-finding.py, validate-program.py, validate-policy-analysis.py, validate-report.py, phase_gate.py, queries.py）
-- 程序质量评估：`program-quality-evaluator/SKILL.md`
-- 审计项目：每个审计主题独立目录，输出到 `internal-audit-workspace/`
+- 规则来源：`.claude/rules/` → junction → `D:\Nut\00_my_digital\12_AGI\rules\`
+- 工具脚本：`_shared/scripts/`（phase_gate, validate-*, queries, project_init）
+- 部署脚本：`setup-project.ps1` — 一键初始化审计项目骨架
+- 项目版 CLAUDE：`CLAUDE-project.md` — 审计项目拷贝此文件
 
 ## 相关决策
 见 decisions.md
