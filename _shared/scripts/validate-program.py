@@ -92,6 +92,28 @@ def check_risk_coverage(text):
     return True, f"风险点 {len(unique_risks)} 个，测试程序 {len(unique_tests)} 个"
 
 
+def check_decision_log(text):
+    """[L] 决策理由记录——程序文本中应有 D-003/D-004/D-005 决策点的理由说明"""
+    issues = []
+    # 检查是否提到了审计目的选择的理由
+    if not re.search(r'(审计目的|审计目标|audit\s*purpose).*(?:因为|原因|理由|基于|由于)', text, re.IGNORECASE):
+        issues.append("D-003（审计目的选择）：未找到选择理由说明")
+    # 检查是否提到了审计范围的理由
+    scope_patterns = [r'审计范围.*(?:为什么|因为|原因|理由|不包括|未纳入|排除)',
+                      r'(?:不包括|未纳入|排除).*(?:因为|原因|基于|理由)']
+    if not any(re.search(p, text, re.IGNORECASE) for p in scope_patterns):
+        issues.append("D-004（审计范围定义）：未找到范围边界理由说明")
+    # 检查轨道激活理由
+    if not re.search(r'(?:激活|启用|选择).*(?:轨道|track).*(?:因为|理由|原因|基于)', text, re.IGNORECASE):
+        if re.search(r'(?:轨道|track)\s*[A-F]', text, re.IGNORECASE):
+            # 有轨道标记但无理由
+            issues.append("D-005（程序轨道激活）：有轨道选择但未说明为什么选这些轨道")
+
+    if issues:
+        return True, "; ".join(issues) + "（非阻断，建议补充）"
+    return True, None
+
+
 # ── 主校验 ──────────────────────────────────────────────
 
 def validate_program(text, filename=""):
@@ -112,6 +134,9 @@ def validate_program(text, filename=""):
 
     passed, msg = check_risk_coverage(text)
     checks["risk_coverage"] = {"passed": passed, "message": msg}
+
+    passed, msg = check_decision_log(text)
+    checks["decision_log"] = {"passed": passed, "message": msg}
 
     blockers = [k for k, v in checks.items() if not v["passed"]
                 and k in ("no_placeholder", "track_activation")]

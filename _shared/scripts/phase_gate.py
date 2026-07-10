@@ -54,6 +54,7 @@ GLOBAL_TOOLS = {
     "validate-json.py",
     "audit_styles.py",
     "excel_core.py",
+    "decisions_schema.py",
 }
 
 # Evaluator scripts — allowed from Phase 1 onward (no init-phase eval)

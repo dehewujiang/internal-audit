@@ -6,7 +6,7 @@
 
 ```
 memory/
-├── INDEX.md       # 索引（必须存在，原名 MEMORY.md，改名理由见第 3 节）
+├── INDEX.md       # 索引（必须存在）
 ├── decisions.md   # 重要决策记录（为什么变成现在这样）
 ├── context.md     # 技术上下文压缩（供 compact 后快速恢复）
 ├── TODO.md        # 行动清单
@@ -17,7 +17,7 @@ memory/
 └── forks/         # 分叉任务
 ```
 
-新项目初始化时用到的模板，见 memory-templates.md（平时不需要，只在新建项目 / `/geb-bootstrap` 时才用，所以单独拆出去，不常驻在这份文件里占地方）。
+新项目初始化时用到的模板，见 memory-templates.md（平时不需要，只在新建项目 / `/geb-bootstrap` 时才用）。
 
 ## 2. project.md 与 context.md 的职责切割
 
@@ -78,30 +78,35 @@ Claude Code 内置 Auto Memory，默认开启，存于 `~/.claude/projects/[项�
 
 ## 7. Session 启动与结束协议
 
-### 启动协议（轻量级，节省 Token）
+### 启动协议（完整读取，零遗漏）
 
 每次对话开始，强制执行：
 
-1. 读取 `memory/project.md`：项目是什么 / 当前状态 / 下一步。
-2. 读取 `memory/INDEX.md`：掌握文件索引。
-3. 若 memory/ 目录不存在 → 执行新项目初始化：
-	- 创建 memory/ 目录及 memory/forks/ 子目录
-	- 按 memory-templates.md 的模板创建所有记忆文件
-	- 向用户询问项目名称和目标，填入 memory/project.md
-	- 告知用户记忆系统已就绪，可以开始工作。
-4. 启动汇报（格式固定）：项目是什么 + 当前状态 / 接下来最重要的任务 / 当前最大风险 / 建议下一步。
+1. 读取以下 6 个文件（不分先后，全部必读）：
+   1. `memory/project.md` — 项目现状
+   2. `memory/TODO.md` — 当前任务与阻塞
+   3. `memory/session.md` — 上次工作交接
+   4. `memory/decisions.md` — 历史决策记录
+   5. `memory/context.md` — 技术上下文
+   6. `memory/feedback.md` — 踩坑记录与教训
+2. 若 memory/ 目录不存在 → 执行新项目初始化：
+   - 创建 memory/ 目录及 memory/forks/ 子目录
+   - 按 memory-templates.md 的模板创建所有记忆文件
+   - 向用户询问项目名称和目标，填入 memory/project.md
+   - 告知用户记忆系统已就绪，可以开始工作。
+3. 启动汇报（格式固定）：项目是什么 + 当前状态 / 接下来最重要的任务 / 当前最大风险 / 建议下一步。
 
-其余文件（decisions / context / TODO / session / user / feedback / forks）通过索引按需读取，不阻塞启动。
+**INDEX.md 不参与启动流程**——INDEX.md 仅在结束协议中维护。
 
 ### 结束协议
 
 当用户说"收工/结束/今天到这里"时：
 
 1. **强制检查**：自检本次是否有代码变更。
-2. **条件阻断**：只有本次 session 真的触发过 project-doctrine.md〈architecture_documentation〉第二层（也就是真的动过某个 CLAUDE.md），才需要问用户："哥，本次有架构级改动并同步过文档，收工前要不要我再复查一遍，确认没有遗漏？"如果本次全是日常改动、没动过任何 CLAUDE.md，不用再问，直接进入下一步——这一步不再和"每次代码变更后都要做"的检查重复。
-3. 更新 project.md / TODO.md / session.md / decisions.md / context.md。
-4. 若架构或目录结构重大改动，提醒用户重跑 /init。
-5. 告知：本次完成了什么 / 发现了什么 / 未完成的是什么 / 建议下一步 / 项目健康（✅/⚠️/🔴）。
+2. **条件阻断**：只有本次 session 真的触发过 project-doctrine.md〈architecture_documentation〉第二层（也就是真的动过某个 CLAUDE.md），才需要更新对应 CLAUDE.md 并提醒用户重跑 `/init`。如果本次全是日常改动，直接进入下一步。
+3a. 更新 project.md / TODO.md / session.md / decisions.md / context.md / feedback.md。
+3b. 上述任何文件有变动时，同步更新 INDEX.md（日期 + 摘要列）。
+4. 告知：本次完成了什么 / 发现了什么 / 未完成的是什么 / 建议下一步 / 项目健康（✅/⚠️/🔴）。
 
 ## 8. 各文件职责
 
@@ -148,11 +153,10 @@ Claude Code 内置 Auto Memory，默认开启，存于 `~/.claude/projects/[项�
 
 ### 读取弱一致（灵活机动）
 
-- 不强制在每次修改代码前读取 memory 文件，以免打断工作流。
-- 但在遇到以下情况时，必须主动检索 `memory/feedback.md` 和 `memory/decisions.md`：
+- 启动时已完整读取所有 6 个记忆文件（见启动协议），工作过程中不强制重复读取。
+- 但在遇到以下情况时，必须主动重新检索 `memory/feedback.md` 和 `memory/decisions.md`：
   1. 遇到报错或代码卡壳，准备重构某个模块时。
   2. 用户说"继续上次的任务"或"按之前的方法做"时。
-  3. 任务整体开始前的启动阶段（通过 INDEX.md 索引快速扫视）。
 
 ### 兜底确认
 

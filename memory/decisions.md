@@ -131,6 +131,7 @@
 - 与 project_init.py 形成"部署安全 + 运行时安全"的里外两层
 影响：setup-project.ps1 重写（24行→140行）；明确区分 junction（不改动源码）和 copy（可独立定制）和 mkdir（项目专属数据）
 
+## ADR-008（续）
 背景：评估 document-organizer 提取完整性的四个弱点及下游弥补能力。四个弱点：1) 提取完整性无法保证（漏控制点）；2) 跨段落隐含控制无法拼接；3) 风险判断依赖主观推理；4) 两次分析结果不一致。
 评估结论：
 - 弱点1：被 program-generator 的三条独立风险来源（经验/系统/公司）有效兜底，残余风险低
@@ -138,3 +139,33 @@
 - 弱点3：事实锚定规则和量化标准检查改善了"多严重"的判定，但没治"是不是风险"的根，残余风险中
 - 弱点4：当前系统完全没有跨次一致性检查，残余风险高
 影响：弱点2需要从 document-organizer 输入端解决（全文搜索拼上下文或先做控制索引再做详情）；弱点4需要加"两次提取+差异对比"或"与上次结果比较"机制。两项记入 TODO.md 待办。
+
+## ADR-012
+日期：2026-07-10
+背景：系统支持两个部署模式——开发环境（黄金源，需要实时同步）和运行环境（审计项目，需要行为稳定）。Junction 实时同步虽然方便但意味着一处改坏全盘崩溃。
+备选方案：
+- A) 保持 junction 作为唯一部署方式，依赖开发纪律保证不破坏旧项目
+- B) 新增 --stable 模式（copy 替代 junction），锁版本 + 提供增量升级能力
+最终选择：B
+原因：Junction 违反"Never break userspace"原则——正式审计项目需要确定性。增量升级让 Flan 先看差异再决定升不升。
+影响：setup-project.ps1 新增 --stable + VERSION.lock.json；新建 update-project.ps1 + VERSION.json
+
+## ADR-013
+日期：2026-07-10
+背景：审计关键判断（为什么这样定级/选范围/出结论？）散落在 LLM 对话文本中，无法结构化查询，无法在审计后被挑战时举证。
+备选方案：
+- A) 依赖 LLM 自然记录理由
+- B) 定义 9 个标准化决策点 + SKILL.md 强制输出 + validate 硬检查 + queries.py decide 查询
+最终选择：B
+原因：审计准则要求记录"重大判断依据"，被审计方挑战时不能答"AI 当时这么判的"。代码闸机比 LLM 自觉可靠。
+影响：decisions_schema.py；4 个 SKILL.md 补 decision_log；4 个 validate 补决策检查项；queries.py decide
+
+## ADR-014
+日期：2026-07-10
+背景：审计项目数据各自存储在项目文件夹，Flan 开新项目时看不到历史 finding/程序/趋势。"同一主题去年审计了什么？"、"这个供应商之前出过问题吗？"——审计日常三问全答不了。
+备选方案：
+- A) 保持单项目数据模型，靠人工翻阅历史文件夹
+- B) 建 projects-index.json 注册表 + queries.py --cross-project 跨项目查询
+最终选择：B
+原因：改动成本极低（一张表 + 现有命令加 --cross-project 参数），不破坏任何现有逻辑。
+影响：新建 projects-index.json；queries.py 新增 CrossProjectSource 类 + register 子命令 + 4 个命令 --cross-project 扩展

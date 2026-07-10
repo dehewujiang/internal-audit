@@ -79,6 +79,28 @@ def check_risk_distribution_consistency(text):
     return True, f"高风险标记 {high_risk_count} 处，总体判断一致性检查通过"
 
 
+def check_conclusion_rationale(text):
+    """[L] 决策理由记录——报告结论应有理由说明（D-008/D-009）"""
+    issues = []
+    # D-008：纳入报告判断——finding是否纳入报告
+    if not re.search(r'(?:纳入|排出|筛选).*(?:finding|发现|问题)', text, re.IGNORECASE) and not re.search(r'(?:finding|审计发现|selected_findings)', text, re.IGNORECASE):
+        issues.append("D-008（纳入报告判断）：未找到 finding 筛选/纳入说明")
+    # D-009：报告结论理由
+    has_conclusion = re.search(r'(?:审计结论|审计意见|综合结论|整体评价)', text)
+    if has_conclusion:
+        # 找到了结论段，检查是否有理由
+        conclusion_start = has_conclusion.start()
+        around = text[conclusion_start:conclusion_start+500]
+        if not re.search(r'(?:因为|原因|理由|基于|根据|依据)', around):
+            issues.append("D-009（报告结论）：结论段缺少理由/依据说明")
+    else:
+        issues.append("D-009（报告结论）：未找到审计结论段")
+
+    if issues:
+        return True, "; ".join(issues) + "（非阻断，建议补充）"
+    return True, None
+
+
 # ── 主校验 ──────────────────────────────────────────────
 
 def validate_report(text, filename=""):
@@ -99,6 +121,9 @@ def validate_report(text, filename=""):
 
     passed, msg = check_risk_distribution_consistency(text)
     checks["risk_consistency"] = {"passed": passed, "message": msg}
+
+    passed, msg = check_conclusion_rationale(text)
+    checks["conclusion_rationale"] = {"passed": passed, "message": msg}
 
     blockers = [k for k, v in checks.items() if not v["passed"]
                 and k in ("no_placeholders", "date_format")]

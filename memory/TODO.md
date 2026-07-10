@@ -4,8 +4,7 @@
 - 无
 
 ## #待办
-- 🟡 决策追溯体系：无统一的证据日志或裁决记录，出问题后查不清决策链路。需要建设 cross-pipeline 可观测性框架。
-- 🟡 document-organizer 输出一致性：需加"两次提取+差异对比"或"同份文档两次分析结果比较"机制，差异点标记为"待确认"。
+- 无
 
 ## #搁置
 - 🟢 P2：模型分级——制度分析用便宜模型，辩论用强模型。已搁置（2026-07-07）：当前架构下 Skill 工具不支持 model 参数，且单人使用 token 成本可控。待以下条件满足后重新评估：(1) 多人协作上线，成本上升；(2) Claude Code 支持 skill 级 model 覆盖。
@@ -25,6 +24,10 @@
 
 ## #已完成（2026-07-10）
 - ✅ 工具分时段硬拦截：phase_gate.py 新增 `tool-check` 子命令 + PHASE_TOOLS/GLOBAL_TOOLS/EVALUATOR_TOOLS 三级白名单，CLAUDE.md 补工具域表，constitution.md 更新引用。exit 1 硬阻断 + --force 逃生门。
+- ✅ 部署优化（开发→运行快速切换）：VERSION.json 黄金源版本清单 + setup-project.ps1 --stable 模式 + VERSION.lock.json 版本锁定 + update-project.ps1 增量升级
+- ✅ 决策追溯体系：decisions_schema.py（9 个决策点）+ 6 个 SKILL.md 输出格式补 decision_log + 4 个 validate 脚本补决策理由检查 + queries.py decide 子命令
+- ✅ OPS.md：用户操作手册初版（面向审计师 Flan，纯中文）
+- ✅ 跨项目数据参考：projects-index.json 项目注册表 + queries.py register/list/remove + findings/summary/search/compare --cross-project
 
 ## #已完成（2026-07-09）
 - ✅ document-organizer 跨段落隐含控制：已实施两遍法（业务对象索引→逐对象分析），industry_benchmarks.md 已全面重写为可执行控制维度清单（15域，52处控制类型标签）。

@@ -1,21 +1,34 @@
 # setup-project.ps1 - Internal Audit Project Initializer
 # Usage: powershell -File setup-project.ps1 -ProjectDir "D:\path\to\project"
+#        powershell -File setup-project.ps1 -ProjectDir "D:\path\to\project" --stable   (production lock)
 #
-# Junction (live sync with gold source — edit gold, changes appear everywhere):
+# Junction (default, live sync with gold source — edit gold, changes appear everywhere):
 #   .claude/skills/  8 skill dirs
 #   _shared/         phase_gate, validate, queries, project_init
 #   tools/           pdf_ocr_extractor.py + 13 capability declarations
 #
-# Copy (snapshot at setup time — re-run this script to sync):
+# Copy --stable (snapshot at setup time, immune to gold-source changes):
+#   .claude/skills/  all skill dirs copied, not linked
+#   _shared/         all scripts copied, not linked
+#   tools/           all tools copied, not linked
+#
+# Copy (always snapshot, regardless of mode):
 #   CLAUDE.md ← CLAUDE-project.md (project version, stripped dev-only noise)
 #   constitution.md
+#   OPS.md (user-facing operation manual)
 #
 # Mkdir (empty, project-owned data):
 #   audit-topics/  memory/  internal-audit-workspace/
+#
+# Write:
+#   VERSION.lock.json — locks deployed version for future update-project.ps1 use
 
 param(
     [Parameter(Mandatory=$true)]
-    [string]$ProjectDir
+    [string]$ProjectDir,
+
+    [Parameter(Mandatory=$false)]
+    [switch]$Stable
 )
 
 $GOLD = "D:\Nut\00_my_digital\12_AGI\skills\internal-audit"
@@ -32,7 +45,7 @@ if (-not (Test-Path $ProjectDir)) {
 
 $ok = 0; $fail = 0
 
-# ── Helper ──────────────────────────────────────────────
+# ── Helpers ──────────────────────────────────────────────
 function New-Junction {
     param([string]$Link, [string]$Target)
     if (Test-Path $Link) {
@@ -53,10 +66,31 @@ function New-Junction {
     }
 }
 
+function New-StableCopy {
+    param([string]$Dest, [string]$Source)
+    if (Test-Path $Dest) {
+        Write-Host "  [SKIP] $Dest" -ForegroundColor DarkGray
+        $script:ok++
+        return
+    }
+    $parent = Split-Path $Dest -Parent
+    if (-not (Test-Path $parent)) { New-Item -ItemType Directory -Path $parent -Force | Out-Null }
+    try {
+        Copy-Item -Path $Source -Destination $Dest -Recurse -Force -ErrorAction Stop
+        Write-Host "  [OK]   $Dest (copy)" -ForegroundColor Green
+        $script:ok++
+    }
+    catch {
+        Write-Host "  [FAIL] $Dest  (source: $Source) — $_" -ForegroundColor Red
+        $script:fail++
+    }
+}
+
 # ════════════════════════════════════════════════════════
-# 1. Skills — junction (8 dirs)
+# 1. Skills — junction (default) or copy (--stable)
 # ════════════════════════════════════════════════════════
-Write-Host "── Skills ──" -ForegroundColor Cyan
+$modeLabel = if ($Stable) { "Copy (stable)" } else { "Junction" }
+Write-Host "── Skills ($modeLabel) ──" -ForegroundColor Cyan
 
 $SKILLS = @(
     "project-init", "topic-wizard",
@@ -68,23 +102,39 @@ $SKILLS = @(
 foreach ($skill in $SKILLS) {
     $link   = Join-Path $ProjectDir ".claude\skills\$skill"
     $target = Join-Path $GOLD $skill
-    New-Junction -Link $link -Target $target
+    if ($Stable) {
+        New-StableCopy -Dest $link -Source $target
+    } else {
+        New-Junction -Link $link -Target $target
+    }
 }
 
 # ════════════════════════════════════════════════════════
-# 2. _shared/ — junction (Python tools)
+# 2. _shared/ — junction (default) or copy (--stable)
 # ════════════════════════════════════════════════════════
-Write-Host "── _shared/ ──" -ForegroundColor Cyan
-New-Junction -Link (Join-Path $ProjectDir "_shared") -Target (Join-Path $GOLD "_shared")
+Write-Host "── _shared/ ($modeLabel) ──" -ForegroundColor Cyan
+$sharedLink = Join-Path $ProjectDir "_shared"
+$sharedTarget = Join-Path $GOLD "_shared"
+if ($Stable) {
+    New-StableCopy -Dest $sharedLink -Source $sharedTarget
+} else {
+    New-Junction -Link $sharedLink -Target $sharedTarget
+}
 
 # ════════════════════════════════════════════════════════
-# 3. tools/ — junction (OCR script + capability docs)
+# 3. tools/ — junction (default) or copy (--stable)
 # ════════════════════════════════════════════════════════
-Write-Host "── tools/ ──" -ForegroundColor Cyan
-New-Junction -Link (Join-Path $ProjectDir "tools") -Target (Join-Path $GOLD "tools")
+Write-Host "── tools/ ($modeLabel) ──" -ForegroundColor Cyan
+$toolsLink = Join-Path $ProjectDir "tools"
+$toolsTarget = Join-Path $GOLD "tools"
+if ($Stable) {
+    New-StableCopy -Dest $toolsLink -Source $toolsTarget
+} else {
+    New-Junction -Link $toolsLink -Target $toolsTarget
+}
 
 # ════════════════════════════════════════════════════════
-# 4. Root files — copy (CLAUDE-project.md → CLAUDE.md, constitution.md)
+# 4. Root files — copy (CLAUDE-project.md → CLAUDE.md, constitution.md, OPS.md)
 # ════════════════════════════════════════════════════════
 Write-Host "── Config ──" -ForegroundColor Cyan
 
@@ -118,6 +168,21 @@ if (Test-Path $constDest) {
     }
 }
 
+# OPS.md — user-facing operation manual
+$opsDest = Join-Path $ProjectDir "OPS.md"
+$opsSrc  = Join-Path $GOLD "OPS.md"
+if (Test-Path $opsDest) {
+    Write-Host "  [SKIP] OPS.md" -ForegroundColor DarkGray; $ok++
+} else {
+    try {
+        Copy-Item -Path $opsSrc -Destination $opsDest -Force -ErrorAction Stop
+        Write-Host "  [OK]   OPS.md" -ForegroundColor Green; $ok++
+    }
+    catch {
+        Write-Host "  [FAIL] OPS.md -- $_" -ForegroundColor Red; $fail++
+    }
+}
+
 # ════════════════════════════════════════════════════════
 # 5. Data dirs — mkdir (project-owned, empty)
 # ════════════════════════════════════════════════════════
@@ -139,7 +204,49 @@ foreach ($dir in $DATA_DIRS) {
 }
 
 # ════════════════════════════════════════════════════════
-# 6. Quick self-check
+# 6. VERSION.lock.json — lock deployed version
+# ════════════════════════════════════════════════════════
+Write-Host "── Version lock ──" -ForegroundColor Cyan
+
+$versionSrc = Join-Path $GOLD "VERSION.json"
+$versionLockDest = Join-Path $ProjectDir "VERSION.lock.json"
+
+if (Test-Path $versionLockDest) {
+    Write-Host "  [SKIP] VERSION.lock.json" -ForegroundColor DarkGray; $ok++
+} else {
+    try {
+        $versionData = Get-Content $versionSrc -Raw -Encoding UTF8 | ConvertFrom-Json
+        $lockData = @{
+            locked_version = $versionData.version
+            git_commit     = $versionData.git_commit
+            locked_at      = (Get-Date -Format "yyyy-MM-ddTHH:mm:sszzz")
+            deployed_with  = if ($Stable) { "stable" } else { "junction" }
+            gold_source    = $GOLD
+        }
+        $lockData | ConvertTo-Json -Depth 4 | Set-Content $versionLockDest -Encoding UTF8
+        Write-Host "  [OK]   VERSION.lock.json ($($versionData.version))" -ForegroundColor Green; $ok++
+    }
+    catch {
+        # If VERSION.json can't be read (very old gold source), still create a minimal lock
+        try {
+            $lockData = @{
+                locked_version = "unknown"
+                git_commit     = "unknown"
+                locked_at      = (Get-Date -Format "yyyy-MM-ddTHH:mm:sszzz")
+                deployed_with  = if ($Stable) { "stable" } else { "junction" }
+                gold_source    = $GOLD
+            }
+            $lockData | ConvertTo-Json -Depth 4 | Set-Content $versionLockDest -Encoding UTF8
+            Write-Host "  [OK]   VERSION.lock.json (unknown — VERSION.json not found)" -ForegroundColor Green; $ok++
+        }
+        catch {
+            Write-Host "  [FAIL] VERSION.lock.json -- $_" -ForegroundColor Red; $fail++
+        }
+    }
+}
+
+# ════════════════════════════════════════════════════════
+# 7. Quick self-check
 # ════════════════════════════════════════════════════════
 Write-Host ""
 Write-Host "── Self-check ──" -ForegroundColor Cyan
@@ -150,6 +257,8 @@ $checks = @(
     @{ Label=".claude/skills/project-init"; Path=(Join-Path $ProjectDir ".claude\skills\project-init") },
     @{ Label="CLAUDE.md"; Path=(Join-Path $ProjectDir "CLAUDE.md") },
     @{ Label="constitution.md"; Path=(Join-Path $ProjectDir "constitution.md") },
+    @{ Label="OPS.md"; Path=(Join-Path $ProjectDir "OPS.md") },
+    @{ Label="VERSION.lock.json"; Path=(Join-Path $ProjectDir "VERSION.lock.json") },
     @{ Label="audit-topics/"; Path=(Join-Path $ProjectDir "audit-topics") },
     @{ Label="memory/"; Path=(Join-Path $ProjectDir "memory") },
     @{ Label="internal-audit-workspace/"; Path=(Join-Path $ProjectDir "internal-audit-workspace") }
@@ -171,13 +280,25 @@ Write-Host ""
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host "  Project : $ProjectDir" -ForegroundColor White
 Write-Host "  Source  : $GOLD" -ForegroundColor White
+if ($Stable) {
+    Write-Host "  Mode    : STABLE (copy — immune to gold-source changes)" -ForegroundColor Yellow
+} else {
+    Write-Host "  Mode    : junction (live sync — gold changes appear automatically)" -ForegroundColor DarkGray
+}
 Write-Host "  Setup   : $ok OK / $fail FAIL" -ForegroundColor $(if ($fail -eq 0) { "Green" } else { "Red" })
 Write-Host "  Check   : $check_ok OK / $check_ng MISS" -ForegroundColor $(if ($check_ng -eq 0) { "Green" } else { "Red" })
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host ""
 
 if ($fail -eq 0 -and $check_ng -eq 0) {
-    Write-Host "Next: cd `"$ProjectDir`" ; claude" -ForegroundColor Yellow
+    if ($Stable) {
+        Write-Host "Next: cd `"$ProjectDir`" ; claude" -ForegroundColor Yellow
+        Write-Host "      (upgrade with: update-project.ps1 -ProjectDir `"$ProjectDir`")" -ForegroundColor DarkGray
+        Write-Host "      (register with: python _shared/scripts/queries.py register --path `"$ProjectDir`" --topic <主题> --period <期间>)" -ForegroundColor DarkGray
+    } else {
+        Write-Host "Next: cd `"$ProjectDir`" ; claude" -ForegroundColor Yellow
+        Write-Host "      (register with: python _shared/scripts/queries.py register --path `"$ProjectDir`" --topic <主题> --period <期间>)" -ForegroundColor DarkGray
+    }
 } else {
     Write-Host "Fix failures above, then: cd `"$ProjectDir`" ; claude" -ForegroundColor Red
 }

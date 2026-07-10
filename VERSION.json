@@ -1,0 +1,28 @@
+{
+  "version": "2026-07-10-3",
+  "git_commit": "11fe161",
+  "updated_at": "2026-07-10T17:00:00+08:00",
+  "changes": [
+    {"type": "schema", "file": "audit-topics/projects-index.json", "summary": "跨项目注册表，存储所有审计项目的路径/主题/期间/统计数据"},
+    {"type": "script", "file": "_shared/scripts/queries.py", "summary": "新增 register 子命令 + findings/search/summary/compare --cross-project + CrossProjectSource 类"},
+    {"type": "script", "file": "setup-project.ps1", "summary": "部署完成提示加 register 注册指引"},
+    {"type": "doc", "file": "OPS.md", "summary": "新增跨项目查询操作说明"},
+    {"type": "script", "file": "setup-project.ps1", "summary": "新增 --stable 模式（copy 替代 junction）+ VERSION.lock.json 写入 + OPS.md 拷贝"},
+    {"type": "script", "file": "update-project.ps1", "summary": "新增增量升级脚本（版本对比→差异展示→备份→覆盖→更新lock）"},
+    {"type": "data", "file": "VERSION.json", "summary": "新增黄金源版本清单"},
+    {"type": "schema", "file": "_shared/scripts/decisions_schema.py", "summary": "新增决策追溯数据结构（9个决策点+校验函数）"},
+    {"type": "script", "file": "_shared/scripts/queries.py", "summary": "新增 decide 子命令（决策追溯查询）"},
+    {"type": "script", "file": "_shared/scripts/validate-policy-analysis.py", "summary": "新增 check_decision_log（D-001/D-002 决策理由检查）"},
+    {"type": "script", "file": "_shared/scripts/validate-program.py", "summary": "新增 check_decision_log（D-003/D-004/D-005 决策理由检查）"},
+    {"type": "script", "file": "_shared/scripts/validate-report.py", "summary": "新增 check_conclusion_rationale（D-008/D-009 决策理由检查）"},
+    {"type": "script", "file": "_shared/scripts/phase_gate.py", "summary": "新增 tool-check 子命令 + 三级工具白名单 + decisions_schema.py 全局注册"},
+    {"type": "script", "file": "_shared/scripts/validate-interview.py", "summary": "新增 --strict 模式"},
+    {"type": "config", "file": "CLAUDE-project.md", "summary": "新增运行版 CLAUDE.md，砍掉开发专用 4 节"},
+    {"type": "skill", "file": "audit-execution-assistant/SKILL.md", "summary": "新增 decision_rationale + decision_log（D-006/D-007）输出字段"},
+    {"type": "skill", "file": "audit-interview-designer/SKILL.md", "summary": "Step 5 补 validate 调用"},
+    {"type": "skill", "file": "document-organizer/SKILL.md", "summary": "新增 decision_log（D-001/D-002）输出格式"},
+    {"type": "skill", "file": "internal-audit-program-generator/SKILL.md", "summary": "新增 decision_log（D-003/D-004/D-005）输出格式 + 第十章"},
+    {"type": "skill", "file": "internal-audit-report-generator/SKILL.md", "summary": "新增 decision_log（D-008/D-009）输出格式"},
+    {"type": "doc", "file": "OPS.md", "summary": "改版：核心操作说明优先用自然语言，命令速查表放末尾供终端用户使用"}
+  ]
+}

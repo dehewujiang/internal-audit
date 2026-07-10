@@ -77,6 +77,8 @@ On session end: update `project.md`, `TODO.md`, `session.md`, `decisions.md`, `c
 
 The user is **non-technical**. All output to them must be plain language with everyday metaphors. No jargon (API, component, directory, interface, state machine) without translating it first.
 
+**任务完成标准**: 操作执行完毕 → 汇报结果 → 停止。同一验证命令在同一次响应中只跑一次。除非用户追问"再确认一下"，不发起第二轮自发验证。"验证通过"不触发下一轮验证。不回复空内容或"无"，不重复执行已完成的操作。
+
 Internal thinking → technical language. External output → plain language.
 
 ## Architecture gotchas
@@ -113,7 +115,7 @@ Every Python script call must pass `phase_gate.py tool-check` first. Exit 1 = bl
 | Phase 4 (execution) | `validate-finding.py` | finding |
 | Phase 5 (report) | `validate-report.py` | report |
 
-**Globals** (all phases): `phase_gate.py`, `queries.py`, `validate-json.py`, `audit_styles.py`, `excel_core.py`
+**Globals** (all phases): `phase_gate.py`, `queries.py`, `validate-json.py`, `audit_styles.py`, `excel_core.py`, `decisions_schema.py`
 
 **Evaluator** (Phase 1+ only): `record_evaluation.py`, `quality_gate.py`
 
@@ -133,6 +135,7 @@ Blocked tools suggest `--force` only when the user explicitly approves a cross-p
 4. Every validate script call should use `--strict` when writing output files
 5. After finding generation: run `validate-finding.py --strict` before writing to `findings/`
 6. Interview write-back → interview-designer sets `design_observations_consumed=false` → gate prompts incremental program update
+7. **任务完成闸机**：汇报一次，验证一次，然后停止。同一个 Bash（语法检查/diff/完整性）同一次响应只跑一遍。用户说"再确认一下"才是二次验证的触发条件，验证通过本身不是。
 
 ### Dual-role thinking — mandatory for audit-business questions
 

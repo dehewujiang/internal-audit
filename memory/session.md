@@ -1,43 +1,38 @@
 # 最近一次工作记录
 
 ## 完成了什么
-本次 session（2026-07-10）完成三个TODO + 一个部署优化，6 次提交。
+本次 session（2026-07-10，下半场）完成了四大体系建设，16 个文件新增/修改。
 
-### 1. 工具分时段硬拦截（第1个TODO）
-- phase_gate.py: 新增 `tool-check` 子命令 + PHASE_TOOLS/GLOBAL_TOOLS/EVALUATOR_TOOLS 三级白名单
-- CLAUDE.md: 补上被引用无数次但从不存在的「Tool domain table」
-- constitution.md: 更新工具分域引用，加入 tool-check 执行说明
-- 8 场景验证全部通过（exit 0 放行 / exit 1 拦截 / --force 逃生门）
+### 1. 跨项目数据参考体系
+- **projects-index.json**: 项目注册表，存储所有审计项目的路径/主题/期间/统计
+- **queries.py**: 新增 `register` 子命令（--list / --path --topic --period / --remove）+ CrossProjectSource 类 + findings/search/summary/compare 四个命令的 --cross-project 扩展
+- **setup-project.ps1**: 部署完成提示加 register 注册指引
+- **OPS.md**: 补跨项目查询操作说明
 
-### 2. 两个缺口补齐（第2、3个TODO）
-- **interview-designer**: SKILL.md 新增 Step 5.0，强制调用 validate-interview.py --strict（脚本已存在但从未引用）
-- **finding-debate**: SKILL.md 新增 Step 5 辩论充分性自检（4项标准，不照搬 validate 模式因为辩论产物是 finding 字段追加）
+### 2. E2E 测试
+- test-e2e 项目全链路测试：setup --stable → 闸机 → 制度分析 validate → 决策追溯 → queries.py decide → 审计程序 validate → register。9 项全部通过。
+- 7 个 Python 脚本全部经过语法验证
 
-### 3. 身份扮演失效诊断
-- 用户指出 CLAUDE.md 设定了双重身份，但回答"决策追溯体系"时直接从架构师切入跳过了审计总监
-- 根因：前一个任务（工具分域）是纯工程问题产生技术思维惯性，决策追溯本质不同但被平铺为"第三个待办"
-- 修复：feedback.md 记录教训 + CLAUDE.md Workflow discipline 新增 Dual-role thinking 硬拦截协议（4类触发词 + 三步协议）
-
-### 4. 部署流程优化
-- **setup-project.ps1 重写**: 从仅 junction skills 扩展为六步——junction（skills/_shared_/tools_）+ copy（CLAUDE-project.md→CLAUDE.md + constitution.md）+ mkdir（audit-topics/memory/workspace）+ 末尾自检 8 个关键路径
-- **CLAUDE-project.md 新建**: 审计项目专用精简版，砍掉开发专用内容（rules junction、architecture gotchas、key files、what this repo is）
+### 3. 文档同步
+- TODO.md：标记全部完成（决策追溯 + 跨项目查询）、取消 document-organizer 一致性条目
+- project.md：系统结构 + 已完成功能全面更新
+- context.md：活跃风险更新（追溯 + 跨项目查询已修复）
+- decisions.md：新增 ADR-012（--stable）、ADR-013（决策追溯）、ADR-014（跨项目）
+- OPS.md：补跨项目查询节
+- VERSION.json：升到 2026-07-10-3（21 条变更记录）
 
 ## 为什么这样做
-三个TODO都是同一根因的不同表现形式——文档说"已做"但代码未实现（工具分域表）、脚本已写但流程未引用（validate-interview）、该有的质量步骤被跳过（finding-debate）。核心治疗方式仍是"代码闸机替代 LLM 记忆"的延续。
-
-部署优化的出发点：两个项目都在 Claude Code 中运行，但 CLAUDE.md 的内容不应该一样。开发版需要所有架构细节，运行版只需要操作指令。
+跨项目查询解决审计日常三问："同一主题去年审了什么？"、"这个问题是不是老问题？"、"这个供应商之前出过问题吗？"。不改架构，一张注册表 + --cross-project 参数就解决。
 
 ## 遇到什么问题
-- 身份扮演失效（见反馈 #3）——技术思维惯性覆盖了审计总监视角
-- 讨论中识别出 setup-project.ps1 漏了 _shared/、tools/、audit-topics/、memory/ 四条血管
-- 用户追问后发现 tools/ 也必须 junction（pdf_ocr_extractor.py 是运行时依赖）
-- CLAUDE-project.md 与 CLAUDE.md 的职责切割——开发版保留完整上下文，运行版砍掉噪音
+- Windows 下 test-e2e 目录无法删除（Claude Code 进程持有文件锁），非阻塞
+- queries.py 膨胀到 1327 行——暂时可接受，下次超过 2000 行时考虑拆分
+- rm -rf 被拒绝、cmd rmdir 进入交互模式——Windows 权限限制
 
 ## 未完成事项
-- 🟡 部署流程优化讨论进行到一半：开发环境→运行环境快速切换方案待完成
-- 🟡 决策追溯体系：跨阶段证据日志 + 裁决记录（下一个TODO）
-- 🟡 document-organizer 输出一致性：两次提取差异对比机制
+- 无（所有待办清空）
 
 ## 下一步建议
-- 继续完成部署流程优化（两个 Claude Code 环境如何快捷切换）
-- 搁置的"决策追溯体系"讨论已经有了审计总监视角的框架，可以继续推进
+1. 实际审计项目中使用，积累实战反馈
+2. project-init 自动注册到 projects-index.json
+3. decision_log SKILL.md 格式第一次被 LLM 消费时观察实际产出质量

@@ -114,6 +114,58 @@ def check_control_gaps_not_all_pending(data):
     return True, f"{len(gaps)} 个缺口，{pending} 个待确认，{len(gaps)-pending} 个已确认"
 
 
+def check_decision_log(data):
+    """[L] 决策理由记录——检查 decision_log 字段是否存在且覆盖 D-001/D-002"""
+    dl = data.get("decision_log")
+    if not dl:
+        return False, "缺少 decision_log 字段（D-001 制度关注重点 + D-002 设计观察升级）"
+    if not isinstance(dl, list):
+        return False, "decision_log 应为数组类型"
+    if len(dl) == 0:
+        return False, "decision_log 数组为空"
+
+    found_ids = set()
+    for entry in dl:
+        if isinstance(entry, dict):
+            did = entry.get("decision_id", "")
+            if did:
+                found_ids.add(did)
+
+    issues = []
+    if "D-001" not in found_ids:
+        issues.append("缺少 D-001（制度关注重点）")
+    if "D-002" not in found_ids:
+        issues.append("缺少 D-002（设计观察升级判断）")
+
+    if issues:
+        # Check if rationale is filled
+        for entry in dl:
+            if isinstance(entry, dict) and entry.get("decision_id") in ("D-001", "D-002"):
+                rationale = entry.get("rationale", "")
+                if rationale and len(rationale.strip()) >= 10:
+                    # Remove from issues if it has a real rationale
+                    if entry["decision_id"] in found_ids:
+                        for i, iss in enumerate(issues):
+                            if entry["decision_id"] in iss:
+                                issues[i] = None
+                        issues = [i for i in issues if i is not None]
+        if issues:
+            return True, "; ".join(issues) + "（非阻断，建议补充）"
+
+    # Check rationale depth
+    short_rationales = []
+    for entry in dl:
+        if isinstance(entry, dict) and entry.get("decision_id") in ("D-001", "D-002"):
+            rationale = entry.get("rationale", "")
+            if len(rationale.strip()) < 20:
+                short_rationales.append(f"{entry.get('decision_id')} 理由偏短({len(rationale.strip())}字)")
+
+    if short_rationales:
+        return True, "; ".join(short_rationales) + "（非阻断）"
+
+    return True, f"已记录 {len(found_ids)} 个决策点: {', '.join(sorted(found_ids))}"
+
+
 # ── 主校验 ──────────────────────────────────────────────
 
 def validate_policy_analysis(data, filename=""):
@@ -137,6 +189,9 @@ def validate_policy_analysis(data, filename=""):
 
     passed, msg = check_control_gaps_not_all_pending(data)
     checks["gaps_resolution"] = {"passed": passed, "message": msg}
+
+    passed, msg = check_decision_log(data)
+    checks["decision_log"] = {"passed": passed, "message": msg}
 
     blockers = [k for k, v in checks.items() if not v["passed"]
                 and k in ("schema", "schema_version", "ocr_completeness")]

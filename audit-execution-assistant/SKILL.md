@@ -405,6 +405,33 @@ Step 3f-3: 决策理由记录（必填）
         evidence_grade_summary: 证据等级判定依据
         key_judgment: 本次 finding 中最核心的一个判断点
     → 高风险 finding 的 risk_level 和 evidence_grade_summary 为硬必填，缺一 block
+    → 同时写入 `decision_log` 数组字段，记录 D-006（证据充分性）和 D-007（风险定级）：
+    
+    ```json
+    "decision_log": [
+      {
+        "decision_id": "D-006",
+        "decision_point": "evidence_sufficiency",
+        "decision": "<充足 / 部分充足 / 不足>",
+        "rationale": "<为什么当前证据水平足够（或不够）支撑本 finding 的结论？引用证据等级、数量、交叉验证结果。≥20字>",
+        "alternatives_considered": [{"option": "<补充证据方案>", "rejected_reason": "<为何未采纳>"}],
+        "context_refs": ["<引用的 evidence 条目>"],
+        "timestamp": "<ISO 8601>"
+      },
+      {
+        "decision_id": "D-007",
+        "decision_point": "risk_classification",
+        "decision": "<高 / 中 / 低>",
+        "rationale": "<为什么评此风险等级？引用金额、影响范围、系统性特征等具体事实。≥30字>",
+        "alternatives_considered": [{"option": "<其他定级>", "rejected_reason": "<为何未采纳>"}],
+        "context_refs": ["<引用的 finding ID 和 evidence>"],
+        "parent_decisions": ["D-006"],
+        "timestamp": "<ISO 8601>"
+      }
+    ]
+    ```
+    
+    → 硬性要求：D-006 rationale ≥20 字，D-007 rationale ≥30 字。不得使用通用模板语言。
     → 参考 finding_schema.md 的 decision_rationale 章节
     ↓
 Step 3g: 输出finding JSON

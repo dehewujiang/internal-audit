@@ -286,8 +286,36 @@ OCR 会自动检测并标记以下需要人工核对的内容：
    - `risk_points` 数组
    - `conflicts` 数组（如有）
    - `summary` 对象
+   - `decision_log` 数组 — 必须包含 D-001 和 D-002（详见下方）
 
-7. **双目录输出**（批量分析时）：
+7. **决策理由记录（decision_log）**：
+   每份制度分析 JSON 必须包含 `decision_log` 数组，记录本阶段做出的关键判断。
+   
+   ```json
+   "decision_log": [
+     {
+       "decision_id": "D-001",
+       "decision_point": "policy_focus",
+       "decision": "<为什么重点看这5个控制点而不是其他？>",
+       "rationale": "<理由：基于哪些因素（制度覆盖度、历史发现、公司特征）确定了分析重点？≥20字>",
+       "alternatives_considered": [],
+       "context_refs": ["<引用的制度文件路径>"],
+       "timestamp": "<ISO 8601>"
+     },
+     {
+       "decision_id": "D-002",
+       "decision_point": "design_observation_escalation",
+       "decision": "<为什么这些纸面问题需要去现场验证？>",
+       "rationale": "<理由：哪些设计观察满足升级条件（控制缺口严重程度、影响范围、无法通过制度文本确认）？≥20字>",
+       "context_refs": ["<关联的 design-assessment ID 列表>"],
+       "timestamp": "<ISO 8601>"
+     }
+   ]
+   ```
+   
+   **硬性要求**：D-001 和 D-002 的 `rationale` 必须 ≥20 字，不得用通用模板语言。
+
+8. **双目录输出**（批量分析时）：
    - `policy-analyses/`：完整分析报告（JSON + Markdown）
    - `design-assessments/`：设计观察（D-XXX 编号，供 Phase 4 验证升级）
 

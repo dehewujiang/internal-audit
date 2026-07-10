@@ -51,9 +51,10 @@ program-quality-evaluator: 四层评估（program-generator Step 5.7 独有）
 1. 🟢 ~~🔴 无阶段状态机~~ — 已修复
 2. 🟢 ~~🔴 硬规则靠 LLM 记忆~~ — 已修复
 3. 🟢 ~~🟡 工具未按 phase 分域~~ — 已修复（tool-check + 三级白名单）
-4. 🟡 无可观测性——决策追溯体系未建设
+4. 🟢 ~~🟡 无可观测性——决策追溯体系未建设~~ — 已修复（decisions_schema.py + 9 个决策点 + decide 子命令）
 5. 🟢 ~~🟡 document-organizer 跨段落隐含控制~~ — 已修复（两遍法）
-6. 🟡 document-organizer 输出一致性——同份文档两次分析结果可能不同
+6. 🟡 document-organizer 输出一致性——同份文档两次分析结果可能不同（用户已取消此待办）
+7. 🟡 跨项目数据无法参考——已修复（projects-index.json + queries.py --cross-project + register 子命令）
 
 ## 用户长期目标
 Flan 从"操作员"变成"审核员"——系统自己管流程，他只做关键决策。
