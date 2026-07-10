@@ -31,8 +31,8 @@ AI 驱动的内部审计辅助流水线，帮 Flan（汽车零部件企业审计
 ## 已知缺口（非阻塞）
 | 缺口                       | 说明                                  |
 | ------------------------ | ----------------------------------- |
-| finding-debate 缺 Step 5  | 已有 MANDATORY_GATE 标记，但无 validate 引用 |
-| interview-designer 缺校验脚本 | 无对应的 validate-interview.py          |
+| finding-debate 缺 evaluator 引用  | 已有 Step 5 辩论充分性自检，但未引用 evaluator 的 record_evaluation / quality_gate（辩论产物是 finding 字段追加，非独立文件，不适用 validate 脚本） |
+| interview-designer 缺 validate 调用 | ✅ 已修复（2026-07-10）：SKILL.md 新增 Step 5.0，强制调用 validate-interview.py --strict |
 
 ## 最大风险
 🟢 无阻塞级风险。主要风险已通过闸机加固消除。剩余为 SKILL.md 软提示的 LLM 遵从性问题（非代码级）。

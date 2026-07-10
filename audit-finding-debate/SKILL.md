@@ -181,6 +181,19 @@ debates/DB-{finding_id}-{session_seq}_transcript.md
 
 角色狡辩基于真实业务痛点，但不能鼓励违规。当用户应对不当时，引导而非单纯"赢"。
 
+## Step 5：辩论充分性自检（不可跳过）
+
+辩论结束时执行，确保不走形式过场。
+
+| 检查项 | 标准 | 不过怎么办 |
+|--------|------|-----------|
+| 回合数 | ≥ 5 轮实质性交锋 | 追加至少 3 轮，更换角色视角 |
+| 角色抵抗 | 至少 1 次角色提出对抗性反驳（非简单附和） | 切换角色或提升难度重辩 |
+| 摘要完整性 | `debate_summary` 四个字段（total_rounds / final_outcome / resistance_points / user_performance）全部非空 | 补填缺失字段 |
+| 回写完整性 | finding JSON 含 `business_validation` + `debate_sessions[]`，字段值非空 | 执行 Step 4 回写操作 |
+
+四项全部通过 → 辩论结束。任一不过 → 继续，不终止。
+
 ## 依赖工具
 
 - `Read` - 按需读取finding JSON / 角色定义 / 检验框架

@@ -271,6 +271,18 @@ wb.save(output_path)
 
 **时机**：访谈问卷生成后，输出 Excel 前自动执行。
 
+### 5.0 格式硬校验（validate-interview.py，不可跳过）
+
+**时机**：Mode A 访谈问卷 Excel 生成后，Step 5.1 之前立即执行。
+
+```bash
+python D:/Nut/00_my_digital/12_AGI/skills/internal-audit/_shared/scripts/validate-interview.py internal-audit-workspace/interview-materials/[主题]_访谈问卷.xlsx --strict
+```
+
+**检查项**（9项）：文件可打开 / Sheet1表头 / Sheet2表头 / Sheet3存在 / Sheet4可选 / 问题数量≥5 / 开放问题比例≥70% / 制度依据覆盖率≥50% / DRL条目≥3
+
+**不可跳过，必须在此步骤通过后方可进入 5.1**。
+
 ### 5.1 格式检查
 
 | 检查项 | 执行方式 | 自动修正？ |
