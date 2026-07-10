@@ -23,16 +23,16 @@ AI 驱动的内部审计辅助流水线，帮 Flan（汽车零部件企业审计
 - **report-generator 重构**: 强制 queries.py 列出 findings
 - **document-organizer**: OCR 检测 + verification 状态机
 - **interview-designer**: 回写时设置 design_observations_consumed flag
-- **document-organizer 行业基准表重写（2026-07-09）**：15域控制维度清单 + 两遍法分析模式
+- **工具分时段硬拦截（2026-07-10）**：phase_gate.py 新增 `tool-check` 子命令 + 三级白名单（PHASE_TOOLS/GLOBAL_TOOLS/EVALUATOR_TOOLS），exit 1 硬阻断 + --force 逃生门 + audit_trail 记录
 
 ## 正在开发
 - （无）
 
 ## 已知缺口（非阻塞）
-| 缺口 | 说明 |
-|------|------|
-| finding-debate 缺 Step 5 | 已有 MANDATORY_GATE 标记，但无 validate 引用 |
-| interview-designer 缺校验脚本 | 无对应的 validate-interview.py |
+| 缺口                       | 说明                                  |
+| ------------------------ | ----------------------------------- |
+| finding-debate 缺 Step 5  | 已有 MANDATORY_GATE 标记，但无 validate 引用 |
+| interview-designer 缺校验脚本 | 无对应的 validate-interview.py          |
 
 ## 最大风险
 🟢 无阻塞级风险。主要风险已通过闸机加固消除。剩余为 SKILL.md 软提示的 LLM 遵从性问题（非代码级）。

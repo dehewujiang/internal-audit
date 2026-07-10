@@ -47,7 +47,7 @@ evaluator (*): 各 skill Step 5 引用，质量评估框架
 ## 当前活跃风险
 1. 🟢 ~~🔴 无阶段状态机~~ —— 已修复。phase_gate.py 6 阶段流转 + 7 个代码级检查条件 + prompt_program_update action，闸机由代码控制。
 2. 🟢 ~~🔴 硬规则靠 LLM 记忆~~ —— 已修复。phase_gate exit code 2、validate --strict exit 1、project_init.py exit 1，三段代码闸机替代 LLM 自觉。
-3. 🟡 工具未按 phase 分域——LLM 可能调错 skill。CLAUDE.md 已有 phases 字段但无代码级拦截。（未解决）
+3. 🟢 ~~🟡 工具未按 phase 分域~~ — 已修复。phase_gate.py 新增 `tool-check` 子命令 + PHASE_TOOLS/GLOBAL_TOOLS/EVALUATOR_TOOLS 三级白名单，exit 1 硬阻断 + --force 逃生门。
 4. 🟡 无可观测性——决策理由、证据链追溯不完整。phase_gate 输出了结构化 issues list，但系统性可观测性框架未建设。（未解决）
 5. 🟢 ~~🟡 document-organizer 跨段落隐含控制~~ — 已修复。采用两遍法（LLM先建业务对象索引归类，再拿完整上下文逐对象分析），行业基准表已全面重写为结构化控制维度清单。
 6. 🟡 document-organizer 输出一致性不可靠——同份文档两次分析结果可能不同，无跨次差异对比机制。
