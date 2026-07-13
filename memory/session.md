@@ -1,18 +1,30 @@
 # 最近一次工作记录
 
 ## 完成了什么
-本次 session（2026-07-13）关闭了"project-init 不会自动注册到跨项目索引"的非阻塞缺口。
+本次 session（2026-07-13）改进了 CLAUDE.md 和 CLAUDE-project.md 的文档完整性。
 
-### 改动：project-init SKILL.md 新增 Step 4.6 自动注册
-- 在 Step 4.5（constitution.md + tools/ 创建）和 Step 5（确认输出）之间，插入 Step 4.6
-- 项目创建完成后自动执行 `queries.py register --path <project_dir> --topic <topic> --period <period>`
-- 参数从 current-audit.json 自动提取：topic = audit_topic，period = audit_period.start_date 前 4 位年份
-- 注册失败不阻断项目创建——exit ≠ 0 时仅显示警告，继续 Step 5
-- Step 5 确认输出中增加 `{auto_register_result}` 占位（成功显示项目 ID，失败显示警告）
-- project.md 已知缺口表从"1 项"归零
+### CLAUDE.md（技能源码仓库版）— 6 项增量改进
+1. 加标准头部（`# CLAUDE.md` + guidance 说明）
+2. 修正技能数量 8→12（实际有 12 个 SKILL.md）
+3. 新增 Skill → Phase 对照表（12 个技能 × 6 个审计阶段）
+4. 新增部署架构说明（junction/stable 双模式 + 部署后目录结构）
+5. 扩展关键文件表（+CLAUDE-project.md、OPS.md、VERSION.json、setup/update 脚本）
+6. 新增 `_shared/scripts/` 一句话速查表（14 个脚本 + 外部评估脚本）
+
+### CLAUDE-project.md（审计项目运行版）— 4 项同步改进
+1. 加标准头部
+2. 新增 Skill → Phase 对照表
+3. 新增 `_shared/scripts/` 速查表
+4. 新增 Architecture gotchas（current-audit.json 标志位、workspace 子目录映射）
+5. 新增 Key files to know 表（含 topic.json）
+
+### 两份文件的差异保持设计意图
+- CLAUDE.md 多「部署架构」和「规则加载」— 开发视角
+- CLAUDE-project.md 多 topic.json 引用 — 干活视角
+- 共享的 12 个章节内容完全对齐
 
 ## 为什么这样做
-`queries.py register` 的 Path→topic→period 信息在 project_init.py 执行时尚未落地（current-audit.json 还没写入），不适合塞进 Python 脚本。但 SKILL.md 是 LLM 执行的编排器，Step 4.5 之后所有文件已就绪——此时 `scan_project()` 能自动从 current-audit.json 读取 topic 和 phase，`queries.py register` 开箱即用，零代码改动。
+ADR-010 拆分 CLAUDE.md/CLAUDE-project.md 的决策仍然有效，但两份文件缺少技能阶段映射和脚本速查表，未来 Claude 实例需要读多个文件才能建立全局视图。增量补充不改变既有架构。
 
 ## 遇到什么问题
 - 无
@@ -21,5 +33,5 @@
 - 无
 
 ## 下一步建议
-1. 实际审计项目中使用 project-init，验证注册链路端到端
-2. 如有需要：让 setup-project.ps1 --stable 模式下的项目也自动注册（当前 setup-project.ps1 不涉及，它是部署工具链不是创建项目）
+1. 如有新 skill 或脚本变更，同步更新两张速查表
+2. 已有项目需跑 `update-project.ps1` 才能拿到 CLAUDE-project.md 的更新

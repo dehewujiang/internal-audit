@@ -7,7 +7,7 @@ AI 驱动的内部审计辅助流水线，帮 Flan（汽车零部件企业审计
 ✅ **三重闸机体系就绪（2026-07-10）**。流程闸机（phase_gate check/advance）、质量闸机（validate --strict）、授权闸机（tool-check）三层覆盖。setup-project.ps1 一键部署到审计项目。
 
 ## 已完成功能
-- 8 个 skill + evaluator + program-quality-evaluator，全可独立运作
+- 12 个 skill + evaluator + program-quality-evaluator，全可独立运作
 - **流程闸机**: phase_gate 6 阶段流转 + 7 检查条件 + prompt_program_update
 - **质量闸机**: 5 个 validate 脚本 + --strict 写入前阻断
 - **授权闸机（2026-07-10）**: phase_gate tool-check + 三级白名单（PHASE_TOOLS/GLOBAL_TOOLS/EVALUATOR_TOOLS），exit 1 硬阻断 + --force 逃生门
@@ -21,6 +21,7 @@ AI 驱动的内部审计辅助流水线，帮 Flan（汽车零部件企业审计
 - queries.py: 独立查询工具（795 行，DataSource 抽象层消除单项目/跨项目分支，+ 536 行 query_data_sources.py）
 - **setup-project.ps1 重写（2026-07-10）**: 三 junction（skills/_shared_/tools_）+ 拷贝 CLAUDE-project.md + mkdir 三个数据目录 + 末尾自检 + --stable 模式 + 部署提示 register
 - **CLAUDE-project.md（2026-07-10）**: 审计项目专用精简版 CLAUDE.md
+- **文档完整性改进（2026-07-13）**: CLAUDE.md + CLAUDE-project.md 新增技能阶段映射表、脚本速查表、部署架构说明、Architecture gotchas，两份文件 12 章节完全对齐
 - **缺口补齐（2026-07-10）**: interview-designer Step 5.0 validate 调用、finding-debate Step 5 辩论充分性自检
 
 ## 正在开发
