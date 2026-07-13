@@ -130,34 +130,47 @@ def parse_test_procedures(track_content: str) -> List[List]:
     """
     解析测试程序 Markdown 内容，转换为表格行
 
-    支持格式：
-    | 风险编号 | 风险名称 | 测试程序 | 取数来源 |
-    |----------|----------|----------|----------|
-    | CP-001   | ...      | ...      | ...      |
+    一个轨道内可能有多个子表（如 A1/A2/A3），每张子表都有独立的分隔行和表头。
+    解析策略：先扫描整个轨道，把"紧邻分隔行之前的行"标记为表头，统一过滤。
+    然后对剩余行按模板列数补齐即可。
     """
     rows = []
     lines = track_content.split('\n')
+    ALIGN_SEP = re.compile(r'^\|[:\-\s]+\|')
 
-    for line in lines:
-        line = line.strip()
-        # 跳过空行和表头
-        if not line or line.startswith('| 序号') or line.startswith('|---|---'):
+    # 第一遍：标记表头行 —— 满足"后跟分隔行"的表格行视为表头
+    header_indices = set()
+    for i, line in enumerate(lines):
+        stripped = line.strip()
+        if ALIGN_SEP.match(stripped) and i > 0:
+            # 前一行若是 `| ... | ... |` 格式且不含程序编号（如 A1.1），则为表头
+            prev = lines[i - 1].strip()
+            if prev.startswith('|') and prev.endswith('|'):
+                # 确认前一行不含程序编号（A1.1, B2.3 等）
+                if not re.match(r'^\|\s*[A-H]?\d+(?:\.\d+)?\s*\|', prev):
+                    header_indices.add(i - 1)
+
+    # 第二遍：提取数据行
+    for i, line in enumerate(lines):
+        stripped = line.strip()
+        if not stripped:
+            continue
+        if ALIGN_SEP.match(stripped):
+            continue
+        if i in header_indices:
             continue
 
-        # 解析 Markdown 表格行
-        if line.startswith('|') and line.endswith('|'):
-            parts = [p.strip() for p in line[1:-1].split('|')]
-            if len(parts) >= 5:  # 序号、风险编号、风险名称、来源标注、测试程序
-                # 补齐到配置的列数
+        if stripped.startswith('|') and stripped.endswith('|'):
+            parts = [p.strip() for p in stripped[1:-1].split('|')]
+            if len(parts) >= 3:
                 while len(parts) < 11:
                     parts.append('')
                 rows.append(parts[:11])
 
-    # 如果没有解析到数据，尝试按文本段落解析
+    # 兜底：文本段落解析
     if not rows:
         paragraphs = [p.strip() for p in track_content.split('\n\n') if p.strip()]
         for idx, para in enumerate(paragraphs, 1):
-            # 简单解析：假设每段是一个测试程序
             rows.append([str(idx), '', '', '', para, '', '', '', '', '', ''])
 
     return rows
