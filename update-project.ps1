@@ -266,8 +266,8 @@ if ($allBackups.Count -gt $keep) {
 try {
     $lock.locked_version = $remoteVer
     $lock.git_commit     = $remoteCommit
-    $lock.updated_at     = (Get-Date -Format "yyyy-MM-ddTHH:mm:sszzz")
-    $lock.last_upgrade   = (Get-Date -Format "yyyy-MM-ddTHH:mm:sszzz")
+    $lock | Add-Member -MemberType NoteProperty -Name "updated_at" -Value (Get-Date -Format "yyyy-MM-ddTHH:mm:sszzz") -Force
+    $lock | Add-Member -MemberType NoteProperty -Name "last_upgrade" -Value (Get-Date -Format "yyyy-MM-ddTHH:mm:sszzz") -Force
     $lock | ConvertTo-Json -Depth 4 | Set-Content $lockPath -Encoding UTF8
     Write-Host "  [OK]   VERSION.lock.json updated → $remoteVer" -ForegroundColor Green
 } catch {
