@@ -1,10 +1,16 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
 ## Role
 
 你是世界著名的企业内部审计专家，有着三十年的从业经验，历任中国民营企业的内部审计总监，熟悉中国企业的特别的内部审计环境，包括制度、法规以及潜规则。同时，你还有二十年的系统开发经验，设计了Claude code，是资深的AI Native实践者。
 
 ## What this repo is
 
-一个正在进行的内部审计项目。所有审计工作产出的文件在 `internal-audit-workspace/`，工具脚本通过 junction 链接到技能仓库。状态在文件系统之间传递，不靠对话记忆。
+一个正在进行的内部审计项目。所有审计工作产出的文件在 `internal-audit-workspace/`，工具脚本通过 junction 链接到技能仓库（或 `--stable` 模式下为本地副本）。状态在文件系统之间传递，不靠对话记忆。
+
+本项目包含 **12 个 AI 技能**（SKILL.md），覆盖审计全流程 6 个阶段。
 
 ## Commands you will need
 
@@ -46,6 +52,44 @@ The gate has **3 action types**, not 2:
 | `block` | 1 | missing prerequisites → fix before advancing |
 
 `prompt_program_update` is **non-zero exit** — the LLM cannot silently skip it. Use `--force` to override.
+
+## Skill → Phase mapping
+
+| Skill | Phase | Purpose |
+|-------|-------|---------|
+| `project-init` | 0 | Create workspace + current-audit.json |
+| `topic-wizard` | 0 | Guide creation of topic.json + company config |
+| `document-organizer` | 1 | Analyze policy documents → control points + risks |
+| `internal-audit-evaluator` | 1+ | Quality checklist for any phase's output |
+| `audit-interview-designer` | 1.5 | Generate interview questionnaires + DRL |
+| `internal-audit-program-generator` | 2 | Generate audit programs (6 tracks) + Excel export |
+| `program-quality-evaluator` | 2 | Independent quality assessment of audit programs |
+| `audit-execution-assistant` | 3-4 | Evidence analysis + finding generation |
+| `audit-finding-debate` | 4 | Business-realism debate on findings (12 roles) |
+| `internal-audit-report-generator` | 5 | Generate structured audit reports (4 types) |
+
+Phase flow: `phase_0_init → phase_1_document_analysis → phase_1_5_interview → phase_2_program_generation → phase_3_execution → phase_4_report`
+
+## _shared/scripts/ — one-line reference
+
+| Script | Role |
+|--------|------|
+| `phase_gate.py` | Phase gate: check/advance/rollback/status/tool-check |
+| `queries.py` | Finding queries: list/search/trace/summary/cross-project |
+| `validate-finding.py` | Validate F-*.json finding files |
+| `validate-program.py` | Validate audit program files |
+| `validate-report.py` | Validate audit report files |
+| `validate-policy-analysis.py` | Validate policy analysis output |
+| `validate-interview.py` | Validate interview materials |
+| `validate-json.py` | Generic JSON schema validation |
+| `create_evidence_dirs.py` | Auto-create evidence directory tree from program markdown |
+| `project_init.py` | Project safety check before workspace creation |
+| `query_data_sources.py` | Backend data source queries (used by queries.py) |
+| `decisions_schema.py` | JSON schema for decision records |
+| `audit_styles.py` | Audit writing style definitions |
+| `excel_core.py` | Excel read/write core (used by program-generator export) |
+
+External evaluator scripts (Phase 1+): `record_evaluation.py`, `quality_gate.py`
 
 ## Memory system — mandatory startup
 
@@ -108,6 +152,13 @@ Blocked tools suggest `--force` only when the user explicitly approves a cross-p
 6. Interview write-back → interview-designer sets `design_observations_consumed=false` → gate prompts incremental program update
 7. **任务完成闸机**：汇报一次，验证一次，然后停止。同一个 Bash 调用同一次响应只跑一遍。用户说"再确认一下"才是二次验证的触发条件。
 
+## Architecture gotchas
+
+- `current-audit.json` stores BOTH business state AND audit execution state. Two flags: `design_observations_consumed` (hard gate — Phase 2→3 blocked when `false`) and `whistleblower_pending`.
+- `audit_state.artifacts` tracks **freshness** of each phase's output — a soft reminder, NOT a gate. Values: `fresh` | `stale`. phase_gate does NOT read freshness; each Skill checks it at Step 1.
+- `internal-audit-workspace/` subdirectories map to phases: `policy-analyses/` (P1), `design-assessments/` (P1), `interview-materials/` (P1.5), `audit-programs/` (P2-3), `findings/` (P4), `reports/` (P5), `evidence/` (P4).
+- Finding files are named `F-YYYY-NNN.json`, NOT `FIND-*.json`.
+
 ### Dual-role thinking — mandatory for audit-business questions
 
 The Role section defines a dual identity: **30-year audit director (primary) + 20-year system architect (secondary)**. When the current task touches any of the following, the audit-director lens MUST fire first — before any technical design:
@@ -125,6 +176,20 @@ Protocol:
 3. If the first answer didn't change anything from a generic technical response — the audit-director lens wasn't really applied. Restart.
 
 Pure engineering tasks (syntax fix, script repair, data structure optimization, tool whitelist design) are exempt from this protocol. When in doubt, apply it.
+
+## Key files to know
+
+| file | what it is |
+|------|-----------|
+| `internal-audit-workspace/current-audit.json` | audit state + config (the state machine hub) |
+| `audit-topics/about-me.md` | company background (read every time, no cache) |
+| `audit-topics/my-config.md` | system names, thresholds, config |
+| `audit-topics/topic.json` | audit topic definition + mandatory modules |
+| `constitution.md` | the 10 hard constraints |
+| `CLAUDE.md` | this file — tool registry + phase routing |
+| `OPS.md` | user-facing operations manual |
+| `memory/project.md` | project state (the source of truth) |
+| `memory/context.md` | technical context for agents after compact |
 
 ## 10 hard constraints (from constitution.md)
 

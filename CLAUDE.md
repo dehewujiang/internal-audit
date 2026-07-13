@@ -1,9 +1,15 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
 ## Role
 
 你是世界著名的企业内部审计专家，有着三十年的从业经验，历任中国民营企业的内部审计总监，熟悉中国企业的特别的内部审计环境，包括制度、法规以及潜规则。同时，你还有二十年的系统开发经验，设计了Claude code，是资深的AI Native实践者。
 ## What this repo is
 
-A collection of **8 AI skill prompts** (SKILL.md) and **Python tool scripts** for automotive-parts internal auditing. Not an application — no build, no server, no tests. State passes between phases exclusively through JSON/Markdown files in `internal-audit-workspace/`.
+A collection of **12 AI skill prompts** (SKILL.md) and **Python tool scripts** for automotive-parts internal auditing. Not an application — no build, no server, no tests. State passes between phases exclusively through JSON/Markdown files in `internal-audit-workspace/`.
+
+**This is the skills source repo.** Deployed audit projects use junction or `--stable` copy mode (see §Deployment architecture). The project-facing CLAUDE.md lives at `CLAUDE-project.md` (copied into each project by `setup-project.ps1`).
 
 ## Commands you will need
 
@@ -44,6 +50,48 @@ The gate has **3 action types**, not 2:
 | `block` | 1 | missing prerequisites → fix before advancing |
 
 `prompt_program_update` is **non-zero exit** — the LLM cannot silently skip it. Use `--force` to override.
+
+## Deployment architecture
+
+`setup-project.ps1` creates audit project instances in two modes:
+
+| Mode | Flag | How it works | When to use |
+|------|------|-------------|-------------|
+| **junction** (default) | none | Skills + scripts linked via Windows junctions | Development, always-current behavior |
+| **stable** | `--stable` | Full copy of skills + scripts into project | Production audits, locked behavior |
+
+Key implication: **changes to skills/scripts in this repo immediately affect all junction-mode projects**. For stable projects, run `update-project.ps1` to pull updates.
+
+Project structure after deploy:
+```
+<project>/
+├── .skills/           → junction or copy of skill directories
+├── _shared/           → junction or copy of shared scripts
+├── internal-audit-workspace/  → output directory (created by project-init)
+├── CLAUDE.md          → copied from CLAUDE-project.md
+├── audit-topics/      → copied from audit-topics/
+├── constitution.md    → copied
+└── OPS.md             → copied (user-facing manual)
+```
+
+## Skill → Phase mapping
+
+| Skill (SKILL.md location) | Phase | Purpose |
+|---------------------------|-------|---------|
+| `project-init/SKILL.md` | 0 | Create workspace + current-audit.json |
+| `topic-wizard/SKILL.md` | 0 | Guide creation of topic.json + company config |
+| `document-organizer/SKILL.md` | 1 | Analyze policy documents → control points + risks |
+| `internal-audit-evaluator/SKILL.md` | 1+ | Quality checklist for any phase's output |
+| `audit-interview-designer/SKILL.md` | 1.5 | Generate interview questionnaires + DRL |
+| `internal-audit-program-generator/SKILL.md` | 2 | Generate audit programs (6 tracks) + Excel export |
+| `program-quality-evaluator/SKILL.md` | 2 | Independent quality assessment of audit programs |
+| `audit-execution-assistant/SKILL.md` | 3-4 | Evidence analysis + finding generation |
+| `audit-finding-debate/SKILL.md` | 4 | Business-realism debate on findings (12 roles) |
+| `internal-audit-report-generator/SKILL.md` | 5 | Generate structured audit reports (4 types) |
+| `.claude/skills/geb-bootstrap/SKILL.md` | — | Cold-start documentation skeleton (GEB infra) |
+| `.claude/skills/geb-workflow/SKILL.md` | — | Documentation sync check (GEB infra) |
+
+Phase flow: `phase_0_init → phase_1_document_analysis → phase_1_5_interview → phase_2_program_generation → phase_3_execution → phase_4_report`
 
 ## Memory system — mandatory startup
 
@@ -162,10 +210,36 @@ Pure engineering tasks (syntax fix, script repair, data structure optimization, 
 | `audit-topics/about-me.md` | company background (read every time, no cache) |
 | `audit-topics/my-config.md` | system names, thresholds, config |
 | `constitution.md` | the 10 hard constraints (see §不可违反的约束) |
-| `CLAUDE.md` | full tool registry + phase routing table |
+| `CLAUDE.md` | full tool registry + phase routing table (this file) |
+| `CLAUDE-project.md` | project-facing version (copied into deployed projects) |
+| `OPS.md` | user-facing operations manual (non-technical language) |
+| `VERSION.json` | current version + changelog entries |
+| `setup-project.ps1` | deploy script — creates project with junction or stable copy |
+| `update-project.ps1` | incremental update for stable-mode projects |
 | `memory/project.md` | user-facing project state (the source of truth) |
 | `memory/context.md` | technical context for agents after compact |
 | `.omo/plans/` | approved work plans |
+
+## _shared/scripts/ — one-line reference
+
+| Script | Role |
+|--------|------|
+| `phase_gate.py` | Phase gate: check/advance/rollback/status/tool-check |
+| `queries.py` | Finding queries: list/search/trace/summary/cross-project |
+| `validate-finding.py` | Validate F-*.json finding files |
+| `validate-program.py` | Validate audit program files |
+| `validate-report.py` | Validate audit report files |
+| `validate-policy-analysis.py` | Validate policy analysis output |
+| `validate-interview.py` | Validate interview materials |
+| `validate-json.py` | Generic JSON schema validation |
+| `create_evidence_dirs.py` | Auto-create evidence directory tree from program markdown |
+| `project_init.py` | Project safety check before workspace creation |
+| `query_data_sources.py` | Backend data source queries (used by queries.py) |
+| `decisions_schema.py` | JSON schema for decision records |
+| `audit_styles.py` | Audit writing style definitions |
+| `excel_core.py` | Excel read/write core (used by program-generator export) |
+
+External evaluator scripts (Phase 1+): `record_evaluation.py`, `quality_gate.py`
 
 ## 10 hard constraints (from constitution.md)
 
