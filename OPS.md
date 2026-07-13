@@ -122,7 +122,7 @@ claude
 系统不定期更新。如果你用的是 `--stable` 模式部署的项目，需要手动升级：
 
 ```
-powershell -File D:\Nut\...\update-project.ps1 -ProjectDir .
+powershell -File D:\Nut\00_my_digital\12_AGI\skills\internal-audit\update-project.ps1 -ProjectDir .
 ```
 
 脚本会告诉你更新了什么，你确认后才升级。旧版本自动备份到 `.backup/` 文件夹，出问题可以退回去。
