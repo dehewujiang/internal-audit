@@ -51,16 +51,16 @@ try {
 }
 
 try {
-    $gold = Get-Content $versionPath -Raw -Encoding UTF8 | ConvertFrom-Json
+    $goldVersion = Get-Content $versionPath -Raw -Encoding UTF8 | ConvertFrom-Json
 } catch {
     Write-Host "[FAIL] Cannot parse gold VERSION.json: $_" -ForegroundColor Red
     exit 1
 }
 
 $localVer  = $lock.locked_version
-$remoteVer = $gold.version
+$remoteVer = $goldVersion.version
 $localCommit = $lock.git_commit
-$remoteCommit = $gold.git_commit
+$remoteCommit = $goldVersion.git_commit
 
 # ── Display diff ────────────────────────────────────────
 
@@ -84,7 +84,7 @@ if ($localVer -eq $remoteVer) {
 
 # ── Show what changed ───────────────────────────────────
 
-$changes = $gold.changes
+$changes = $goldVersion.changes
 if (-not $changes -or $changes.Count -eq 0) {
     Write-Host "  ⚠️  VERSION.json has no changes array — cannot show detailed diff" -ForegroundColor Yellow
     Write-Host "  Will upgrade all junction/copy paths (excluding data dirs)." -ForegroundColor Yellow
