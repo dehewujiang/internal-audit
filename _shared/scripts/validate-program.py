@@ -22,8 +22,12 @@ import argparse
 
 def check_no_placeholder(text):
     """[S] 无占位符（_X_ 或 {{}}）"""
-    x_matches = re.findall(r'_X_[^\n]*', text)
-    brace_matches = re.findall(r'\{\{[^}]+\}\}', text)
+    # _X_ : 排除"无 _X_ 占位符"这类质量自检行（提及占位符但本身不是占位符）
+    x_matches = [m for m in re.findall(r'_X_[^\n]*', text)
+                 if not re.search(r'[无沒][\s\S]{0,20}_X_[\s\S]{0,20}(?:占位符|placeholder)', m, re.IGNORECASE)]
+    # {{ }} : 要求括号内至少有一个非空白字符（排除 "{{ }}" 空壳和 "{{ }}" 这类自查文案）
+    brace_matches = [m for m in re.findall(r'\{\{[^}\s][^}]*\}\}|\{\{[^}]*[^\s}]\}\}', text)
+                     if not re.search(r'[无沒][\s\S]{0,30}\{\{', m, re.IGNORECASE)]
     issues = []
     if x_matches:
         issues.append(f"发现 {len(x_matches)} 处 _X_ 占位符: {x_matches[0][:60]}")
@@ -161,6 +165,11 @@ def validate_program(text, filename=""):
 # ── CLI ──────────────────────────────────────────────────
 
 def main():
+    # Windows 终端默认 GBK 编码，emoji（🔴⚠️✅）会触发 UnicodeEncodeError。
+    # 在打印任何 emoji 之前先把 stdout 切到 UTF-8。
+    if sys.stdout.encoding != 'utf-8':
+        sys.stdout.reconfigure(encoding='utf-8')
+
     parser = argparse.ArgumentParser(description="审计程序硬校验工具")
     parser.add_argument("path", help="审计程序 Markdown 文件路径（或目录）")
     parser.add_argument("--json", action="store_true", help="输出 JSON 格式")

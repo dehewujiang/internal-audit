@@ -86,7 +86,7 @@ findings/ 存储经证实的发现，origin="design"，关联 design_observation
 | Phase 1 制度分析 | `"document-organizer"` | 基于制度文本，含 source_doc/source_section |
 | Phase 1.5 访谈回填 | `"interview"` | 含 source_role/source_id/interview_snippet，可能含 contradiction |
 
-interview 来源的验证需额外处理（详见 document-organizer/references/design-observation-format.md）：
+interview 来源的验证需额外处理（详见 `D:/Nut/00_my_digital/12_AGI/skills/internal-audit/document-organizer/references/design-observation-format.md`）：
 
 | 条件 | 验证要求 |
 |------|---------|

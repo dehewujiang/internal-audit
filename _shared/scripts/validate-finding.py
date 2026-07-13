@@ -572,6 +572,10 @@ def print_report(report, verbose=False):
 
 
 def main():
+    # Windows GBK → UTF-8（emoji 兼容）
+    if sys.stdout.encoding != 'utf-8':
+        sys.stdout.reconfigure(encoding='utf-8')
+
     parser = argparse.ArgumentParser(description="Finding 质量硬校验工具")
     parser.add_argument("path", nargs="?", help="单个 finding JSON 文件路径")
     parser.add_argument("--findings-dir", help="批量校验目录下所有 FIND-*.json")

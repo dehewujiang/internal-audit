@@ -216,6 +216,10 @@ def validate_policy_analysis(data, filename=""):
 # ── CLI ──────────────────────────────────────────────────
 
 def main():
+    # Windows GBK → UTF-8（emoji 兼容）
+    if sys.stdout.encoding != 'utf-8':
+        sys.stdout.reconfigure(encoding='utf-8')
+
     parser = argparse.ArgumentParser(description="制度分析 JSON 硬校验工具")
     parser.add_argument("path", help="JSON 文件路径（或目录）")
     parser.add_argument("--json", action="store_true", help="输出 JSON 格式")

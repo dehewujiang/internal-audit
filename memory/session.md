@@ -1,38 +1,25 @@
 # 最近一次工作记录
 
 ## 完成了什么
-本次 session（2026-07-10，下半场）完成了四大体系建设，16 个文件新增/修改。
+本次 session（2026-07-13）关闭了"project-init 不会自动注册到跨项目索引"的非阻塞缺口。
 
-### 1. 跨项目数据参考体系
-- **projects-index.json**: 项目注册表，存储所有审计项目的路径/主题/期间/统计
-- **queries.py**: 新增 `register` 子命令（--list / --path --topic --period / --remove）+ CrossProjectSource 类 + findings/search/summary/compare 四个命令的 --cross-project 扩展
-- **setup-project.ps1**: 部署完成提示加 register 注册指引
-- **OPS.md**: 补跨项目查询操作说明
-
-### 2. E2E 测试
-- test-e2e 项目全链路测试：setup --stable → 闸机 → 制度分析 validate → 决策追溯 → queries.py decide → 审计程序 validate → register。9 项全部通过。
-- 7 个 Python 脚本全部经过语法验证
-
-### 3. 文档同步
-- TODO.md：标记全部完成（决策追溯 + 跨项目查询）、取消 document-organizer 一致性条目
-- project.md：系统结构 + 已完成功能全面更新
-- context.md：活跃风险更新（追溯 + 跨项目查询已修复）
-- decisions.md：新增 ADR-012（--stable）、ADR-013（决策追溯）、ADR-014（跨项目）
-- OPS.md：补跨项目查询节
-- VERSION.json：升到 2026-07-10-3（21 条变更记录）
+### 改动：project-init SKILL.md 新增 Step 4.6 自动注册
+- 在 Step 4.5（constitution.md + tools/ 创建）和 Step 5（确认输出）之间，插入 Step 4.6
+- 项目创建完成后自动执行 `queries.py register --path <project_dir> --topic <topic> --period <period>`
+- 参数从 current-audit.json 自动提取：topic = audit_topic，period = audit_period.start_date 前 4 位年份
+- 注册失败不阻断项目创建——exit ≠ 0 时仅显示警告，继续 Step 5
+- Step 5 确认输出中增加 `{auto_register_result}` 占位（成功显示项目 ID，失败显示警告）
+- project.md 已知缺口表从"1 项"归零
 
 ## 为什么这样做
-跨项目查询解决审计日常三问："同一主题去年审了什么？"、"这个问题是不是老问题？"、"这个供应商之前出过问题吗？"。不改架构，一张注册表 + --cross-project 参数就解决。
+`queries.py register` 的 Path→topic→period 信息在 project_init.py 执行时尚未落地（current-audit.json 还没写入），不适合塞进 Python 脚本。但 SKILL.md 是 LLM 执行的编排器，Step 4.5 之后所有文件已就绪——此时 `scan_project()` 能自动从 current-audit.json 读取 topic 和 phase，`queries.py register` 开箱即用，零代码改动。
 
 ## 遇到什么问题
-- Windows 下 test-e2e 目录无法删除（Claude Code 进程持有文件锁），非阻塞
-- queries.py 膨胀到 1327 行——暂时可接受，下次超过 2000 行时考虑拆分
-- rm -rf 被拒绝、cmd rmdir 进入交互模式——Windows 权限限制
+- 无
 
 ## 未完成事项
-- 无（所有待办清空）
+- 无
 
 ## 下一步建议
-1. 实际审计项目中使用，积累实战反馈
-2. project-init 自动注册到 projects-index.json
-3. decision_log SKILL.md 格式第一次被 LLM 消费时观察实际产出质量
+1. 实际审计项目中使用 project-init，验证注册链路端到端
+2. 如有需要：让 setup-project.ps1 --stable 模式下的项目也自动注册（当前 setup-project.ps1 不涉及，它是部署工具链不是创建项目）

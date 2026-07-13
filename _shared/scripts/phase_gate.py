@@ -43,7 +43,7 @@ PHASE_TOOLS = {
     "phase_0_init":                    {"project_init.py"},
     "phase_1_document_analysis":       {"validate-policy-analysis.py", "pdf_ocr_extractor.py"},
     "phase_1_5_interview":            {"validate-interview.py"},
-    "phase_2_program_generation":      {"validate-program.py"},
+    "phase_2_program_generation":      {"validate-program.py", "create_evidence_dirs.py"},
     "phase_3_execution":               {"validate-finding.py"},
     "phase_4_report":                  {"validate-report.py"},
 }
@@ -65,14 +65,14 @@ EVALUATOR_TOOLS = {
 
 
 def resolve_skills_dir(args) -> Path:
-    """Resolve skills directory: CLI arg > env var > workspace.parent.parent inference."""
+    """Resolve skills directory: CLI arg > env var > workspace.parent inference."""
     if args is not None and getattr(args, "skills_dir", None):
         return Path(args.skills_dir)
     env_val = os.environ.get("INTERNAL_AUDIT_SKILLS_DIR")
     if env_val:
         return Path(env_val)
     ws = find_workspace()
-    inferred = ws.parent.parent
+    inferred = ws.parent
     return inferred
 
 
@@ -523,11 +523,11 @@ def main():
     sub.add_parser("status", help="显示当前阶段和退出条件")
 
     p_check = sub.add_parser("check", help="检查能否进入下一阶段")
-    p_check.add_argument("--skills-dir", default=None, help="技能目录路径 (默认: env INTERNAL_AUDIT_SKILLS_DIR 或 workspace.parent.parent)")
+    p_check.add_argument("--skills-dir", default=None, help="技能目录路径 (默认: env INTERNAL_AUDIT_SKILLS_DIR 或 workspace.parent)")
     p_check.add_argument("--force", action="store_true", help="强制通过 prompt_program_update 提示")
 
     p_advance = sub.add_parser("advance", help="执行阶段切换")
-    p_advance.add_argument("--skills-dir", default=None, help="技能目录路径 (默认: env INTERNAL_AUDIT_SKILLS_DIR 或 workspace.parent.parent)")
+    p_advance.add_argument("--skills-dir", default=None, help="技能目录路径 (默认: env INTERNAL_AUDIT_SKILLS_DIR 或 workspace.parent)")
     p_advance.add_argument("--force", action="store_true", help="强制通过 prompt_program_update 提示")
 
     rb = sub.add_parser("rollback", help="回退到指定阶段")

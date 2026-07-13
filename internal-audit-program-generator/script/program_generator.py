@@ -23,20 +23,64 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent / '_shared' / 'script
 from excel_core import ExcelCore
 
 
+# ── 章节标题 → 轨道映射 ──────────────────────────────────
+
+# 已废弃：旧格式 ## 三/四/五/六/七/八，写作时参考但不再维护
+# 新版统一使用 <!-- track X --> 注释标记，降级路径见 _fallback_by_headings()
+
+
 def load_config(config_path: str) -> Dict:
     """加载轨道配置"""
     with open(config_path, 'r', encoding='utf-8') as f:
         return json.load(f)
 
 
+def _fallback_by_headings(content: str) -> Dict[str, str]:
+    """降级路径：按 Markdown 章节标题划分轨道内容。
+
+    匹配形如 `## 三、测试程序（轨道A：...）` 的标题行，
+    切出标题到下一个同级 ## 标题之间的内容，映射到对应轨道。
+    章节编号与轨道的对应关系：
+      三 → A, 四 → B, 五 → C, 六 → E, 七 → F, 八 → D
+    （注意：六=E、七=F —— 模板中六是效率、七是合规，八是边界）
+    """
+    SECTION_TO_TRACK = {
+        '三': 'A', '四': 'B', '五': 'C',
+        '六': 'E', '七': 'F', '八': 'D',
+    }
+
+    # 找所有 ## 开头但不是 ## 的标题行（即二级标题）
+    headings = list(re.finditer(r'^##\s+(.+?)(?:\[.+?\])?\s*$', content, re.MULTILINE))
+    result = {}
+
+    for i, m in enumerate(headings):
+        title = m.group(1).strip()
+        # 提取中文数字编号（如"三、"）
+        num_match = re.match(r'([一二三四五六七八九十]+)[、．.]', title)
+        if not num_match:
+            continue
+        section_num = num_match.group(1)
+        track_id = SECTION_TO_TRACK.get(section_num)
+        if not track_id:
+            continue
+
+        # 切出本标题到下一个 ## 标题之间的内容
+        start = m.end()
+        end = headings[i + 1].start() if i + 1 < len(headings) else len(content)
+        track_content = content[start:end].strip()
+        if track_content:
+            result[track_id] = track_content
+
+    return result
+
+
 def parse_markdown_sections(md_path: str) -> Dict[str, List[str]]:
     """
-    解析 Markdown 文件，提取各轨道测试程序
+    解析 Markdown 文件，提取各轨道测试程序。
 
-    识别标记：
-    - 轨道 A: <!-- track A --> ... <!-- end track A -->
-    - 轨道 B: <!-- track B --> ... <!-- end track B -->
-    - 等等
+    两级策略（先精确后降级）：
+    1. 优先用 <!-- track A --> ... <!-- end track A --> 注释标记
+    2. 没有注释标记时，降级为按章节标题（## 三、测试程序（轨道A）…）切分
     """
     with open(md_path, 'r', encoding='utf-8') as f:
         content = f.read()
@@ -50,7 +94,6 @@ def parse_markdown_sections(md_path: str) -> Dict[str, List[str]]:
         'compliance_tests': [],   # 轨道 F
     }
 
-    # 轨道映射
     track_mapping = {
         'A': 'control_tests',
         'B': 'fraud_tests',
@@ -60,12 +103,24 @@ def parse_markdown_sections(md_path: str) -> Dict[str, List[str]]:
         'F': 'compliance_tests',
     }
 
-    # 提取各轨道内容
+    # 第一级：注释标记
+    has_comments = False
     for track_id, track_key in track_mapping.items():
         pattern = rf'<!--\s*track\s+{track_id}\s*-->(.*?)<!--\s*end\s*track\s+{track_id}\s*-->'
         match = re.search(pattern, content, re.DOTALL | re.IGNORECASE)
         if match:
+            has_comments = True
             track_content = match.group(1).strip()
+            tracks_data[track_key] = parse_test_procedures(track_content)
+
+    if has_comments:
+        return tracks_data
+
+    # 第二级：降级到章节标题
+    sections = _fallback_by_headings(content)
+    if sections:
+        for track_id, track_content in sections.items():
+            track_key = track_mapping[track_id]
             tracks_data[track_key] = parse_test_procedures(track_content)
 
     return tracks_data

@@ -18,7 +18,7 @@ AI 驱动的内部审计辅助流水线，帮 Flan（汽车零部件企业审计
 - **操作手册（2026-07-10）**: OPS.md 纯中文操作说明
 - project_init.py: 覆盖检测 + 配置检测
 - program-generator: 增量更新模式
-- queries.py: 独立查询工具（findings/trend/compare/summary/search/analyses/trace/decide/register）
+- queries.py: 独立查询工具（795 行，DataSource 抽象层消除单项目/跨项目分支，+ 536 行 query_data_sources.py）
 - **setup-project.ps1 重写（2026-07-10）**: 三 junction（skills/_shared_/tools_）+ 拷贝 CLAUDE-project.md + mkdir 三个数据目录 + 末尾自检 + --stable 模式 + 部署提示 register
 - **CLAUDE-project.md（2026-07-10）**: 审计项目专用精简版 CLAUDE.md
 - **缺口补齐（2026-07-10）**: interview-designer Step 5.0 validate 调用、finding-debate Step 5 辩论充分性自检
@@ -29,7 +29,7 @@ AI 驱动的内部审计辅助流水线，帮 Flan（汽车零部件企业审计
 ## 已知缺口（非阻塞）
 | 缺口 | 说明 |
 |------|------|
-| 跨项目依赖 projects-index.json 手工注册 | 每次新建审计项目后需手动运行 `queries.py register`，未嵌入 project-init 自动化 |
+| 无 | — |
 
 ## 最大风险
 🟢 无阻塞级风险。五层防御（三重闸机 + 决策追溯 + 跨项目可观测性）。

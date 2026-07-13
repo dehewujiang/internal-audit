@@ -16,20 +16,53 @@
 
 ## 怎么开始一个新审计项目
 
+**第一步：建一个文件夹**
+
+在你习惯放文件的地方（比如 D 盘），新建一个文件夹。名字随便取，自己能记住就行，比如"2026年7月存货审计"。
+
+**第二步：在这个文件夹里打开 PowerShell**
+
+打开你刚建的文件夹，然后：
+
+> 在文件夹顶部地址栏（显示路径的那个白条）里，直接输入 `powershell`，然后按回车。
+
+（备用方法：按住 Shift 键不放，在文件夹空白处点右键，菜单里会多出一项"在此处打开 PowerShell 窗口"，点它。）
+
+这时候会弹出一个蓝底白字的窗口——这就是 PowerShell，别怕，只需要在里面粘贴一行命令。
+
+**第三步：粘贴部署命令**
+
+把下面这行命令完整复制，在 PowerShell 窗口里点右键（或按 Ctrl+V），粘贴进去，然后按回车：
+
 ```
-1. 在你电脑上建一个新文件夹（比如 D:\审计项目\2026-Q3-存货审计）
-2. 打开这个文件夹，右键 → "Git Bash Here"
-3. 运行：powershell -File D:\Nut\...\setup-project.ps1 -ProjectDir .
-4. 在黑窗口里看到 "Next: cd ... ; claude" 就说明搭好了
-5. 输入 claude，等 AI 启动后对它说 "开始新审计项目"
+powershell -File "D:\Nut\00_my_digital\12_AGI\skills\internal-audit\setup-project.ps1" -ProjectDir .
 ```
 
-**重要**：第 3 步跑完后，你的文件夹里有了一套完整的工具。以后每次审计，重复第 1-2 步，换个文件夹就行。
+> ⚠️ **注意**：上面这行命令中间那串路径 `D:\Nut\00_my_digital\12_AGI\skills\internal-audit\setup-project.ps1` 是系统工具的存放位置。如果你的工具放在别的盘或别的文件夹，把路径改成实际的就行。不知道怎么改的话，问一下帮你装系统的人。
 
-如果是正式审计项目（不想被系统更新干扰），第 3 步加 `--stable`：
+跑完后，窗口里会出现一堆文字，最后一行如果是 `Done` 开头，就说明部署成功了。
+
+如果你希望这个项目**不受后续系统更新的影响**（正式审计项目建议这么做），用下面这行代替：
+
 ```
-powershell -File D:\Nut\...\setup-project.ps1 -ProjectDir . --stable
+powershell -File "D:\Nut\00_my_digital\12_AGI\skills\internal-audit\setup-project.ps1" -ProjectDir . --stable
 ```
+
+**第四步：启动 AI 助手**
+
+在同一个 PowerShell 窗口里，输入下面这行命令，按回车：
+
+```
+claude
+```
+
+等几秒钟，AI 启动后，对它说"开始新审计项目"就行了。
+
+---
+
+**以后每次新审计**：重复第一步和第二步（换一个新文件夹），其他步骤一样。
+
+**总结一下你只需要学会三个操作**：① 建文件夹 ② 在文件夹地址栏输入 powershell ③ 粘贴一行命令。三次搞定。
 
 ---
 

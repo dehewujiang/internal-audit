@@ -127,7 +127,6 @@ C) 取消
 {project_dir}/
 ├── CLAUDE.md                      ← 精简版（指向全局工具）
 ├── internal-audit-workspace/
-│   ├── constitution.md            ← 中央大脑宪法（从全局复制或引用）
 │   ├── current-audit.json         ← 项目状态 + 审计状态
 │   ├── tools/                     ← 工具能力声明（从全局 tools/ 复制）
 │   ├── documents/                 # 待分析的源文档（用户放入）
@@ -199,11 +198,26 @@ C) 取消
 - Excel 工具说明（全局管理）
 - 详细规则说明（由宪法定义）
 
-### 4.5 创建 constitution.md 和 tools/
+### 4.5 创建 tools/
 
-- 将 `D:/Nut/00_my_digital/12_AGI/skills/internal-audit/constitution.md`（全局共享宪法）复制到项目 `internal-audit-workspace/constitution.md`。如全局宪法尚不存在，先生成初始版本再复制。
 - 将 `D:/Nut/00_my_digital/12_AGI/skills/internal-audit/tools/*.md`（工具能力声明）复制到项目 `internal-audit-workspace/tools/`。
   ⚠️ 复制全部 13 个能力声明文件，忽略 tools/ 中的非能力说明文件（pdf_ocr_extractor.py、PDF_OCR_README.md）：document-organizer.md、execution-assistant.md、finding-debate.md、interview-designer.md、phase_gate.md、program-generator.md、program-quality-evaluator.md、queries.md、report-generator.md、validate-finding.md、validate-policy-analysis.md、validate-program.md、validate-report.md
+
+> ⚠️ `constitution.md` 不复制到 workspace。setup-project.ps1 已经在项目根目录放置了宪法（与 CLAUDE.md 同级），workspace 是审计产物目录，不需要再放一份。
+
+### 4.6 自动注册到跨项目索引
+
+项目创建完成后，自动注册到 `projects-index.json`，使跨项目查询立即可用：
+
+```bash
+python _shared/scripts/queries.py register --path <project_dir> --topic <topic> --period <period>
+```
+
+- `<project_dir>`：Step 3 确认的项目目录绝对路径
+- `<topic>`：审计主题名（与 current-audit.json 中的 `audit_topic` 一致）
+- `<period>`：从 `audit_period` 提取，格式 `YYYY`（如 `2026`）。若 `audit_period` 为对象 `{start_date, end_date}`，取 `start_date` 前 4 位年份。
+
+若注册命令失败（exit ≠ 0）：**不阻断项目创建**，显示警告 `⚠️ 跨项目索引注册失败，可稍后手动运行 queries.py register --path <project_dir>`，继续 Step 5。
 
 ---
 
@@ -217,8 +231,7 @@ C) 取消
 状态：phase_1_document_analysis
 
 已创建：
-✓ constitution.md（中央大脑运行宪法）
-✓ tools/（13个工具能力声明）
+✓ tools/（13个工具能力声明，存放于 internal-audit-workspace/tools/）
 ✓ internal-audit-workspace/current-audit.json（含 audit_state）
 ✓ internal-audit-workspace/documents/
 ✓ internal-audit-workspace/policy-analyses/
@@ -229,7 +242,9 @@ C) 取消
 ✓ internal-audit-workspace/evidence/
 ✓ internal-audit-workspace/debates/
 ✓ internal-audit-workspace/reports/
-✓ CLAUDE.md
+✓ CLAUDE.md（项目根目录，setup-project.ps1 已创建）
+✓ constitution.md（项目根目录，setup-project.ps1 已创建）
+{auto_register_result}
 
 下一步：
 1. 将制度文档放入 internal-audit-workspace/documents/

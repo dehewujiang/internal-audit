@@ -42,6 +42,7 @@ program-quality-evaluator: 四层评估（program-generator Step 5.7 独有）
 ## 关键技术约束
 - 状态传递：全部通过文件系统，不通过内存
 - 工具分域：每个 Python 脚本调用前必须过 phase_gate tool-check
+- queries.py 架构（2026-07-10 重构）：795 行 CLI 入口 + 536 行 query_data_sources.py 数据源层。DataSource 抽象（SingleProjectSource / CrossProjectSource）消除所有 cmd_* 函数中的 if/cross-project 分支。CLI 接口不变，零 Python 导入者，纯 CLI 调用。
 - current-audit.json：业务状态 + 审计执行状态 + 快照回滚
 - 证据等级：A-E 五级，高风险 finding 必须 A 或 E
 - 部署：setup-project.ps1 一键初始化审计项目（junction + copy + mkdir + 自检）

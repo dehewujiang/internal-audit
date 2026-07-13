@@ -323,6 +323,34 @@ EXPOSED（风险敞口）：
 
 **完整模板**：见 [references/output_template.md](./references/output_template.md)
 
+### 4.X 导出 Excel（Markdown → 多 Sheet 审计程序表）
+
+Markdown 输出确认无误后，将程序导出为 Excel 格式，方便现场执行时打印/填写：
+
+```bash
+python D:/Nut/00_my_digital/12_AGI/skills/internal-audit/internal-audit-program-generator/script/program_generator.py \
+    internal-audit-workspace/audit-programs/[审计主题]_审计程序_v1.0.md \
+    internal-audit-workspace/audit-programs/[审计主题]_审计程序_v1.0.xlsx \
+    --tracks <激活的轨道字母，如 A,B,C,E>
+```
+
+- `<激活的轨道字母>`：与 Step 4 输出的 Markdown 中实际激活的轨道一致（跳过未激活的轨道，不生成空 Sheet）
+- 每个轨道生成一个独立 Sheet（轨道A-控制测试、轨道B-舞弊测试…），列名、列宽、行高均按 `config/program_templates.json` 的预设自动排版
+- Excel 输出后，`audit-programs/` 下应同时存在 `.md`（给 AI 读）和 `.xlsx`（给人执行）两个文件
+
+### 4.X+1 创建证据存放目录
+
+审计程序确定后，预先为每个程序创建对应的证据目录，审计员执行时直接往里放文件即可：
+
+```bash
+python D:/Nut/00_my_digital/12_AGI/skills/internal-audit/_shared/scripts/create_evidence_dirs.py \
+    --program-md internal-audit-workspace/audit-programs/[审计主题]_审计程序_v1.0.md
+```
+
+脚本自动从 Markdown 中提取所有程序编号和名称，在 `evidence/{project_name}/` 下创建 `{编号}_{关键词}/` 目录树。已存在的目录静默跳过。
+
+> 如果 Excel 导出和证据目录都成功生成，此时 `audit-programs/` 下有 `.md` + `.xlsx` 两份文件，`evidence/` 下有对应的空目录结构，审计员可以直接开始执行。`create_evidence_dirs.py` 属于 Phase 2-3 白名单工具，无需 --force。
+
 ### 4.X 决策理由记录（decision_log，第十章）
 
 审计程序文档的第十章，必须记录本阶段做出的 3 个关键判断的理由：

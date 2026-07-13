@@ -169,3 +169,17 @@
 最终选择：B
 原因：改动成本极低（一张表 + 现有命令加 --cross-project 参数），不破坏任何现有逻辑。
 影响：新建 projects-index.json；queries.py 新增 CrossProjectSource 类 + register 子命令 + 4 个命令 --cross-project 扩展
+
+## ADR-015
+日期：2026-07-10
+背景：queries.py 膨胀到 1327 行，4 个命令（findings/search/compare/summary）各内嵌单项目/跨项目数据获取分支，同一 if/else 模式写了 4 遍。
+备选方案：
+- A) 保持单文件，在函数内部进一步提取公共子函数
+- B) 引入 DataSource 抽象层 + 拆成两个文件（queries.py 795 行 + query_data_sources.py 536 行）
+最终选择：B
+原因：
+- 分支消除（好品味原则）：通过 DataSource 协议让"数据从哪来"变成构造参数，而非运行时判断。4 个 if/cross-project 分支 → 0。
+- 数据结构优先：SingleProjectSource 和 CrossProjectSource 实现相同接口，调用方不感知差异。
+- 内部接口不变：CLI 子命令名、参数、输出格式全部保持。queries.py 无 Python 导入者——纯 CLI 调用。
+- 撤回成本极低：一次 git revert。
+影响：queries.py 1327→795 行；新建 query_data_sources.py 536 行；cmd_* 函数从平均 90 行压到 20-35 行。

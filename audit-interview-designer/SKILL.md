@@ -50,7 +50,7 @@ description: |
 | **过往经验** | 读取 `internal_audit_risk_framework.md`，匹配审计主题相关的已验证风险 | 探测性问题（基于真实案例） |
 | **公司背景** | 查找子公司结构、系统架构、特殊业务模式 | 针对性问题 |
 | **历史发现** | 查找同主题的历史 Finding | 追踪性问题（整改验证） |
-| **行业基准** | 基于 `document-organizer/references/industry_benchmarks.md` | 补充性问题（行业通用风险） |
+| **行业基准** | 基于 `D:/Nut/00_my_digital/12_AGI/skills/internal-audit/document-organizer/references/industry_benchmarks.md` | 补充性问题（行业通用风险） |
 
 ### Step 2：生成 Excel 访谈问卷
 

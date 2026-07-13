@@ -148,6 +148,10 @@ def validate_report(text, filename=""):
 # ── CLI ──────────────────────────────────────────────────
 
 def main():
+    # Windows GBK → UTF-8（emoji 兼容）
+    if sys.stdout.encoding != 'utf-8':
+        sys.stdout.reconfigure(encoding='utf-8')
+
     parser = argparse.ArgumentParser(description="审计报告硬校验工具")
     parser.add_argument("path", help="报告 Markdown 文件路径（或目录）")
     parser.add_argument("--json", action="store_true", help="输出 JSON 格式")
