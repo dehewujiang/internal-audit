@@ -171,8 +171,9 @@ if ($isStable) {
             }
         }
 
-        # Overwrite with new
+        # Overwrite with new (delete first: Copy-Item -Recurse nests if dest exists)
         try {
+            if (Test-Path $destPath) { Remove-Item $destPath -Recurse -Force }
             Copy-Item -Path $srcPath -Destination $destPath -Recurse -Force -ErrorAction Stop
             Write-Host "  [OK]   $($d.Dest) upgraded" -ForegroundColor Green
             $upOk++
