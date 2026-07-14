@@ -11,7 +11,7 @@ bump-version.py — 自动更新 VERSION.json
 
 [INPUT]:  VERSION.json + git HEAD
 [OUTPUT]: VERSION.json（更新 version/git_commit/updated_at/changes）
-[POS]:    _shared/scripts 的版本管理工具
+[POS]:    黄金源根目录的开发工具，不部署到审计项目
 """
 import json
 import subprocess
@@ -26,10 +26,8 @@ if sys.platform == "win32":
 
 
 def get_version_path():
-    """定位 VERSION.json（从脚本所在目录向上两级找黄金源根目录）"""
-    script_dir = Path(__file__).resolve().parent
-    gold_root = script_dir.parent.parent  # _shared/../.. = gold root
-    return gold_root / "VERSION.json"
+    """定位 VERSION.json（与脚本同目录）"""
+    return Path(__file__).resolve().parent / "VERSION.json"
 
 
 def get_short_hash():
