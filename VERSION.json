@@ -1,12 +1,42 @@
 {
-  "version": "2026-07-14-1",
-  "git_commit": "5504b1d",
-  "updated_at": "2026-07-14T08:30:00+08:00",
+  "version": "2026-07-14-3",
+  "git_commit": "ab1f772",
+  "updated_at": "2026-07-14T08:54:02+08:00",
   "changes": [
-    {"type": "doc", "file": "CLAUDE.md", "summary": "新增标准头部 + 技能数量修正 8→12 + Skill→Phase 映射表 + 部署架构说明 + 脚本速查表 + 关键文件扩展"},
-    {"type": "doc", "file": "CLAUDE-project.md", "summary": "同步 CLAUDE.md 改进：阶段映射表 + 脚本速查表 + Architecture gotchas + Key files"},
-    {"type": "script", "file": "query_data_sources.py", "summary": "新增 get_audit_programs_dir() + load_program_index() 加载审计程序索引"},
-    {"type": "script", "file": "queries.py", "summary": "trace 重写：支持三种 ID（F-xxx 步骤 A7.2 控制点 CP-xxx）双向追溯 + Windows GBK 编码修复"},
-    {"type": "skill", "file": "internal-audit-program-generator/SKILL.md", "summary": "新增 Step 4.X+2 生成 program_index.json 索引文件（审计程序→控制点→制度条款追溯链）"}
+    {
+      "type": "doc",
+      "file": "CLAUDE.md",
+      "summary": "新增标准头部 + 技能数量修正 8→12 + Skill→Phase 映射表 + 部署架构说明 + 脚本速查表 + 关键文件扩展"
+    },
+    {
+      "type": "doc",
+      "file": "CLAUDE-project.md",
+      "summary": "同步 CLAUDE.md 改进：阶段映射表 + 脚本速查表 + Architecture gotchas + Key files"
+    },
+    {
+      "type": "script",
+      "file": "query_data_sources.py",
+      "summary": "新增 get_audit_programs_dir() + load_program_index() 加载审计程序索引"
+    },
+    {
+      "type": "script",
+      "file": "queries.py",
+      "summary": "trace 重写：支持三种 ID（F-xxx 步骤 A7.2 控制点 CP-xxx）双向追溯 + Windows GBK 编码修复"
+    },
+    {
+      "type": "skill",
+      "file": "internal-audit-program-generator/SKILL.md",
+      "summary": "新增 Step 4.X+2 生成 program_index.json 索引文件（审计程序→控制点→制度条款追溯链）"
+    },
+    {
+      "type": "script",
+      "file": "bump-version.py",
+      "summary": "新增版本自动管理脚本"
+    },
+    {
+      "type": "script",
+      "file": "bump-version.py",
+      "summary": "新增版本自动管理脚本"
+    }
   ]
 }
