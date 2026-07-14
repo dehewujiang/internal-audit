@@ -1,21 +1,12 @@
 {
-  "version": "2026-07-13-1",
-  "git_commit": "eaf3091",
-  "updated_at": "2026-07-13T20:00:00+08:00",
+  "version": "2026-07-14-1",
+  "git_commit": "5504b1d",
+  "updated_at": "2026-07-14T08:30:00+08:00",
   "changes": [
-    {"type": "script", "file": "create_evidence_dirs.py", "summary": "新增：从审计程序 Markdown 自动创建 evidence/ 证据目录树"},
-    {"type": "skill", "file": "internal-audit-program-generator/SKILL.md", "summary": "Step 4 新增 Excel 导出 + 证据目录创建两步"},
-    {"type": "skill", "file": "project-init/SKILL.md", "summary": "新增 Step 4.6 跨项目自动注册 + 删除重复的 constitution.md 复制"},
-    {"type": "script", "file": "phase_gate.py", "summary": "fix ws.parent.parent→ws.parent 路径推断 + tool-check 白名单补 create_evidence_dirs.py"},
-    {"type": "script", "file": "validate-program.py", "summary": "fix GBK emoji 编码 + _X_/{{}} 占位符检测误报（过滤质量自检行）"},
-    {"type": "script", "file": "validate-finding.py", "summary": "fix Windows GBK emoji 编码（stdout.reconfigure utf-8）"},
-    {"type": "script", "file": "validate-policy-analysis.py", "summary": "fix Windows GBK emoji 编码"},
-    {"type": "script", "file": "validate-report.py", "summary": "fix Windows GBK emoji 编码"},
-    {"type": "script", "file": "program_generator.py", "summary": "fix Excel 导出：表头识别兼容多子表 + 列数门槛 5→3（轨道 C/D/E/F 不再丢数据）"},
-    {"type": "config", "file": "program_templates.json", "summary": "6 轨道列名对齐 Markdown 表头（程序编号/测试程序/取证方式/判定标准）"},
-    {"type": "config", "file": "output_template.md", "summary": "6 轨道章节补 <!-- track X --> 注释标记"},
-    {"type": "skill", "file": "audit-interview-designer/SKILL.md", "summary": "fix industry_benchmarks.md 相对路径→绝对路径"},
-    {"type": "skill", "file": "audit-execution-assistant/SKILL.md", "summary": "fix design-observation-format.md 相对路径→绝对路径"},
-    {"type": "doc", "file": "OPS.md", "summary": "重写：去 Git Bash→用 PowerShell，面向非技术人员"}
+    {"type": "doc", "file": "CLAUDE.md", "summary": "新增标准头部 + 技能数量修正 8→12 + Skill→Phase 映射表 + 部署架构说明 + 脚本速查表 + 关键文件扩展"},
+    {"type": "doc", "file": "CLAUDE-project.md", "summary": "同步 CLAUDE.md 改进：阶段映射表 + 脚本速查表 + Architecture gotchas + Key files"},
+    {"type": "script", "file": "query_data_sources.py", "summary": "新增 get_audit_programs_dir() + load_program_index() 加载审计程序索引"},
+    {"type": "script", "file": "queries.py", "summary": "trace 重写：支持三种 ID（F-xxx 步骤 A7.2 控制点 CP-xxx）双向追溯 + Windows GBK 编码修复"},
+    {"type": "skill", "file": "internal-audit-program-generator/SKILL.md", "summary": "新增 Step 4.X+2 生成 program_index.json 索引文件（审计程序→控制点→制度条款追溯链）"}
   ]
 }
