@@ -294,6 +294,8 @@ EXPOSED（风险敞口）：
 
 **章节激活规则**：若某轨道未被激活，对应章节输出"本次审计目的不含此轨道，已跳过"。
 
+**列头一致性（硬规则）**：每张轨道表格的列名和列数必须与 `config/program_templates.json` 中对应轨道的 `markdown_columns` 完全一致。不允许增减列、改列名、改列顺序。validate-program.py 会校验，不一致则阻断。每张轨道表格必须以 `<!-- track X -->` 和 `<!-- end track X -->` 注释包裹。
+
 ```markdown
 # [审计主题]审计程序
 

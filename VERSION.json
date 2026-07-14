@@ -1,7 +1,7 @@
 {
-  "version": "2026-07-14-9",
-  "git_commit": "ef12c67",
-  "updated_at": "2026-07-14T11:38:08+08:00",
+  "version": "2026-07-14-10",
+  "git_commit": "a2cc22e",
+  "updated_at": "2026-07-14T11:38:36+08:00",
   "changes": [
     {
       "type": "doc",
@@ -67,6 +67,11 @@
       "type": "config",
       "file": "program_templates.json",
       "summary": "v2.0 三层列结构（分析+执行+结果）"
+    },
+    {
+      "type": "skill",
+      "file": "program-generator/SKILL.md",
+      "summary": "Step 4 补列头一致性硬规则"
     }
   ]
 }
