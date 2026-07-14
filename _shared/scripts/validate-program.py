@@ -16,6 +16,7 @@ import os
 import sys
 import re
 import argparse
+from pathlib import Path
 
 
 # ── 校验项 ──────────────────────────────────────────────
@@ -118,6 +119,82 @@ def check_decision_log(text):
     return True, None
 
 
+# ── 列头一致性校验 ────────────────────────────────────────
+
+def _load_template_columns():
+    """从 program_templates.json 加载各轨道的 markdown_columns"""
+    # 定位 config/program_templates.json（从脚本向上找黄金源根目录）
+    script_dir = Path(__file__).resolve().parent
+    gold_root = script_dir.parent.parent  # _shared/../.. = gold root
+    config_path = gold_root / "internal-audit-program-generator" / "config" / "program_templates.json"
+    if not config_path.exists():
+        return {}
+    try:
+        with open(config_path, "r", encoding="utf-8") as f:
+            config = json.load(f)
+    except (json.JSONDecodeError, FileNotFoundError):
+        return {}
+    result = {}
+    for track_id, track_cfg in config.get("tracks", {}).items():
+        result[track_id] = track_cfg.get("markdown_columns", [])
+    return result
+
+
+def check_column_consistency(text):
+    """[S] 列头一致性 — 各轨道表格的列名必须与 program_templates.json 的 markdown_columns 一致"""
+    template_cols = _load_template_columns()
+    if not template_cols:
+        return True, "未找到 program_templates.json，跳过列头校验"
+
+    # 按 <!-- track X --> 切分轨道
+    issues = []
+    for track_id, expected_cols in template_cols.items():
+        pattern = rf'<!--\s*track\s+{track_id}\s*-->(.*?)<!--\s*end\s*track\s+{track_id}\s*-->'
+        match = re.search(pattern, text, re.DOTALL | re.IGNORECASE)
+        if not match:
+            continue  # 轨道未激活，跳过
+
+        track_content = match.group(1)
+        # 找第一张表格的表头行（第一个 | ... | 行，后面跟着 |---| 分隔行）
+        lines = track_content.strip().split('\n')
+        header_line = None
+        for i, line in enumerate(lines):
+            stripped = line.strip()
+            if stripped.startswith('|') and stripped.endswith('|'):
+                # 检查下一行是否是分隔行
+                if i + 1 < len(lines):
+                    next_line = lines[i + 1].strip()
+                    if re.match(r'^\|[\s:\-]+\|$', next_line):
+                        header_line = stripped
+                        break
+
+        if not header_line:
+            continue  # 没找到表格，跳过
+
+        # 解析表头
+        actual_cols = [c.strip() for c in header_line[1:-1].split('|')]
+
+        # 去掉空列名
+        actual_cols = [c for c in actual_cols if c]
+
+        # 比较
+        if actual_cols != expected_cols:
+            missing = set(expected_cols) - set(actual_cols)
+            extra = set(actual_cols) - set(expected_cols)
+            detail_parts = []
+            if missing:
+                detail_parts.append(f"缺少: {', '.join(missing)}")
+            if extra:
+                detail_parts.append(f"多余: {', '.join(extra)}")
+            if not missing and not extra:
+                detail_parts.append(f"列顺序或数量不一致")
+            issues.append(f"轨道{track_id}: {'; '.join(detail_parts)} (期望{len(expected_cols)}列, 实际{len(actual_cols)}列)")
+
+    if issues:
+        return False, "列头不一致: " + " | ".join(issues)
+    return True, None
+
+
 # ── 主校验 ──────────────────────────────────────────────
 
 def validate_program(text, filename=""):
@@ -142,10 +219,13 @@ def validate_program(text, filename=""):
     passed, msg = check_decision_log(text)
     checks["decision_log"] = {"passed": passed, "message": msg}
 
+    passed, msg = check_column_consistency(text)
+    checks["column_consistency"] = {"passed": passed, "message": msg}
+
     blockers = [k for k, v in checks.items() if not v["passed"]
-                and k in ("no_placeholder", "track_activation")]
+                and k in ("no_placeholder", "track_activation", "column_consistency")]
     warnings = [k for k, v in checks.items() if not v["passed"]
-                and k not in ("no_placeholder", "track_activation")]
+                and k not in ("no_placeholder", "track_activation", "column_consistency")]
 
     action = "block" if blockers else ("warn" if warnings else "pass")
 

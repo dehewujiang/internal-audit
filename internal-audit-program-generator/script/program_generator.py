@@ -221,17 +221,21 @@ def filter_activated_tracks(
 
 def build_rows_for_track(data: List[List], track_cfg: Dict) -> List[List]:
     """
-    标准化数据行，确保列数与配置一致
+    标准化数据行：Markdown 列 → Excel 列。
+
+    Markdown 的列数 = markdown_columns（分析层+执行层）。
+    Excel 的列数 = columns（序号+分析层+执行层+结果层）。
+    差异：Excel 多一个序号列（自动补）和结果层列（自动补空）。
     """
+    md_cols = track_cfg.get('markdown_columns', [])
     expected_cols = len(track_cfg.get('columns', []))
     rows = []
 
     for idx, row_data in enumerate(data, 1):
         # 插入序号
-        if len(row_data) > 0 and row_data[0] != str(idx):
-            row_data = [str(idx)] + row_data
+        row_data = [str(idx)] + list(row_data)
 
-        # 补齐或截断列数
+        # 补齐或截断到 Excel 列数
         while len(row_data) < expected_cols:
             row_data.append('')
         rows.append(row_data[:expected_cols])
