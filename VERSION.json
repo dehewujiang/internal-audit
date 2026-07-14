@@ -1,7 +1,7 @@
 {
-  "version": "2026-07-14-7",
-  "git_commit": "fc26b01",
-  "updated_at": "2026-07-14T09:31:56+08:00",
+  "version": "2026-07-14-8",
+  "git_commit": "3d92de9",
+  "updated_at": "2026-07-14T10:24:34+08:00",
   "changes": [
     {
       "type": "doc",
@@ -57,6 +57,11 @@
       "type": "doc",
       "file": "incremental_update.md",
       "summary": "新增勘误模式（证据链不可断裂硬规则）"
+    },
+    {
+      "type": "refactor",
+      "file": "queries.py",
+      "summary": "拆分为 4 文件（router+commands+display+data_sources）"
     }
   ]
 }

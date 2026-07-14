@@ -75,7 +75,10 @@ Phase flow: `phase_0_init → phase_1_document_analysis → phase_1_5_interview 
 | Script | Role |
 |--------|------|
 | `phase_gate.py` | Phase gate: check/advance/rollback/status/tool-check |
-| `queries.py` | Finding queries: list/search/trace/summary/cross-project (trace supports finding/step/control-point IDs) |
+| `queries.py` | CLI router for all query subcommands |
+| `query_commands.py` | Command implementations (findings/trace/errata/decide/...) |
+| `query_display.py` | Display formatting (tables, detail views) |
+| `query_data_sources.py` | Data access layer (SingleProject/CrossProject sources) |
 | `validate-finding.py` | Validate F-*.json finding files |
 | `validate-program.py` | Validate audit program files |
 | `validate-report.py` | Validate audit report files |
