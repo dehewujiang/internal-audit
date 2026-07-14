@@ -163,9 +163,8 @@ def parse_test_procedures(track_content: str) -> List[List]:
         if stripped.startswith('|') and stripped.endswith('|'):
             parts = [p.strip() for p in stripped[1:-1].split('|')]
             if len(parts) >= 3:
-                while len(parts) < 11:
-                    parts.append('')
-                rows.append(parts[:11])
+                # 不硬编码补到多少列——交给 build_rows_for_track 做适配
+                rows.append(parts)
 
     # 兜底：文本段落解析
     if not rows:
@@ -223,22 +222,34 @@ def build_rows_for_track(data: List[List], track_cfg: Dict) -> List[List]:
     """
     标准化数据行：Markdown 列 → Excel 列。
 
-    Markdown 的列数 = markdown_columns（分析层+执行层）。
-    Excel 的列数 = columns（序号+分析层+执行层+结果层）。
-    差异：Excel 多一个序号列（自动补）和结果层列（自动补空）。
+    Markdown 可能有两种格式：
+    1. 新格式：分析列 + 执行列（列数 = len(markdown_columns)）
+    2. 旧格式：仅执行列（列数 < len(markdown_columns)，没有分析层）
+
+    自动适配：列数不足时在前面补空的分析列，确保旧程序也能正确导出。
+    Excel 列 = 序号 + markdown_columns + 结果列。
     """
     md_cols = track_cfg.get('markdown_columns', [])
-    expected_cols = len(track_cfg.get('columns', []))
+    expected_md = len(md_cols)
+    expected_excel = len(track_cfg.get('columns', []))
     rows = []
 
     for idx, row_data in enumerate(data, 1):
+        row_data = list(row_data)
+
+        # 自动适配旧格式：列数不足时在前面补空分析列
+        actual_cols = len(row_data)
+        if actual_cols < expected_md:
+            gap = expected_md - actual_cols
+            row_data = [''] * gap + row_data
+
         # 插入序号
-        row_data = [str(idx)] + list(row_data)
+        row_data = [str(idx)] + row_data
 
         # 补齐或截断到 Excel 列数
-        while len(row_data) < expected_cols:
+        while len(row_data) < expected_excel:
             row_data.append('')
-        rows.append(row_data[:expected_cols])
+        rows.append(row_data[:expected_excel])
 
     return rows
 

@@ -1,7 +1,7 @@
 {
-  "version": "2026-07-14-10",
-  "git_commit": "a2cc22e",
-  "updated_at": "2026-07-14T11:38:36+08:00",
+  "version": "2026-07-14-11",
+  "git_commit": "d409cda",
+  "updated_at": "2026-07-14T13:18:49+08:00",
   "changes": [
     {
       "type": "doc",
@@ -72,6 +72,11 @@
       "type": "skill",
       "file": "program-generator/SKILL.md",
       "summary": "Step 4 补列头一致性硬规则"
+    },
+    {
+      "type": "fix",
+      "file": "program_generator.py",
+      "summary": "自动适配旧格式Markdown（列数不足自动前补空分析列）"
     }
   ]
 }
