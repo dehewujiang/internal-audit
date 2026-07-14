@@ -55,6 +55,7 @@ GLOBAL_TOOLS = {
     "audit_styles.py",
     "excel_core.py",
     "decisions_schema.py",
+    "bump-version.py",
 }
 
 # Evaluator scripts — allowed from Phase 1 onward (no init-phase eval)
