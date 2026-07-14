@@ -1,0 +1,103 @@
+{
+  "schema_version": "1.0.0",
+  "description": "审计报告Excel模板配置 - 包含发现汇总、评分表、管理层反馈",
+  "sheets": {
+    "findings_summary": {
+      "name": "审计发现汇总",
+      "description": "所有审计发现的汇总清单",
+      "columns": [
+        {"name": "序号", "width": 6, "type": "index"},
+        {"name": "发现编号", "width": 12, "type": "id"},
+        {"name": "模块/领域", "width": 15, "type": "category"},
+        {"name": "发现描述", "width": 50, "type": "description"},
+        {"name": "风险等级", "width": 10, "type": "severity", "values": ["高", "中", "低"]},
+        {"name": "影响金额(元)", "width": 15, "type": "currency"},
+        {"name": "审计依据", "width": 25, "type": "reference"},
+        {"name": "整改建议", "width": 40, "type": "recommendation"},
+        {"name": "整改责任人", "width": 12, "type": "responsible"},
+        {"name": "整改期限", "width": 12, "type": "date"},
+        {"name": "整改进度", "width": 12, "type": "progress", "values": ["未开始", "进行中", "已完成"]},
+        {"name": "备注", "width": 20, "type": "notes"}
+      ],
+      "freeze_first_row": true,
+      "alt_row_colors": true,
+      "conditional_formatting": {
+        "severity": {
+          "高": {"bg": "FFE699", "fg": "000000", "bold": false},
+          "中": {"bg": "FFFFFF", "fg": "000000"},
+          "低": {"bg": "FFFFFF", "fg": "808080"}
+        }
+      }
+    },
+    "score_card": {
+      "name": "审计评分表",
+      "description": "各领域评分详情",
+      "columns": [
+        {"name": "评估维度", "width": 20, "type": "dimension"},
+        {"name": "权重(%)", "width": 10, "type": "weight"},
+        {"name": "得分(0-10)", "width": 12, "type": "score"},
+        {"name": "加权得分", "width": 12, "type": "calculated"},
+        {"name": "评价依据", "width": 40, "type": "evidence"},
+        {"name": "改进方向", "width": 30, "type": "improvement"}
+      ],
+      "dimensions": [
+        "内部控制环境",
+        "风险管理",
+        "控制活动",
+        "信息与沟通",
+        "内部监督",
+        "信息系统",
+        "反舞弊机制",
+        "合规管理"
+      ]
+    },
+    "management_response": {
+      "name": "管理层反馈",
+      "description": "管理层对审计发现的回应",
+      "columns": [
+        {"name": "发现编号", "width": 12, "type": "id"},
+        {"name": "管理层意见", "width": 45, "type": "response"},
+        {"name": "接受情况", "width": 12, "type": "acceptance", "values": ["接受", "部分接受", "不接受", "待讨论"]},
+        {"name": "整改计划", "width": 40, "type": "action_plan"},
+        {"name": "预计完成日", "width": 12, "type": "due_date"},
+        {"name": "签名", "width": 12, "type": "signature"}
+      ]
+    },
+    "executive_summary": {
+      "name": "执行摘要",
+      "description": "供高管快速阅读的核心信息",
+      "is_template": true,
+      "sections": [
+        {"title": "审计概况", "rows": 4},
+        {"title": "关键发现", "rows": 8},
+        {"title": "重大风险", "rows": 4},
+        {"title": "优先建议", "rows": 4},
+        {"title": "即时行动", "rows": 4}
+      ]
+    }
+  },
+  "general_settings": {
+    "default_row_height": 35,
+    "header_color": "2F5496",
+    "font_family": "微软雅黑",
+    "font_size": 10
+  },
+  "risk_level_definitions": {
+    "高": {
+      "scale": 9,
+      "description": "存在重大控制缺陷，可能导致重大影响或损失",
+      "requires_immediate_action": true,
+      "escalation_required": true
+    },
+    "中": {
+      "scale": 6,
+      "description": "存在控制弱点，可能导致一定影响",
+      "requires_immediate_action": false
+    },
+    "低": {
+      "scale": 3,
+      "description": "存在 minor 不足，建议改进",
+      "requires_immediate_action": false
+    }
+  }
+}

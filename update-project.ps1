@@ -146,8 +146,39 @@ if ($isStable) {
     # ── Stable mode: re-copy all directories ──
     Write-Host "── Upgrading (stable mode — recopy) ──" -ForegroundColor Cyan
 
+    # Auto-discover and deploy skills from .claude/skills/ (merge, not replace)
+    $skillsDir = Join-Path $GOLD ".claude\skills"
+    if (Test-Path $skillsDir) {
+        $skillNames = Get-ChildItem $skillsDir -Directory | ForEach-Object { $_.Name }
+        foreach ($skill in $skillNames) {
+            $destPath = Join-Path $ProjectDir ".claude\skills\$skill"
+            $srcPath = Join-Path $skillsDir $skill
+            # Backup old
+            if (Test-Path $destPath) {
+                $backupTarget = Join-Path $backupDir ".claude\skills\$skill"
+                $backupParent = Split-Path $backupTarget -Parent
+                if (-not (Test-Path $backupParent)) { New-Item -ItemType Directory -Path $backupParent -Force | Out-Null }
+                try {
+                    Copy-Item -Path $destPath -Destination $backupTarget -Recurse -Force -ErrorAction Stop
+                    Write-Host "  [OK]   backed up .claude/skills/$skill" -ForegroundColor DarkGray
+                } catch {
+                    Write-Host "  [WARN] backup failed for .claude/skills/$skill`: $_" -ForegroundColor Yellow
+                }
+            }
+            # Overwrite with new
+            try {
+                if (Test-Path $destPath) { Remove-Item $destPath -Recurse -Force }
+                Copy-Item -Path $srcPath -Destination $destPath -Recurse -Force -ErrorAction Stop
+                Write-Host "  [OK]   .claude/skills/$skill upgraded" -ForegroundColor Green
+                $upOk++
+            } catch {
+                Write-Host "  [FAIL] .claude/skills/$skill — $_" -ForegroundColor Red
+                $upFail++
+            }
+        }
+    }
+
     $dirs = @(
-        @{Dest=".claude\skills"; Source=(Join-Path $GOLD ".claude\skills")},
         @{Dest="_shared"; Source=(Join-Path $GOLD "_shared")},
         @{Dest="tools"; Source=(Join-Path $GOLD "tools")}
     )
@@ -208,6 +239,49 @@ if ($isStable) {
             $upOk++
         } catch {
             Write-Host "  [FAIL] $rf — $_" -ForegroundColor Red
+            $upFail++
+        }
+    }
+
+    # .claude/settings.json
+    $settingsDest = Join-Path $ProjectDir ".claude\settings.json"
+    $settingsSrc  = Join-Path $GOLD ".claude\settings.json"
+    if (Test-Path $settingsSrc) {
+        if (Test-Path $settingsDest) {
+            $backupTarget = Join-Path $backupDir ".claude\settings.json"
+            $backupParent = Split-Path $backupTarget -Parent
+            if (-not (Test-Path $backupParent)) { New-Item -ItemType Directory -Path $backupParent -Force | Out-Null }
+            try { Copy-Item -Path $settingsDest -Destination $backupTarget -Force -ErrorAction Stop } catch {}
+        }
+        try {
+            $settingsParent = Split-Path $settingsDest -Parent
+            if (-not (Test-Path $settingsParent)) { New-Item -ItemType Directory -Path $settingsParent -Force | Out-Null }
+            Copy-Item -Path $settingsSrc -Destination $settingsDest -Force -ErrorAction Stop
+            Write-Host "  [OK]   .claude/settings.json upgraded" -ForegroundColor Green
+            $upOk++
+        } catch {
+            Write-Host "  [FAIL] .claude/settings.json — $_" -ForegroundColor Red
+            $upFail++
+        }
+    }
+
+    # .claude/rules/ — recopy from gold source
+    $rulesDest = Join-Path $ProjectDir ".claude\rules"
+    $rulesSrc  = Join-Path $GOLD ".claude\rules"
+    if (Test-Path $rulesSrc) {
+        if (Test-Path $rulesDest) {
+            $backupTarget = Join-Path $backupDir ".claude\rules"
+            $backupParent = Split-Path $backupTarget -Parent
+            if (-not (Test-Path $backupParent)) { New-Item -ItemType Directory -Path $backupParent -Force | Out-Null }
+            try { Copy-Item -Path $rulesDest -Destination $backupTarget -Recurse -Force -ErrorAction Stop } catch {}
+        }
+        try {
+            if (Test-Path $rulesDest) { Remove-Item $rulesDest -Recurse -Force }
+            Copy-Item -Path $rulesSrc -Destination $rulesDest -Recurse -Force -ErrorAction Stop
+            Write-Host "  [OK]   .claude/rules/ upgraded" -ForegroundColor Green
+            $upOk++
+        } catch {
+            Write-Host "  [FAIL] .claude/rules/ — $_" -ForegroundColor Red
             $upFail++
         }
     }

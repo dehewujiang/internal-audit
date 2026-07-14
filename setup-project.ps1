@@ -92,20 +92,23 @@ function New-StableCopy {
 $modeLabel = if ($Stable) { "Copy (stable)" } else { "Junction" }
 Write-Host "── Skills ($modeLabel) ──" -ForegroundColor Cyan
 
-$SKILLS = @(
-    "project-init", "topic-wizard",
-    "document-organizer", "audit-interview-designer",
-    "internal-audit-program-generator", "audit-execution-assistant",
-    "audit-finding-debate", "internal-audit-report-generator",
-    "internal-audit-evaluator", "program-quality-evaluator"
-)
-foreach ($skill in $SKILLS) {
-    $link   = Join-Path $ProjectDir ".claude\skills\$skill"
-    $target = Join-Path $GOLD $skill
-    if ($Stable) {
-        New-StableCopy -Dest $link -Source $target
-    } else {
-        New-Junction -Link $link -Target $target
+# Auto-discover all skills from .claude/skills/ (supports both native dirs and junctions)
+$skillsDir = Join-Path $GOLD ".claude\skills"
+if (-not (Test-Path $skillsDir)) {
+    Write-Host "  [WARN] .claude/skills/ not found in gold source — no skills deployed" -ForegroundColor Yellow
+} else {
+    $SKILLS = Get-ChildItem $skillsDir -Directory | ForEach-Object { $_.Name }
+    if ($SKILLS.Count -eq 0) {
+        Write-Host "  [WARN] No skills found in .claude/skills/" -ForegroundColor Yellow
+    }
+    foreach ($skill in $SKILLS) {
+        $link   = Join-Path $ProjectDir ".claude\skills\$skill"
+        $target = Join-Path $skillsDir $skill
+        if ($Stable) {
+            New-StableCopy -Dest $link -Source $target
+        } else {
+            New-Junction -Link $link -Target $target
+        }
     }
 }
 
@@ -180,6 +183,36 @@ if (Test-Path $opsDest) {
     }
     catch {
         Write-Host "  [FAIL] OPS.md -- $_" -ForegroundColor Red; $fail++
+    }
+}
+
+# .claude/settings.json — project-level skill/rule configuration
+$settingsDest = Join-Path $ProjectDir ".claude\settings.json"
+$settingsSrc  = Join-Path $GOLD ".claude\settings.json"
+if (Test-Path $settingsDest) {
+    Write-Host "  [SKIP] .claude/settings.json" -ForegroundColor DarkGray; $ok++
+} elseif (Test-Path $settingsSrc) {
+    try {
+        $settingsParent = Split-Path $settingsDest -Parent
+        if (-not (Test-Path $settingsParent)) { New-Item -ItemType Directory -Path $settingsParent -Force | Out-Null }
+        Copy-Item -Path $settingsSrc -Destination $settingsDest -Force -ErrorAction Stop
+        Write-Host "  [OK]   .claude/settings.json" -ForegroundColor Green; $ok++
+    }
+    catch {
+        Write-Host "  [FAIL] .claude/settings.json -- $_" -ForegroundColor Red; $fail++
+    }
+}
+
+# .claude/rules/ — junction to shared rules repo (coding-safety, good-taste, etc.)
+$rulesDest = Join-Path $ProjectDir ".claude\rules"
+$rulesSrc  = Join-Path $GOLD ".claude\rules"
+if (Test-Path $rulesDest) {
+    Write-Host "  [SKIP] .claude/rules/" -ForegroundColor DarkGray; $ok++
+} elseif (Test-Path $rulesSrc) {
+    if ($Stable) {
+        New-StableCopy -Dest $rulesDest -Source $rulesSrc
+    } else {
+        New-Junction -Link $rulesDest -Target $rulesSrc
     }
 }
 

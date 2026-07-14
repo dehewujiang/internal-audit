@@ -1,0 +1,28 @@
+{
+  "name": "case-3-control",
+  "description": "内控评估——深化控制有效性测试，不激活舞弊轨道",
+  "schema_version": "1.0",
+  "inputs": {
+    "audit_topic": "存货管理",
+    "audit_purpose": "内控效果评估",
+    "trigger": "例行审计",
+    "company_data_file": "audit-topics/about-me.md",
+    "policy_analysis": null
+  },
+  "expected": {
+    "activated_tracks": ["A", "C", "D"],
+    "must_have": [
+      "控制有效性测试"
+    ],
+    "must_not_have": [
+      "轨道B",
+      "轨道E",
+      "轨道F",
+      "_X_占位符"
+    ],
+    "min_risk_count_by_type": {
+      "系统类": 2,
+      "公司类": 2
+    }
+  }
+}
