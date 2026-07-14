@@ -1,7 +1,7 @@
 {
-  "version": "2026-07-14-11",
-  "git_commit": "d409cda",
-  "updated_at": "2026-07-14T13:18:49+08:00",
+  "version": "2026-07-14-12",
+  "git_commit": "343e3b9",
+  "updated_at": "2026-07-14T14:05:47+08:00",
   "changes": [
     {
       "type": "doc",
@@ -77,6 +77,11 @@
       "type": "fix",
       "file": "program_generator.py",
       "summary": "自动适配旧格式Markdown（列数不足自动前补空分析列）"
+    },
+    {
+      "type": "revert",
+      "file": "四文件",
+      "summary": "回退模板导出校验到旧版本"
     }
   ]
 }
