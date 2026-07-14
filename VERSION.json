@@ -1,7 +1,7 @@
 {
-  "version": "2026-07-14-12",
-  "git_commit": "343e3b9",
-  "updated_at": "2026-07-14T14:05:47+08:00",
+  "version": "2026-07-14-14",
+  "git_commit": "4b75fd8",
+  "updated_at": "2026-07-14T16:27:02+08:00",
   "changes": [
     {
       "type": "doc",
@@ -82,6 +82,16 @@
       "type": "revert",
       "file": "四文件",
       "summary": "回退模板导出校验到旧版本"
+    },
+    {
+      "type": "feat",
+      "file": "第一批列结构统一v2.0",
+      "summary": "JSON三层columns(risk/design/execution)+validate-program增check_column_consistency+program_generator重写按layer导出+create_evidence_dirs正则修正+9文件同步取数来源改取证方式"
+    },
+    {
+      "type": "fix",
+      "file": "setup-project.ps1",
+      "summary": "auto-discover skills from .claude/skills instead of hardcoded list, create 10 audit skill junctions"
     }
   ]
 }
