@@ -1,37 +1,34 @@
 # 最近一次工作记录
 
 ## 完成了什么
-本次 session（2026-07-13）改进了 CLAUDE.md 和 CLAUDE-project.md 的文档完整性。
+本次 session（2026-07-13）完成了两项工作：
 
-### CLAUDE.md（技能源码仓库版）— 6 项增量改进
-1. 加标准头部（`# CLAUDE.md` + guidance 说明）
-2. 修正技能数量 8→12（实际有 12 个 SKILL.md）
-3. 新增 Skill → Phase 对照表（12 个技能 × 6 个审计阶段）
-4. 新增部署架构说明（junction/stable 双模式 + 部署后目录结构）
-5. 扩展关键文件表（+CLAUDE-project.md、OPS.md、VERSION.json、setup/update 脚本）
-6. 新增 `_shared/scripts/` 一句话速查表（14 个脚本 + 外部评估脚本）
+### 1. CLAUDE.md 文档完整性改进（commit 157eb51）
+- CLAUDE.md 增量改进 6 项（标准头部、技能数量修正、阶段映射表、部署架构、关键文件扩展、脚本速查表）
+- CLAUDE-project.md 同步改进 4 项
 
-### CLAUDE-project.md（审计项目运行版）— 4 项同步改进
-1. 加标准头部
-2. 新增 Skill → Phase 对照表
-3. 新增 `_shared/scripts/` 速查表
-4. 新增 Architecture gotchas（current-audit.json 标志位、workspace 子目录映射）
-5. 新增 Key files to know 表（含 topic.json）
+### 2. 审计程序追溯链修复（commit fb480b4）
+**问题**：用户问"审计程序A7.2针对的是哪个制度的哪一条款？"，系统答不上来。追溯链 6 个环节中，审计程序是唯一纯 Markdown 产物，没有机器可读的结构化数据。
 
-### 两份文件的差异保持设计意图
-- CLAUDE.md 多「部署架构」和「规则加载」— 开发视角
-- CLAUDE-project.md 多 topic.json 引用 — 干活视角
-- 共享的 12 个章节内容完全对齐
+**修复**：两步走——
+1. **program-generator SKILL.md** 新增 Step 4.X+2：审计程序 Markdown 输出后，顺手生成 `*_program_index.json` 索引文件，记录每个步骤的 `step_id`、`related_controls`（CP-XXX）、`related_design_observations`（D-XXX）、`risk_ref`
+2. **queries.py trace** 重写：自动识别三种 ID 类型
+   - `F-2026-001` → finding 追溯链（原有功能，增强程序步骤查找）
+   - `A7.2` → 审计程序步骤 → 关联控制点 → 制度条款
+   - `CP-HR-006` → 控制点 → 引用它的审计程序步骤 + findings
+
+**附带修复**：queries.py 加 `sys.stdout.reconfigure(encoding='utf-8')` 解决 Windows GBK 编码崩溃
 
 ## 为什么这样做
-ADR-010 拆分 CLAUDE.md/CLAUDE-project.md 的决策仍然有效，但两份文件缺少技能阶段映射和脚本速查表，未来 Claude 实例需要读多个文件才能建立全局视图。增量补充不改变既有架构。
+追溯链断裂是审计底稿完整性的缺口——"为什么做这个测试"答不上来，被审计方挑战时无法举证。数据结构上 5/6 环节已有 JSON，唯独审计程序是纯 Markdown，是唯一的断点。
 
 ## 遇到什么问题
-- 无
+- Windows GBK 编码导致 queries.py trace 崩溃（emoji 输出），加了 reconfigure 修复
 
 ## 未完成事项
 - 无
 
 ## 下一步建议
-1. 如有新 skill 或脚本变更，同步更新两张速查表
-2. 已有项目需跑 `update-project.ps1` 才能拿到 CLAUDE-project.md 的更新
+1. 实际项目中运行 program-generator，验证 program_index.json 的生成质量
+2. 如已有审计程序但无索引，需重新运行 program-generator 生成索引文件
+3. validate-program.py 可选增加对 program_index.json 的校验

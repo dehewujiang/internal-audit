@@ -22,6 +22,7 @@ AI 驱动的内部审计辅助流水线，帮 Flan（汽车零部件企业审计
 - **setup-project.ps1 重写（2026-07-10）**: 三 junction（skills/_shared_/tools_）+ 拷贝 CLAUDE-project.md + mkdir 三个数据目录 + 末尾自检 + --stable 模式 + 部署提示 register
 - **CLAUDE-project.md（2026-07-10）**: 审计项目专用精简版 CLAUDE.md
 - **文档完整性改进（2026-07-13）**: CLAUDE.md + CLAUDE-project.md 新增技能阶段映射表、脚本速查表、部署架构说明、Architecture gotchas，两份文件 12 章节完全对齐
+- **审计程序追溯链（2026-07-13）**: program_index.json 伴生文件 + queries.py trace 三向追溯（finding/步骤/控制点双向链接）
 - **缺口补齐（2026-07-10）**: interview-designer Step 5.0 validate 调用、finding-debate Step 5 辩论充分性自检
 
 ## 正在开发

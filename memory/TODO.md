@@ -4,7 +4,7 @@
 - 无
 
 ## #待办
-- 无
+- validate-program.py 可选增加对 program_index.json 的校验（非阻塞，等实战反馈）
 
 ## #已完成（2026-07-13）
 - ✅ project-init 自动注册到 projects-index.json：SKILL.md 新增 Step 4.6，项目创建完成后自动调用 `queries.py register`。注册失败不阻断创建流程，仅警告提示。关闭了"跨项目索引需手工注册"的非阻塞缺口。
