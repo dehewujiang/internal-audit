@@ -1,7 +1,7 @@
 {
-  "version": "2026-07-14-5",
-  "git_commit": "111da42",
-  "updated_at": "2026-07-14T08:55:02+08:00",
+  "version": "2026-07-14-6",
+  "git_commit": "e165641",
+  "updated_at": "2026-07-14T08:58:04+08:00",
   "changes": [
     {
       "type": "doc",
@@ -47,6 +47,11 @@
       "type": "script",
       "file": "phase_gate.py",
       "summary": "GLOBAL_TOOLS 补 bump-version.py"
+    },
+    {
+      "type": "script",
+      "file": "bump-version.py",
+      "summary": "移到根目录（开发工具不部署到生产）"
     }
   ]
 }
