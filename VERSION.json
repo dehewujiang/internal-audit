@@ -1,7 +1,7 @@
 {
-  "version": "2026-07-14-6",
-  "git_commit": "e165641",
-  "updated_at": "2026-07-14T08:58:04+08:00",
+  "version": "2026-07-14-7",
+  "git_commit": "fc26b01",
+  "updated_at": "2026-07-14T09:31:56+08:00",
   "changes": [
     {
       "type": "doc",
@@ -52,6 +52,11 @@
       "type": "script",
       "file": "bump-version.py",
       "summary": "移到根目录（开发工具不部署到生产）"
+    },
+    {
+      "type": "doc",
+      "file": "incremental_update.md",
+      "summary": "新增勘误模式（证据链不可断裂硬规则）"
     }
   ]
 }

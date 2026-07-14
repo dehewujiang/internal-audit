@@ -205,3 +205,4 @@ Pure engineering tasks (syntax fix, script repair, data structure optimization, 
 8. Before self-designing a solution, exhaust all existing tool capabilities first
 9. Missing evidence is itself a signal — analyze WHY it's missing
 10. Phase 1 must cross-check actual documents against `topic.json` mandatory modules
+11. Audit program step IDs are immutable once used — corrections via errata note + new step (-C suffix), evidence chain must never break

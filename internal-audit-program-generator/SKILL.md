@@ -566,6 +566,10 @@ evaluator 的 5.0-5.6 只管"格式对不对"。本步骤管"程序能不能用"
 执行：按 references/incremental_update.md 执行增量生成。
 输出后：更新 current-audit.json (design_observations_consumed/whistleblower_pending/program_version/program_update_history)
 
+**勘误模式**：当用户指出已有程序存在根本性错误（系统归属、业务范围、风险假设）时，
+按 incremental_update.md§勘误模式 处理——勘误注记 + 追加修正步骤（-C 后缀），
+已有步骤编号永久保留，证据链不可断裂。详见 incremental_update.md。
+
 **详细规范**：见 [references/incremental_update.md](./references/incremental_update.md)
 
 ---
