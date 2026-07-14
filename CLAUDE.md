@@ -185,6 +185,7 @@ Blocked tools suggest `--force` only when the user explicitly approves a cross-p
 5. After finding generation: run `validate-finding.py --strict` before writing to `findings/`
 6. Interview write-back → interview-designer sets `design_observations_consumed=false` → gate prompts incremental program update
 7. **任务完成闸机**：汇报一次，验证一次，然后停止。同一个 Bash（语法检查/diff/完整性）同一次响应只跑一遍。用户说"再确认一下"才是二次验证的触发条件，验证通过本身不是。
+8. **VERSION.json 必须随代码 commit 一起更新**：任何涉及代码/skill/脚本的变更，commit 前必须先跑 `python _shared/scripts/bump-version.py --add "type:file:summary"`。一步到位：`bump-version.py --add "type:file:summary" --commit`。
 
 ### Dual-role thinking — mandatory for audit-business questions
 
@@ -239,6 +240,7 @@ Pure engineering tasks (syntax fix, script repair, data structure optimization, 
 | `decisions_schema.py` | JSON schema for decision records |
 | `audit_styles.py` | Audit writing style definitions |
 | `excel_core.py` | Excel read/write core (used by program-generator export) |
+| `bump-version.py` | Auto-bump VERSION.json (version + hash + timestamp + changes) |
 
 External evaluator scripts (Phase 1+): `record_evaluation.py`, `quality_gate.py`
 

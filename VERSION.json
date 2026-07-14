@@ -1,7 +1,7 @@
 {
-  "version": "2026-07-14-3",
-  "git_commit": "ab1f772",
-  "updated_at": "2026-07-14T08:54:02+08:00",
+  "version": "2026-07-14-4",
+  "git_commit": "633d4f7",
+  "updated_at": "2026-07-14T08:54:43+08:00",
   "changes": [
     {
       "type": "doc",
@@ -27,6 +27,11 @@
       "type": "skill",
       "file": "internal-audit-program-generator/SKILL.md",
       "summary": "新增 Step 4.X+2 生成 program_index.json 索引文件（审计程序→控制点→制度条款追溯链）"
+    },
+    {
+      "type": "script",
+      "file": "bump-version.py",
+      "summary": "新增版本自动管理脚本"
     },
     {
       "type": "script",

@@ -1,5 +1,16 @@
 # 经验教训
 
+## 2026-07-14：VERSION.json 忘记更新——同样的错犯了三次
+
+- **发生了什么**：本次 session 做了 3 个 commit（文档改进、追溯链修复、记忆更新），每次都没更新 VERSION.json。用户提醒了三次。
+- **根因**：没有把 VERSION.json 更新纳入 commit 流程。靠记忆不可靠——改文件→commit 是肌肉记忆，VERSION.json 更新不是。
+- **教训**：靠"下次注意"治不好。需要工具 + 流程双重保障。
+- **硬规则**：
+  1. **任何涉及代码/skill/脚本的 commit 之前，必须先跑 `python _shared/scripts/bump-version.py`。**
+  2. 追加变更记录：`python _shared/scripts/bump-version.py --add "type:file:summary"`
+  3. 一步到位：`python _shared/scripts/bump-version.py --add "type:file:summary" --commit`
+  4. 纯文档/记忆更新不需要 bump VERSION.json。
+
 ## 2026-07-10：验证循环——成功信号不产生停止信号
 
 - **发生了什么**：跨项目查询功能代码完成后，我自动执行了三轮完全相同的验证（语法检查 + diff + 文件完整性），每轮输出几乎一样。用户两次喊停（"你陷入死循环了？""你他妈又陷入循环了？"）才中断。
