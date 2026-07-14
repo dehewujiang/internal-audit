@@ -75,7 +75,7 @@ Phase flow: `phase_0_init → phase_1_document_analysis → phase_1_5_interview 
 | Script | Role |
 |--------|------|
 | `phase_gate.py` | Phase gate: check/advance/rollback/status/tool-check |
-| `queries.py` | Finding queries: list/search/trace/summary/cross-project |
+| `queries.py` | Finding queries: list/search/trace/summary/cross-project (trace supports finding/step/control-point IDs) |
 | `validate-finding.py` | Validate F-*.json finding files |
 | `validate-program.py` | Validate audit program files |
 | `validate-report.py` | Validate audit report files |
@@ -158,6 +158,7 @@ Blocked tools suggest `--force` only when the user explicitly approves a cross-p
 - `audit_state.artifacts` tracks **freshness** of each phase's output — a soft reminder, NOT a gate. Values: `fresh` | `stale`. phase_gate does NOT read freshness; each Skill checks it at Step 1.
 - `internal-audit-workspace/` subdirectories map to phases: `policy-analyses/` (P1), `design-assessments/` (P1), `interview-materials/` (P1.5), `audit-programs/` (P2-3), `findings/` (P4), `reports/` (P5), `evidence/` (P4).
 - Finding files are named `F-YYYY-NNN.json`, NOT `FIND-*.json`.
+- Audit program index (`audit-programs/*_program_index.json`) links step_id → related_controls → policy-analyses. `queries.py trace A7.2` and `queries.py trace CP-HR-006` consume it.
 
 ### Dual-role thinking — mandatory for audit-business questions
 

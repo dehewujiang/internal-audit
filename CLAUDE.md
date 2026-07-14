@@ -147,6 +147,7 @@ Internal thinking → technical language. External output → plain language.
   - **phase_gate 不读取 freshness** — 它属于纯信息层，由各 Skill 在 Step 1 自行检查并提示用户。
 - `internal-audit-workspace/` is the output directory for ALL phases. Each subdirectory maps to a phase: `policy-analyses/` (P1), `design-assessments/` (P1), `interview-materials/` (P1.5), `audit-programs/` (P2-3), `findings/` (P4), `reports/` (P5), `evidence/` (P4).
 - Finding files are named `F-YYYY-NNN.json`, NOT `FIND-*.json`. Validate scripts match `F-*`.
+- Audit program index: `audit-programs/*_program_index.json` is a machine-readable companion to the Markdown program. It links step_id → related_controls (CP-XXX) → policy-analyses. `queries.py trace` consumes it for step-level and control-point-level tracing.
 - `_shared/scripts/` is the shared tool directory. New Python scripts must have L3 headers. Public tool interfaces are permanent — do not break callers.
 - `program-quality-evaluator/SKILL.md` is a standalone quality assessment tool. Only the program-generator Step 5 currently calls it.
 
@@ -225,7 +226,7 @@ Pure engineering tasks (syntax fix, script repair, data structure optimization, 
 | Script | Role |
 |--------|------|
 | `phase_gate.py` | Phase gate: check/advance/rollback/status/tool-check |
-| `queries.py` | Finding queries: list/search/trace/summary/cross-project |
+| `queries.py` | Finding queries: list/search/trace/summary/cross-project (trace supports finding/step/control-point IDs) |
 | `validate-finding.py` | Validate F-*.json finding files |
 | `validate-program.py` | Validate audit program files |
 | `validate-report.py` | Validate audit report files |

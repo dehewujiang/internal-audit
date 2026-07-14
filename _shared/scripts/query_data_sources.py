@@ -48,6 +48,33 @@ def get_design_assessments_dir() -> Path:
     return find_workspace() / "design-assessments"
 
 
+def get_audit_programs_dir() -> Path:
+    return find_workspace() / "audit-programs"
+
+
+def load_program_index() -> dict:
+    """读取 audit-programs/ 下的 program_index.json，返回 {steps: [...]} 结构。
+
+    如果索引文件不存在，返回空结构（不报错——索引文件是可选的伴生文件）。
+    """
+    programs_dir = get_audit_programs_dir()
+    if not programs_dir.exists():
+        return {"steps": []}
+
+    # 查找 *_program_index.json
+    for fpath in sorted(programs_dir.glob("*_program_index.json")):
+        try:
+            with open(fpath, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            # 确保有 steps 字段
+            if "steps" not in data:
+                data["steps"] = []
+            return data
+        except (json.JSONDecodeError, FileNotFoundError):
+            continue
+    return {"steps": []}
+
+
 def get_projects_index_path() -> Path:
     """Find projects-index.json from gold source (same dir as this script's repo)"""
     script_dir = Path(__file__).resolve().parent

@@ -351,6 +351,56 @@ python D:/Nut/00_my_digital/12_AGI/skills/internal-audit/_shared/scripts/create_
 
 > 如果 Excel 导出和证据目录都成功生成，此时 `audit-programs/` 下有 `.md` + `.xlsx` 两份文件，`evidence/` 下有对应的空目录结构，审计员可以直接开始执行。`create_evidence_dirs.py` 属于 Phase 2-3 白名单工具，无需 --force。
 
+### 4.X+2 生成审计程序索引（program_index.json）
+
+审计程序 Markdown 输出后，从中提取结构化索引，写入 `audit-programs/[审计主题]_program_index.json`。该文件是 `queries.py trace` 追溯链的关键一环——打通"审计程序步骤 → 控制点 → 制度条款"的机器可读链接。
+
+**操作**：读取已生成的 Markdown 审计程序，逐表格提取每个程序步骤，输出 JSON：
+
+```json
+{
+  "schema_version": "1.0.0",
+  "audit_topic": "[审计主题]",
+  "generated_date": "[YYYY-MM-DD]",
+  "program_version": "v1.0",
+  "program_md_file": "[审计主题]_审计程序_v1.0.md",
+  "steps": [
+    {
+      "step_id": "A7.2",
+      "track": "A",
+      "risk_ref": "RK-HR-002",
+      "title": "人事审批权限控制测试",
+      "related_controls": ["CP-HR-006", "CP-HR-005"],
+      "related_design_observations": ["D-012"],
+      "data_source": "ERP系统",
+      "test_method": "控制有效性测试"
+    }
+  ]
+}
+```
+
+**字段说明**：
+
+| 字段 | 必填 | 来源 |
+|------|:----:|------|
+| `step_id` | ✅ | Markdown 表格的程序编号列（如 A7.2、B3.1） |
+| `track` | ✅ | 程序编号首字母（A/B/C/D/E/F） |
+| `title` | ✅ | 程序名称/测试程序描述 |
+| `related_controls` | ✅ | 从"来源标注"中提取的 CP-XXX 编号列表，无则为空数组 |
+| `related_design_observations` | ⚠️ | 从"来源标注"中提取的 D-XXX 编号列表，无则为空数组 |
+| `risk_ref` | ⚠️ | 风险编号（如 RK-HR-002、R15），无则为空字符串 |
+| `data_source` | ⚠️ | 取数来源列内容，无则为空字符串 |
+| `test_method` | ⚠️ | 测试性质（控制有效性/实质性测试等），无则为空字符串 |
+
+**提取规则**：
+1. 从 Markdown 表格中逐行提取，每行对应一个 step
+2. "来源标注"列中搜索 `CP-\w+-\d+` 或 `CP-\d+` 模式，提取为 `related_controls`
+3. "来源标注"列中搜索 `D-\d+` 模式，提取为 `related_design_observations`
+4. 若某行无法提取到 step_id，跳过该行（不报错）
+5. 覆盖所有轨道（A/B/C/D/E/F），包括跳过的轨道如果有表格内容
+
+> `queries.py trace A7.2` 和 `queries.py trace CP-HR-006` 依赖此文件。缺失索引文件时，trace 命令会提示重新运行 program-generator。
+
 ### 4.X 决策理由记录（decision_log，第十章）
 
 审计程序文档的第十章，必须记录本阶段做出的 3 个关键判断的理由：

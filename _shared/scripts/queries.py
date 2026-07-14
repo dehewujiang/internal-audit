@@ -33,6 +33,8 @@ queries.py — 审计数据查询工具
     python queries.py analyses --verbose
 
     python queries.py trace F-2026-001
+    python queries.py trace A7.2
+    python queries.py trace CP-HR-006
 
     python queries.py decide D-003
     python queries.py decide --all
@@ -46,11 +48,17 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from collections import defaultdict
 
+# Windows GBK 兼容：强制 stdout/stderr 使用 UTF-8
+if sys.platform == "win32":
+    sys.stdout.reconfigure(encoding="utf-8")
+    sys.stderr.reconfigure(encoding="utf-8")
+
 # 数据源层 — "数据从哪来"与"怎么查/怎么显示"分离
 from query_data_sources import (
     create_data_source, load_finding, load_evaluations,
     find_workspace, get_findings_dir, get_design_assessments_dir,
-    get_policy_analyses_dir, load_projects_index, save_projects_index, scan_project,
+    get_policy_analyses_dir, get_audit_programs_dir, load_program_index,
+    load_projects_index, save_projects_index, scan_project,
     search_in_json,
 )
 
@@ -628,8 +636,27 @@ def cmd_decide(args):
 
 
 def cmd_trace(args):
-    """跨实体追溯：finding ↔ design observation ↔ control point"""
-    finding_id = args.finding_id
+    """跨实体追溯：finding ↔ design observation ↔ control point ↔ 审计程序步骤
+
+    自动识别 ID 类型：
+      F-YYYY-NNN  → finding 追溯链
+      A7.2 / B3.1 → 审计程序步骤 → 关联控制点/制度条款
+      CP-XXX      → 控制点 → 关联的审计程序步骤 + findings
+    """
+    target = args.target
+
+    # ── 类型路由 ──────────────────────────────────────
+    if target.startswith("F-"):
+        _trace_finding(target)
+    elif target.startswith("CP-") or target.startswith("RK-"):
+        _trace_control_point(target)
+    else:
+        # 尝试作为审计程序步骤 ID（A7.2, B3.1, C1.5 等）
+        _trace_program_step(target)
+
+
+def _trace_finding(finding_id):
+    """Finding 追溯链：Finding → Design Observation → Control Point → 制度条款 → 审计程序步骤"""
     findings_dir = get_findings_dir()
     assessments_dir = get_design_assessments_dir()
 
@@ -674,6 +701,10 @@ def cmd_trace(args):
                     print(f"     状态: {obs_status}")
                     break
 
+    # 追溯审计程序步骤（通过 program_index.json）
+    if related_procs:
+        _print_program_steps_for_procedures(related_procs, related_ctrl)
+
     # 反向追溯：同一控制点的其他 finding
     if related_ctrl:
         related_findings = _find_related_findings(findings_dir, finding_id,
@@ -691,6 +722,218 @@ def cmd_trace(args):
             print(f"\n  🔁 同一设计观察 {obs_id} 的其他 finding:")
             for fid, ft in related_findings:
                 print(f"     {fid}: {ft}")
+
+
+def _trace_program_step(step_id):
+    """审计程序步骤追溯：步骤 → 关联控制点 → 制度条款"""
+    index = load_program_index()
+    steps = index.get("steps", [])
+
+    if not steps:
+        print("📋 未找到审计程序索引文件。")
+        print("   审计程序索引（program_index.json）由 program-generator 在 Step 4 输出时生成。")
+        print("   如果审计程序已生成但没有索引，请重新运行 program-generator。")
+        return
+
+    # 模糊匹配 step_id（支持 "A7.2"、"A-7.2"、"A72" 等变体）
+    normalized = step_id.replace("-", "").replace(".", "").upper()
+    matched = None
+    for step in steps:
+        sid = step.get("step_id", "").replace("-", "").replace(".", "").upper()
+        if sid == normalized:
+            matched = step
+            break
+
+    if not matched:
+        # 也尝试前缀匹配
+        prefix_matches = [s for s in steps if s.get("step_id", "").upper().startswith(step_id.upper())]
+        if len(prefix_matches) == 1:
+            matched = prefix_matches[0]
+        elif len(prefix_matches) > 1:
+            print(f"🔍 步骤 ID「{step_id}」匹配到 {len(prefix_matches)} 个结果：")
+            for s in prefix_matches:
+                print(f"   {s.get('step_id', '?')}: {s.get('title', '')[:50]}")
+            print(f"\n请使用更精确的 ID。")
+            return
+
+    if not matched:
+        print(f"❌ 未找到审计程序步骤「{step_id}」")
+        available = [s.get("step_id", "") for s in steps[:10]]
+        if available:
+            print(f"   可用步骤: {', '.join(available)}{'...' if len(steps) > 10 else ''}")
+        return
+
+    # 输出步骤详情
+    sid = matched.get("step_id", "")
+    title = matched.get("title", "")
+    track = matched.get("track", "")
+    risk_ref = matched.get("risk_ref", "")
+    controls = matched.get("related_controls", [])
+    observations = matched.get("related_design_observations", [])
+    data_source = matched.get("data_source", "")
+    test_method = matched.get("test_method", "")
+
+    print(f"🔗 审计程序步骤: {sid} — {title}\n")
+    print(f"  轨道: {track}")
+    if risk_ref:
+        print(f"  风险编号: {risk_ref}")
+    if test_method:
+        print(f"  测试方法: {test_method}")
+    if data_source:
+        print(f"  数据来源: {data_source}")
+
+    # 追溯到控制点 → 制度条款
+    if controls:
+        print(f"\n  📎 关联控制点 ({len(controls)} 个):")
+        _print_control_point_details(controls)
+
+    if observations:
+        print(f"\n  📋 关联设计观察: {', '.join(observations)}")
+
+    # 反向追溯：同一控制点的其他步骤
+    if controls:
+        _print_peer_steps(sid, controls, steps)
+
+
+def _trace_control_point(cp_id):
+    """控制点追溯：控制点 → 制度条款 → 关联的审计程序步骤 + findings"""
+    print(f"🔗 控制点追溯: {cp_id}\n")
+
+    # 先从制度分析中找到控制点详情
+    analyses_dir = get_policy_analyses_dir()
+    found_cp = None
+    if analyses_dir.exists():
+        for fpath in analyses_dir.glob("*.json"):
+            try:
+                with open(fpath, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+            except json.JSONDecodeError:
+                continue
+            for cp in data.get("control_points", []):
+                if isinstance(cp, dict) and cp.get("id") == cp_id:
+                    found_cp = cp
+                    break
+            if found_cp:
+                break
+
+    if found_cp:
+        source = found_cp.get("source", "")
+        source_file = found_cp.get("source_file", "")
+        requirement = found_cp.get("requirement", "")
+        cp_type = found_cp.get("type", "")
+        risk_level = found_cp.get("risk_level", "")
+        print(f"  制度来源: {source_file} — {source}")
+        print(f"  控制类型: {cp_type}")
+        print(f"  风险等级: {risk_level}")
+        if requirement:
+            print(f"  制度要求: {requirement[:100]}")
+    else:
+        print(f"  ⚠️  未在制度分析中找到 {cp_id}")
+
+    # 反向追溯：引用该控制点的审计程序步骤
+    index = load_program_index()
+    steps = index.get("steps", [])
+    related_steps = [s for s in steps if cp_id in s.get("related_controls", [])]
+    if related_steps:
+        print(f"\n  📎 引用该控制点的审计程序步骤 ({len(related_steps)} 个):")
+        for s in related_steps:
+            sid = s.get("step_id", "?")
+            title = s.get("title", "")[:50]
+            track = s.get("track", "")
+            print(f"     {sid} [{track}]: {title}")
+    else:
+        print(f"\n  📎 审计程序索引中无引用该控制点的步骤")
+
+    # 反向追溯：引用该控制点的 findings
+    findings_dir = get_findings_dir()
+    if findings_dir.exists():
+        related_findings = _find_related_findings(findings_dir, "",
+                                                   lambda other: other.get("related_control") == cp_id)
+        if related_findings:
+            print(f"\n  📌 关联 findings ({len(related_findings)} 个):")
+            for fid, ft in related_findings:
+                print(f"     {fid}: {ft}")
+
+
+def _print_control_point_details(control_ids):
+    """从制度分析 JSON 中查找并打印控制点详情"""
+    analyses_dir = get_policy_analyses_dir()
+    if not analyses_dir.exists():
+        for cid in control_ids:
+            print(f"     {cid}: (制度分析目录不存在)")
+        return
+
+    # 一次性加载所有控制点索引
+    all_cps = {}
+    for fpath in analyses_dir.glob("*.json"):
+        try:
+            with open(fpath, "r", encoding="utf-8") as f:
+                data = json.load(f)
+        except json.JSONDecodeError:
+            continue
+        for cp in data.get("control_points", []):
+            if isinstance(cp, dict) and cp.get("id"):
+                all_cps[cp["id"]] = cp
+
+    for cid in control_ids:
+        cp = all_cps.get(cid)
+        if cp:
+            source = cp.get("source", "")
+            source_file = cp.get("source_file", "")
+            requirement = cp.get("requirement", "")
+            print(f"     {cid}: {source_file} — {source}")
+            if requirement:
+                print(f"       制度要求: {requirement[:80]}")
+        else:
+            print(f"     {cid}: (未在制度分析中找到)")
+
+
+def _print_program_steps_for_procedures(proc_refs, related_ctrl):
+    """根据 related_procedures 引用，在 program_index 中查找匹配步骤"""
+    index = load_program_index()
+    steps = index.get("steps", [])
+    if not steps:
+        return
+
+    matched = []
+    for proc_ref in proc_refs:
+        ref_upper = proc_ref.upper().strip()
+        for step in steps:
+            sid = step.get("step_id", "").upper()
+            title = step.get("title", "").upper()
+            if ref_upper in sid or ref_upper in title:
+                matched.append(step)
+
+    if matched:
+        print(f"\n  📎 审计程序步骤详情 ({len(matched)} 个):")
+        for s in matched:
+            sid = s.get("step_id", "?")
+            title = s.get("title", "")[:50]
+            track = s.get("track", "")
+            controls = s.get("related_controls", [])
+            print(f"     {sid} [{track}]: {title}")
+            if controls:
+                print(f"       关联控制点: {', '.join(controls)}")
+
+
+def _print_peer_steps(exclude_step_id, control_ids, all_steps):
+    """打印同一控制点的其他审计程序步骤"""
+    peers = []
+    for s in all_steps:
+        sid = s.get("step_id", "")
+        if sid == exclude_step_id:
+            continue
+        s_controls = set(s.get("related_controls", []))
+        if s_controls & set(control_ids):
+            peers.append(s)
+
+    if peers:
+        print(f"\n  🔁 同一控制点的其他审计程序步骤:")
+        for s in peers:
+            sid = s.get("step_id", "?")
+            title = s.get("title", "")[:50]
+            track = s.get("track", "")
+            print(f"     {sid} [{track}]: {title}")
 
 
 def _find_related_findings(findings_dir, exclude_id, predicate):
@@ -756,8 +999,8 @@ def main():
     p_analyses.add_argument("--verbose", action="store_true", help="显示高风险点详情")
 
     # trace
-    p_trace = sub.add_parser("trace", help="跨实体追溯")
-    p_trace.add_argument("finding_id", help="Finding ID (如 F-2026-001)")
+    p_trace = sub.add_parser("trace", help="跨实体追溯（支持 finding/步骤/控制点 ID）")
+    p_trace.add_argument("target", help="ID: finding (F-2026-001) / 步骤 (A7.2) / 控制点 (CP-001)")
 
     # decide
     p_decide = sub.add_parser("decide", help="查询决策追溯链")
