@@ -28,14 +28,12 @@ from pathlib import Path
 from datetime import date
 
 # 复用 program_generator 的章节→轨道映射（非字母序），避免漂移
-_PG_DIR = Path(__file__).parent.parent.parent / 'internal-audit-program-generator'
+_PG_DIR = Path(__file__).parent.parent.parent / '.claude' / 'skills' / 'internal-audit-program-generator'
 sys.path.insert(0, str(_PG_DIR / 'script'))
 try:
     from program_generator import SECTION_TO_TRACK  # noqa: F401
 except Exception:  # 兜底：万一 program_generator 不可 import，退化为本文件内置映射
     SECTION_TO_TRACK = {'三': 'A', '四': 'B', '五': 'C', '六': 'E', '七': 'F', '八': 'D'}
-
-CONFIG_PATH = _PG_DIR / 'config' / 'program_templates.json'
 
 ALIGN_SEP_RE = re.compile(r'^\|[:\-\s|]+\|?\s*$')
 

@@ -131,7 +131,7 @@ def check_column_consistency(text, config_path=None):
     """
     if config_path is None:
         config_path = Path(__file__).parent.parent.parent / \
-                      'internal-audit-program-generator' / 'config' / 'program_templates.json'
+                      '.claude' / 'skills' / 'internal-audit-program-generator' / 'config' / 'program_templates.json'
 
     if not Path(config_path).exists():
         return True, "配置文件不存在，跳过列头校验"
