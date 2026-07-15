@@ -55,11 +55,11 @@ def _extract_title(description: str) -> str:
 
 
 def _parse_table_rows(text: str) -> list:
-    """从 Markdown 文本中提取程序编号和标题。
+    """从 Markdown 文本中提取程序编号和风险名称。
 
     v2.0：不假设程序编号在固定列位置——新列结构中程序编号在第4列
     （前面是风险编号/风险名称/来源标注）。改为扫描整行找 [A-H]\\d+.\\d+ 格式。
-    返回 [(编号, 标题), ...] 列表。
+    返回 [(编号, 风险名称), ...] 列表。
     """
     results = []
     # 匹配所有表格行（| 开头 | 结尾）
@@ -89,10 +89,11 @@ def _parse_table_rows(text: str) -> list:
             continue
         seen.add(code)
 
-        # 标题取程序编号后面的下一列（通常是"测试程序"列）
-        title_raw = parts[code_idx + 1] if code_idx + 1 < len(parts) else ""
-        title = _extract_title(title_raw)
-        results.append((code, title))
+        # 风险名称在程序编号左两列（跳过来源标注列）
+        risk_name = parts[code_idx - 2] if code_idx >= 2 else ""
+        if not risk_name:
+            risk_name = parts[code_idx + 1] if code_idx + 1 < len(parts) else "未命名"
+        results.append((code, risk_name))
 
     return results
 
@@ -220,7 +221,7 @@ def main():
             ws = md_parent  # 兜底
 
     project_name = load_project_name(ws)
-    evidence_root = ws / "evidence" / safe_dirname(project_name, max_len=80)
+    evidence_root = ws / "evidence"
 
     programs = parse_programs_from_md(str(md_path))
     if not programs:
