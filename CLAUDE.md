@@ -211,7 +211,7 @@ Pure engineering tasks (syntax fix, script repair, data structure optimization, 
 |------|-----------|
 | `audit-topics/about-me.md` | company background (read every time, no cache) |
 | `audit-topics/my-config.md` | system names, thresholds, config |
-| `constitution.md` | the 13 hard constraints (see §不可违反的约束) |
+| `constitution.md` | the 14 hard constraints (see §不可违反的约束) |
 | `CLAUDE.md` | full tool registry + phase routing table (this file) |
 | `CLAUDE-project.md` | project-facing version (copied into deployed projects) |
 | `OPS.md` | user-facing operations manual (non-technical language) |
@@ -247,7 +247,7 @@ Pure engineering tasks (syntax fix, script repair, data structure optimization, 
 
 External evaluator scripts (Phase 1+): `record_evaluation.py`, `quality_gate.py`
 
-## 13 hard constraints (from constitution.md)
+## 14 hard constraints (from constitution.md)
 
 1. No finding without sufficient evidence
 2. Fraud suspicion → always mark as high risk
@@ -262,3 +262,4 @@ External evaluator scripts (Phase 1+): `record_evaluation.py`, `quality_gate.py`
 11. Audit program step IDs are immutable once used — corrections via errata note + new step (-C suffix), evidence chain must never break
 12. **When a Skill or script is unavailable** (missing, broken, undeployed), halt and report; never generate or simulate its output yourself
 13. **When a Skill or script IS available**, you MUST use it; never bypass a working Skill/script to produce equivalent content yourself
+14. **Every output must declare its source** — "via Skill X", "via script Y", or "AI-generated (no gate)". The user must be able to see which content passed through the system's quality gates and which didn't.
