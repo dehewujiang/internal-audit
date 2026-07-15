@@ -1,7 +1,7 @@
 {
-  "version": "2026-07-15-3",
-  "git_commit": "2b728fd",
-  "updated_at": "2026-07-15T08:06:40+08:00",
+  "version": "2026-07-15-4",
+  "git_commit": "55a85a1",
+  "updated_at": "2026-07-15T08:17:45+08:00",
   "changes": [
     {
       "type": "doc",
@@ -107,6 +107,11 @@
       "type": "fix",
       "file": "validate-program+program_ir_parser",
       "summary": "路径修正(.claude/skills/层缺失导致部署项目列头校验静默跳过)"
+    },
+    {
+      "type": "feat",
+      "file": "constitution",
+      "summary": "13条硬约束 — 第12条(技能/脚本不可用时禁自行替代)+第13条(技能/脚本可用时必须走它,禁主动绕过).覆盖被动不可用和主动绕过两个场景."
     }
   ]
 }

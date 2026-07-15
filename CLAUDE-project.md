@@ -190,13 +190,13 @@ Pure engineering tasks (syntax fix, script repair, data structure optimization, 
 | `audit-topics/about-me.md` | company background (read every time, no cache) |
 | `audit-topics/my-config.md` | system names, thresholds, config |
 | `audit-topics/topic.json` | audit topic definition + mandatory modules |
-| `constitution.md` | the 10 hard constraints |
+| `constitution.md` | the 13 hard constraints |
 | `CLAUDE.md` | this file — tool registry + phase routing |
 | `OPS.md` | user-facing operations manual |
 | `memory/project.md` | project state (the source of truth) |
 | `memory/context.md` | technical context for agents after compact |
 
-## 10 hard constraints (from constitution.md)
+## 13 hard constraints (from constitution.md)
 
 1. No finding without sufficient evidence
 2. Fraud suspicion → always mark as high risk
@@ -209,3 +209,5 @@ Pure engineering tasks (syntax fix, script repair, data structure optimization, 
 9. Missing evidence is itself a signal — analyze WHY it's missing
 10. Phase 1 must cross-check actual documents against `topic.json` mandatory modules
 11. Audit program step IDs are immutable once used — corrections via errata note + new step (-C suffix), evidence chain must never break
+12. **When a Skill or script is unavailable**, halt and report; never generate or simulate its output yourself
+13. **When a Skill or script IS available**, you MUST use it; never bypass a working Skill/script to produce equivalent content yourself
