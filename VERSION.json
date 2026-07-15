@@ -1,7 +1,7 @@
 {
-  "version": "2026-07-15-5",
-  "git_commit": "37ff9f9",
-  "updated_at": "2026-07-15T08:18:22+08:00",
+  "version": "2026-07-15-6",
+  "git_commit": "5eaaa6f",
+  "updated_at": "2026-07-15T15:44:44+08:00",
   "changes": [
     {
       "type": "doc",
@@ -117,6 +117,11 @@
       "type": "feat",
       "file": "constitution",
       "summary": "14条硬约束 — 12(Skill/脚本不可用时禁自行替代)+13(Skill/脚本可用时必须走它,禁主动绕过)+14(输出必须声明来源,用户可识别哪些经过了闸机)"
+    },
+    {
+      "type": "fix",
+      "file": "_shared/scripts/create_evidence_dirs.py",
+      "summary": "证据目录名改用程序编号+风险名称，去掉项目名中间层"
     }
   ]
 }
