@@ -1,5 +1,5 @@
 # 技术上下文
-更新时间：2026-07-10
+更新时间：2026-07-14
 
 ## 核心模块关系
 
@@ -8,14 +8,26 @@ internal-audit/
 ├── CLAUDE.md                 ← 开发版（含 architecture gotchas, rules loading）
 ├── CLAUDE-project.md         ← 运行版（精简，setup-project.ps1 拷贝为审计项目 CLAUDE.md）
 ├── constitution.md           ← 全局硬约束 + 闸机规则
-├── setup-project.ps1         ← 一键部署：junction(skills/_shared_/tools_) + copy + mkdir + 自检
-├── .claude/rules/            ← junction → D:\Nut\00_my_digital\12_AGI\rules\
+├── setup-project.ps1         ← 一键部署：扫描 .claude/skills/ 自动发现技能
+├── update-project.ps1        ← 增量升级：逐技能合并而非整目录覆盖
+├── .claude/
+│   ├── skills/               ← 12 个技能（2 geb-* + 10 个审计 junction）
+│   ├── settings.json         ← extraRules 配置
+│   └── rules/                ← junction → D:\Nut\00_my_digital\12_AGI\rules\
 ├── _shared/scripts/          ← phase_gate + 5 个 validate-* + project_init + queries
 ├── tools/                    ← pdf_ocr_extractor.py + 13 个能力声明
 ├── audit-topics/             ← 审计主题模板
 ├── [10 个 skill 目录]/        ← 各含 SKILL.md + references/
 └── memory/                   ← 项目记忆（本目录）
 ```
+
+## 技能注册架构（2026-07-14 修复）
+
+- **唯一来源**：`.claude/skills/` — 仓库根目录的 10 个审计技能通过 junction 映射于此
+- **部署一致性**：setup 和 update 都从 `.claude/skills/` 读取技能列表
+- **setup**：扫描 `.claude/skills/` 自动发现 → deployment
+- **update stable**：逐技能合并而非整目录覆盖（不再丢失审计技能）
+- **补充部署**：`.claude/settings.json` 和 `.claude/rules/` 现在也随部署脚本一起复制
 
 ## 三重闸机体系
 

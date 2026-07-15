@@ -4,7 +4,20 @@
 - 无
 
 ## #待办
-- validate-program.py 可选增加对 program_index.json 的校验（非阻塞，等实战反馈）
+- 检查其他已部署项目是否也存在技能注册缺失（被 update-project.ps1 覆盖掉），如有则重新运行 setup-project.ps1 补齐
+
+## #已完成（2026-07-14）
+- ✅ 审计技能注册修复：源仓库 .claude/skills/ 创建 10 个 junction + setup/update 脚本同步
+- ✅ **P0-1 程序 JSON 化（渐进式方案 A）**：
+  - 新增 `_shared/scripts/program_ir_parser.py` — MD→ProgramIR 确定性解析器（复用 program_generator.SECTION_TO_TRACK；header-aware 表格解析；风险编号归一化 R01→R-1；增量章节十/十一；-C 勘误后缀；来源标注提取 CP/CG/RP/CF/D）
+  - `validate-program.py` 新增 `--ir` 模式：覆盖度/判定标准量化/数据来源比例 三项 block 检查 + 抽样/未覆盖/决策理由 warn；修了 check_risk_coverage 正则 bug（R-\d{3}→R-?\d+）
+  - `SKILL.md` Step 4.X+2 改为调脚本生成索引（替代 LLM 手写 JSON）；Step 5.0 加 --ir
+  - ProgramIR 是 program_index.json 超集（schema 2.0.0），steps[] 字段兼容，queries.py trace 无需改
+  - tests/fixtures/ 两份合成样本端到端验证：问题版触发 3 block，修正版 pass
+  - 留 LLM 判断：闭环逻辑/工具明确/mandatory 实质覆盖/查证有效性
+
+## #待办
+- ~~validate-program.py 可选增加对 program_index.json 的校验~~ → 已由 P0-1 ProgramIR + --ir 覆盖（超集）
 
 ## #已完成（2026-07-13）
 - ✅ project-init 自动注册到 projects-index.json：SKILL.md 新增 Step 4.6，项目创建完成后自动调用 `queries.py register`。注册失败不阻断创建流程，仅警告提示。关闭了"跨项目索引需手工注册"的非阻塞缺口。

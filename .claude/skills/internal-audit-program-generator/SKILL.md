@@ -355,53 +355,55 @@ python D:/Nut/00_my_digital/12_AGI/skills/internal-audit/_shared/scripts/create_
 
 ### 4.X+2 生成审计程序索引（program_index.json）
 
-审计程序 Markdown 输出后，从中提取结构化索引，写入 `audit-programs/[审计主题]_program_index.json`。该文件是 `queries.py trace` 追溯链的关键一环——打通"审计程序步骤 → 控制点 → 制度条款"的机器可读链接。
+审计程序 Markdown 输出后，**调用确定性脚本**从 MD 提取结构化索引，写入 `audit-programs/[审计主题]_program_index.json`。该文件是 `queries.py trace` 追溯链的关键一环，也是 Step 5.0 `validate-program.py --ir` 结构化校验的输入。
 
-**操作**：读取已生成的 Markdown 审计程序，逐表格提取每个程序步骤，输出 JSON：
+> v2.0 起，索引由脚本 `program_ir_parser.py` 自动生成（替代此前 LLM 手写 JSON 的做法——消除手写 JSON 漏字段/格式漂移的不可靠步骤）。LLM 只需输出 Markdown，无需手写 JSON。
+
+**操作**：运行解析器，从已生成的 Markdown 提取 ProgramIR（索引的超集）：
+
+```bash
+python D:/Nut/00_my_digital/12_AGI/skills/internal-audit/_shared/scripts/program_ir_parser.py \
+    internal-audit-workspace/audit-programs/[审计主题]_审计程序_v1.0.md \
+    --out internal-audit-workspace/audit-programs/[审计主题]_program_index.json
+```
+
+解析器自动完成：
+- 风险清单表（2.1/2.2）→ `risk_register`，风险编号归一化（`R01`→`R-1`）
+- 各轨道程序表（含 `<!-- track X -->` 包裹）→ `steps[]`，按表头列名映射命名字段
+- 增量章节十/十一（S 编号，在 track 注释外）→ 并入 `steps[]`，计入覆盖度
+- 来源标注列正则提取 `CP-/CG-/RP-/CF-/D-` 编号 → `related_controls` / `related_design_observations`
+- `-C` 勘误后缀识别 → `is_errata` / `corrects`
+- 覆盖度计算 → `coverage`（covered_risks / uncovered_risks / coverage_rate）
+
+**输出 schema（v2.0.0，program_index 的超集，`steps[]` 字段名严格兼容旧版）**：
 
 ```json
 {
-  "schema_version": "1.0.0",
+  "schema_version": "2.0.0",
   "audit_topic": "[审计主题]",
   "generated_date": "[YYYY-MM-DD]",
   "program_version": "v1.0",
   "program_md_file": "[审计主题]_审计程序_v1.0.md",
+  "activated_tracks": ["A","B","C"],
+  "decision_log": {"D-003":{"result","rationale"}, "D-004":{...}, "D-005":{...}},
+  "risk_register": [{"risk_id":"R-1","raw_id":"R01","type":"经验类","title":"...","fact_anchors":["CP-..."]}],
   "steps": [
     {
-      "step_id": "A7.2",
-      "track": "A",
-      "risk_ref": "RK-HR-002",
-      "title": "人事审批权限控制测试",
-      "related_controls": ["CP-HR-006", "CP-HR-005"],
-      "related_design_observations": ["D-012"],
-      "data_source": "ERP系统",
-      "test_method": "控制有效性测试"
+      "step_id": "A1.1", "track": "A",
+      "risk_ref": "R-1", "risk_refs": ["R-1"],
+      "title": "...", "related_controls": ["CP-..."], "related_design_observations": ["D-..."],
+      "procedure": "...", "sampling": "...", "data_source": "...", "tool": "",
+      "criterion": "...", "test_method": "控制有效性测试",
+      "is_errata": false, "corrects": ""
     }
-  ]
+  ],
+  "coverage": {"covered_risks":[...], "uncovered_risks":[{"risk_id","reason"}], "coverage_rate": 1.0}
 }
 ```
 
-**字段说明**：
+**兼容性**：`steps[]` 保留旧版全部字段名（`step_id`/`track`/`risk_ref`/`title`/`related_controls`/`related_design_observations`/`data_source`/`test_method`），`queries.py trace` 无需改动。新增 `risk_refs`（数组）、`criterion`、`sampling` 等字段供 `validate-program.py --ir` 校验。
 
-| 字段 | 必填 | 来源 |
-|------|:----:|------|
-| `step_id` | ✅ | Markdown 表格的程序编号列（如 A7.2、B3.1） |
-| `track` | ✅ | 程序编号首字母（A/B/C/D/E/F） |
-| `title` | ✅ | 程序名称/测试程序描述 |
-| `related_controls` | ✅ | 从"来源标注"中提取的 CP-XXX 编号列表，无则为空数组 |
-| `related_design_observations` | ⚠️ | 从"来源标注"中提取的 D-XXX 编号列表，无则为空数组 |
-| `risk_ref` | ⚠️ | 风险编号（如 RK-HR-002、R15），无则为空字符串 |
-| `data_source` | ⚠️ | 取证方式列内容，无则为空字符串 |
-| `test_method` | ⚠️ | 测试性质（控制有效性/实质性测试等），无则为空字符串 |
-
-**提取规则**：
-1. 从 Markdown 表格中逐行提取，每行对应一个 step
-2. "来源标注"列中搜索 `CP-\w+-\d+` 或 `CP-\d+` 模式，提取为 `related_controls`
-3. "来源标注"列中搜索 `D-\d+` 模式，提取为 `related_design_observations`
-4. 若某行无法提取到 step_id，跳过该行（不报错）
-5. 覆盖所有轨道（A/B/C/D/E/F），包括跳过的轨道如果有表格内容
-
-> `queries.py trace A7.2` 和 `queries.py trace CP-HR-006` 依赖此文件。缺失索引文件时，trace 命令会提示重新运行 program-generator。
+> `queries.py trace A1.1` 和 `queries.py trace CP-N001-07` 依赖此文件。缺失索引文件时，trace 命令会提示重新运行 program-generator。
 
 ### 4.X 决策理由记录（decision_log，第十章）
 
@@ -438,11 +440,24 @@ python D:/Nut/00_my_digital/12_AGI/skills/internal-audit/_shared/scripts/create_
 
 ### 5.0 格式硬校验（validate-program.py，不可跳过）
 
-在所有推理检查之前，先用确定性脚本做格式校验：
+在所有推理检查之前，先用确定性脚本做格式校验 + 结构化校验：
 
 ```bash
-python D:/Nut/00_my_digital/12_AGI/skills/internal-audit/_shared/scripts/validate-program.py audit-programs/ --json
+python D:/Nut/00_my_digital/12_AGI/skills/internal-audit/_shared/scripts/validate-program.py audit-programs/ --json --ir
 ```
+
+`--ir` 模式会先调 `program_ir_parser.py` 把 MD 解析成 ProgramIR，再跑结构化确定性检查（与现有 7 项文本检查合并输出）：
+
+| IR 检查项 | 性质 | 触发阻断（block）条件 |
+|----------|:----:|----------------------|
+| `ir_coverage_rate` | block | 风险覆盖率 < 80%（风险清单 − 程序覆盖） |
+| `ir_criterion` | block | 任一程序判定标准为纯开关词（是/否/符合）或含模糊词（较大/过多）或为空 |
+| `ir_data_source` | block | 无数据来源的步骤占比 > 30% |
+| `ir_coverage_uncovered` | warn | 有未覆盖风险且无理由 |
+| `ir_sampling` | warn | 轨道A 步骤缺抽样方法 |
+| `ir_decision_rationale` | warn | D-003 理由 <30 字 / D-004、D-005 <20 字 |
+
+> 闭环逻辑、工具明确性、助理可执行性、mandatory 实质覆盖、查证有效性仍由 5.2 推理检查与 program-quality-evaluator（LLM）覆盖——这些是判断题，确定性代码不碰。
 
 | 输出 | 处理 |
 |------|------|

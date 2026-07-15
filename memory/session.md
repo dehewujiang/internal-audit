@@ -1,34 +1,34 @@
 # 最近一次工作记录
 
 ## 完成了什么
-本次 session（2026-07-13）完成了两项工作：
+本次 session（2026-07-14）完成了审计技能注册修复。
 
-### 1. CLAUDE.md 文档完整性改进（commit 157eb51）
-- CLAUDE.md 增量改进 6 项（标准头部、技能数量修正、阶段映射表、部署架构、关键文件扩展、脚本速查表）
-- CLAUDE-project.md 同步改进 4 项
+### 问题诊断
+用户报告部署项目 `AU_PL_260601_人力资源_武汉长源` 中 Claude Code 无法识别审计技能（如 `/internal-audit-program-generator`）。
 
-### 2. 审计程序追溯链修复（commit fb480b4）
-**问题**：用户问"审计程序A7.2针对的是哪个制度的哪一条款？"，系统答不上来。追溯链 6 个环节中，审计程序是唯一纯 Markdown 产物，没有机器可读的结构化数据。
+**根因链**：
+1. 源仓库 `.claude/skills/` 只有 geb-bootstrap 和 geb-workflow 两个技能
+2. 10 个审计技能目录在仓库根目录，格式正确但未注册
+3. `setup-project.ps1` 首次部署从根目录逐个部署 → 正确（10 个技能全在）
+4. `update-project.ps1` stable 模式整目录复制 `.claude/skills/` → 覆盖成只有 2 个
+5. 项目经历了 3 次 update，每次都被覆盖掉
 
-**修复**：两步走——
-1. **program-generator SKILL.md** 新增 Step 4.X+2：审计程序 Markdown 输出后，顺手生成 `*_program_index.json` 索引文件，记录每个步骤的 `step_id`、`related_controls`（CP-XXX）、`related_design_observations`（D-XXX）、`risk_ref`
-2. **queries.py trace** 重写：自动识别三种 ID 类型
-   - `F-2026-001` → finding 追溯链（原有功能，增强程序步骤查找）
-   - `A7.2` → 审计程序步骤 → 关联控制点 → 制度条款
-   - `CP-HR-006` → 控制点 → 引用它的审计程序步骤 + findings
+### 修复内容
+1. 源仓库 `.claude/skills/` 下创建 10 个目录 junction → 仓库本身能识别 12 个技能
+2. `setup-project.ps1` 改为扫描 `.claude/skills/` 自动发现技能，消除硬编码列表
+3. `setup-project.ps1` 新增 `.claude/settings.json` 和 `.claude/rules/` 部署
+4. `update-project.ps1` stable 模式改为逐技能合并，不再整目录覆盖
+5. 部署项目 `武汉长源` 已补齐 10 个技能 + settings.json + rules
 
-**附带修复**：queries.py 加 `sys.stdout.reconfigure(encoding='utf-8')` 解决 Windows GBK 编码崩溃
+### 提交
+- `271ac1d` — 91 files, VERSION → 2026-07-14-15
 
 ## 为什么这样做
-追溯链断裂是审计底稿完整性的缺口——"为什么做这个测试"答不上来，被审计方挑战时无法举证。数据结构上 5/6 环节已有 JSON，唯独审计程序是纯 Markdown，是唯一的断点。
-
-## 遇到什么问题
-- Windows GBK 编码导致 queries.py trace 崩溃（emoji 输出），加了 reconfigure 修复
+技能注册的一致性必须是基础设施级别的保证——两个部署脚本的行为不同源（一个从根目录读，一个从 `.claude/skills/` 读），必然导致部署后行为不一致。统一到 `.claude/skills/` 作为唯一来源，消除了这个系统性缺陷。
 
 ## 未完成事项
 - 无
 
 ## 下一步建议
-1. 实际项目中运行 program-generator，验证 program_index.json 的生成质量
-2. 如已有审计程序但无索引，需重新运行 program-generator 生成索引文件
-3. validate-program.py 可选增加对 program_index.json 的校验
+1. 在 `武汉长源` 项目中验证 `/internal-audit-program-generator` 可用
+2. 如其他已部署项目也存在同样问题，重新运行 `setup-project.ps1 --stable` 补齐

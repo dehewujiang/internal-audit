@@ -2,10 +2,10 @@
 
 | 文件 | 最后更新 | 摘要 |
 |:----|:--------|:----|
-| project.md | 2026-07-13 | 审计程序追溯链修复 + 文档完整性改进 |
-| decisions.md | 2026-07-10 | 12 条 ADR：新增 ADR-015（queries.py DataSource 抽象层消除分支） |
-| context.md | 2026-07-10 | 三重闸机体系 + 10 skill 流水线 + queries.py DataSource 架构 |
-| TODO.md | 2026-07-13 | 1 项待办：validate-program.py 可选校验 program_index.json |
-| session.md | 2026-07-13 | 追溯链修复（program_index.json + trace 三向追溯）+ 文档改进 |
+| project.md | 2026-07-14 | 新增：技能注册修复记录 |
+| decisions.md | 2026-07-14 | 13 条 ADR：新增 ADR-016（统一 .claude/skills/ 为技能唯一来源） |
+| context.md | 2026-07-14 | 技能注册架构修复 + .claude/ 目录结构更新 |
+| TODO.md | 2026-07-14 | 1 项待办：检查其他部署项目的技能注册 |
+| session.md | 2026-07-14 | 技能注册修复（10 junction + setup/update 脚本同步） |
 | user.md | 2026-07-06 | Flan：内审经理，中文，先建模再动手，不要黑话 |
-| feedback.md | 2026-07-10 | 新增身份扮演失效案例（技术思维惯性覆盖审计总监视角）+ 5 类触发词拦截协议 |
+| feedback.md | 2026-07-13 | 验证循环复发 + 5 项硬停止规则 |

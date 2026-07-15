@@ -1,22 +1,28 @@
 {
-  "schema_version": "1.0.0",
-  "description": "审计程序模板配置 - 支持多轨道（控制/舞弊/系统/边界/效率/合规）",
+  "schema_version": "2.0.0",
+  "description": "审计程序模板配置 v2.0 — 三层列结构（风险溯源+程序设计+执行记录）。本文件是列结构的唯一真相源，SKILL.md/output_template.md/validate-program.py/program_generator.py 全部引用。",
+  "layer_description": {
+    "risk": "①风险溯源——MD和Excel都输出，AI生成",
+    "design": "②程序设计——MD和Excel都输出，AI生成",
+    "execution": "③执行记录——仅Excel输出，留空现场填"
+  },
   "tracks": {
     "A": {
       "name": "轨道A-控制有效性测试",
       "description": "验证关键控制点是否有效执行",
       "sheet_name": "轨道A-控制测试",
       "columns": [
-        {"name": "序号", "width": 8},
-        {"name": "程序编号", "width": 12},
-        {"name": "测试程序", "width": 45},
-        {"name": "抽样方法", "width": 15},
-        {"name": "取证方式", "width": 20},
-        {"name": "判定标准", "width": 25},
-        {"name": "测试结果", "width": 15},
-        {"name": "执行人", "width": 12},
-        {"name": "执行日期", "width": 12},
-        {"name": "备注", "width": 20}
+        {"name": "风险编号", "width": 12, "layer": "risk"},
+        {"name": "风险名称", "width": 20, "layer": "risk"},
+        {"name": "来源标注", "width": 20, "layer": "risk"},
+        {"name": "程序编号", "width": 12, "layer": "design"},
+        {"name": "测试程序", "width": 45, "layer": "design"},
+        {"name": "抽样方法", "width": 15, "layer": "design"},
+        {"name": "取证方式", "width": 20, "layer": "design"},
+        {"name": "判定标准", "width": 25, "layer": "design"},
+        {"name": "测试结果", "width": 15, "layer": "execution"},
+        {"name": "执行人", "width": 12, "layer": "execution"},
+        {"name": "执行日期", "width": 12, "layer": "execution"}
       ],
       "default_row_height": 60,
       "instructions": [
@@ -31,15 +37,18 @@
       "description": "针对舞弊风险点的深入测试",
       "sheet_name": "轨道B-舞弊测试",
       "columns": [
-        {"name": "序号", "width": 8},
-        {"name": "程序编号", "width": 12},
-        {"name": "测试程序", "width": 45},
-        {"name": "取证方式", "width": 20},
-        {"name": "判定标准", "width": 25},
-        {"name": "测试结果", "width": 15},
-        {"name": "执行人", "width": 12},
-        {"name": "执行日期", "width": 12},
-        {"name": "证据索引", "width": 20}
+        {"name": "风险编号", "width": 12, "layer": "risk"},
+        {"name": "风险名称", "width": 20, "layer": "risk"},
+        {"name": "来源标注", "width": 20, "layer": "risk"},
+        {"name": "程序编号", "width": 12, "layer": "design"},
+        {"name": "测试程序", "width": 45, "layer": "design"},
+        {"name": "舞弊手法", "width": 18, "layer": "design"},
+        {"name": "量化阈值", "width": 15, "layer": "design"},
+        {"name": "取证方式", "width": 20, "layer": "design"},
+        {"name": "判定标准", "width": 25, "layer": "design"},
+        {"name": "测试结果", "width": 15, "layer": "execution"},
+        {"name": "执行人", "width": 12, "layer": "execution"},
+        {"name": "执行日期", "width": 12, "layer": "execution"}
       ],
       "default_row_height": 60,
       "instructions": [
@@ -51,17 +60,21 @@
       "high_risk_tags": ["权限集中", "机会窗口", "动机因素"]
     },
     "C": {
-      "name": "轨道C-系统类实质性测试",
+      "name": "轨道C-系统/公司类实质性测试",
       "description": "基于系统数据的实质性抽样测试",
       "sheet_name": "轨道C-系统测试",
       "columns": [
-        {"name": "序号", "width": 8},
-        {"name": "程序编号", "width": 12},
-        {"name": "测试程序", "width": 40},
-        {"name": "取证方式", "width": 25},
-        {"name": "判定标准", "width": 25},
-        {"name": "结论", "width": 12},
-        {"name": "备注", "width": 20}
+        {"name": "风险编号", "width": 12, "layer": "risk"},
+        {"name": "风险名称", "width": 20, "layer": "risk"},
+        {"name": "来源标注", "width": 20, "layer": "risk"},
+        {"name": "程序编号", "width": 12, "layer": "design"},
+        {"name": "测试程序", "width": 45, "layer": "design"},
+        {"name": "量化阈值", "width": 15, "layer": "design"},
+        {"name": "取证方式", "width": 20, "layer": "design"},
+        {"name": "判定标准", "width": 25, "layer": "design"},
+        {"name": "测试结果", "width": 15, "layer": "execution"},
+        {"name": "执行人", "width": 12, "layer": "execution"},
+        {"name": "执行日期", "width": 12, "layer": "execution"}
       ],
       "default_row_height": 50
     },
@@ -70,13 +83,17 @@
       "description": "测试系统边界和控制边界",
       "sheet_name": "轨道D-边界测试",
       "columns": [
-        {"name": "序号", "width": 8},
-        {"name": "程序编号", "width": 12},
-        {"name": "测试程序", "width": 40},
-        {"name": "取证方式", "width": 25},
-        {"name": "判定标准", "width": 25},
-        {"name": "是否通过", "width": 12},
-        {"name": "备注", "width": 20}
+        {"name": "风险编号", "width": 12, "layer": "risk"},
+        {"name": "风险名称", "width": 20, "layer": "risk"},
+        {"name": "来源标注", "width": 20, "layer": "risk"},
+        {"name": "程序编号", "width": 12, "layer": "design"},
+        {"name": "测试程序", "width": 40, "layer": "design"},
+        {"name": "为什么这家公司更需要关注", "width": 30, "layer": "design"},
+        {"name": "取证方式", "width": 20, "layer": "design"},
+        {"name": "判定标准", "width": 25, "layer": "design"},
+        {"name": "测试结果", "width": 15, "layer": "execution"},
+        {"name": "执行人", "width": 12, "layer": "execution"},
+        {"name": "执行日期", "width": 12, "layer": "execution"}
       ],
       "default_row_height": 50,
       "boundary_types": ["审批阈值", "金额上限", "周期限制", "数量限制"]
@@ -86,14 +103,17 @@
       "description": "针对运营效率的专项测试",
       "sheet_name": "轨道E-效率测试",
       "columns": [
-        {"name": "序号", "width": 8},
-        {"name": "程序编号", "width": 12},
-        {"name": "测试程序", "width": 40},
-        {"name": "取证方式", "width": 25},
-        {"name": "判定标准", "width": 25},
-        {"name": "偏差率", "width": 12},
-        {"name": "原因分析", "width": 30},
-        {"name": "改进建议", "width": 30}
+        {"name": "风险编号", "width": 12, "layer": "risk"},
+        {"name": "风险名称", "width": 20, "layer": "risk"},
+        {"name": "来源标注", "width": 20, "layer": "risk"},
+        {"name": "程序编号", "width": 12, "layer": "design"},
+        {"name": "测试程序", "width": 40, "layer": "design"},
+        {"name": "量化指标", "width": 18, "layer": "design"},
+        {"name": "取证方式", "width": 20, "layer": "design"},
+        {"name": "判定标准", "width": 25, "layer": "design"},
+        {"name": "测试结果", "width": 15, "layer": "execution"},
+        {"name": "执行人", "width": 12, "layer": "execution"},
+        {"name": "执行日期", "width": 12, "layer": "execution"}
       ],
       "default_row_height": 45
     },
@@ -102,15 +122,17 @@
       "description": "针对内外部合规要求的测试",
       "sheet_name": "轨道F-合规测试",
       "columns": [
-        {"name": "序号", "width": 8},
-        {"name": "程序编号", "width": 12},
-        {"name": "测试程序", "width": 40},
-        {"name": "取证方式", "width": 25},
-        {"name": "判定标准", "width": 25},
-        {"name": "符合性", "width": 12},
-        {"name": "偏差描述", "width": 35},
-        {"name": "整改建议", "width": 30},
-        {"name": "优先级", "width": 12}
+        {"name": "风险编号", "width": 12, "layer": "risk"},
+        {"name": "风险名称", "width": 20, "layer": "risk"},
+        {"name": "来源标注", "width": 20, "layer": "risk"},
+        {"name": "程序编号", "width": 12, "layer": "design"},
+        {"name": "测试程序", "width": 40, "layer": "design"},
+        {"name": "检查对象", "width": 18, "layer": "design"},
+        {"name": "取证方式", "width": 20, "layer": "design"},
+        {"name": "判定标准", "width": 25, "layer": "design"},
+        {"name": "测试结果", "width": 15, "layer": "execution"},
+        {"name": "执行人", "width": 12, "layer": "execution"},
+        {"name": "执行日期", "width": 12, "layer": "execution"}
       ],
       "default_row_height": 50,
       "compliance_sources": ["内部制度", "会计准则", "上市规则", "行业规范"]
@@ -122,8 +144,5 @@
     "header_color": "2F5496",
     "high_risk_color": "FFE699",
     "default_font_size": 10
-  },
-  "output_columns_template": {
-    "all_tracks": ["序号", "风险编号", "风险名称", "来源标注", "测试程序", "取数来源", "样本量", "测试结果", "执行人", "执行日期", "备注"]
   }
 }

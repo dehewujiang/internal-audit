@@ -1,0 +1,276 @@
+{
+  "schema_version": "2.0.0",
+  "audit_topic": "存货管理",
+  "generated_date": "2026-07-14",
+  "program_version": "v1.0",
+  "program_md_file": "样本_存货管理_审计程序_v1.1_已修正.md",
+  "audit_purpose": [],
+  "trigger_reason": "",
+  "activated_tracks": [
+    "A",
+    "B",
+    "C"
+  ],
+  "decision_log": {
+    "D-003": {
+      "result": "舞弊调查 + 内控效果评估",
+      "rationale": "举报线索指向存货入库环节可能存在虚假入库舞弊，同时需评估相关控制是否被绕过。"
+    },
+    "D-004": {
+      "result": "覆盖宁波长华成品仓与地磅入库环节",
+      "rationale": "举报涉及宁波地磅入库，武汉/广东冲焊件仓库本次不纳入。"
+    },
+    "D-005": {
+      "result": "激活 A + B + C + D",
+      "rationale": "舞弊调查须激活轨道B实质性测试，内控评估激活轨道A，系统类风险激活轨道C。"
+    }
+  },
+  "risk_register": [
+    {
+      "risk_id": "R-1",
+      "raw_id": "R01",
+      "type": "经验类",
+      "title": "虚假入库",
+      "desc": "地磅入库重量被篡改，虚增库存",
+      "source_tag": "【经验类】",
+      "fact_anchors": []
+    },
+    {
+      "risk_id": "R-2",
+      "raw_id": "R02",
+      "type": "系统类-推演",
+      "title": "ERP权限越权",
+      "desc": "SAP 主数据维护权限未分离",
+      "source_tag": "【系统类-推演】",
+      "fact_anchors": []
+    },
+    {
+      "risk_id": "R-3",
+      "raw_id": "R03",
+      "type": "公司类-推演",
+      "title": "客户集中导致呆滞",
+      "desc": "大众/丰田需求波动致专用件呆滞",
+      "source_tag": "【公司类-推演】",
+      "fact_anchors": []
+    },
+    {
+      "risk_id": "R-4",
+      "raw_id": "R04",
+      "type": "制度类-设计缺陷：CP-N001-07（NPM001成品仓库管理标准）",
+      "title": "盘点差异无分级",
+      "desc": "盘点差异无金额分级阈值",
+      "source_tag": "【制度类-设计缺陷：CP-N001-07（NPM001成品仓库管理标准）】",
+      "fact_anchors": [
+        "CP-N001-07"
+      ]
+    },
+    {
+      "risk_id": "R-5",
+      "raw_id": "R05",
+      "type": "跨类-Step2.5",
+      "title": "废料处置无复核",
+      "desc": "废料由车间自行联系回收商，无定期复核",
+      "source_tag": "【跨类-Step2.5】",
+      "fact_anchors": []
+    }
+  ],
+  "steps": [
+    {
+      "step_id": "A1.1",
+      "track": "A",
+      "risk_ref": "R-1",
+      "risk_refs": [
+        "R-1"
+      ],
+      "raw_risk_ids": [
+        "R01"
+      ],
+      "title": "虚假入库",
+      "source_tag": "【经验类】",
+      "related_controls": [],
+      "related_design_observations": [],
+      "procedure": "1. 调取近3个月地磅入库记录\n2. 核对SAP入库单重量",
+      "sampling": "分层抽样",
+      "data_source": "地磅系统导出+SAP MM03",
+      "tool": "",
+      "criterion": "入库重量与领用差异>5%标记异常",
+      "test_method": "控制有效性测试",
+      "boundary_reason": "",
+      "clue_basis": "",
+      "is_errata": false,
+      "corrects": ""
+    },
+    {
+      "step_id": "A1.2",
+      "track": "A",
+      "risk_ref": "R-2",
+      "risk_refs": [
+        "R-2"
+      ],
+      "raw_risk_ids": [
+        "R02"
+      ],
+      "title": "ERP权限越权",
+      "source_tag": "【系统类-推演】",
+      "related_controls": [],
+      "related_design_observations": [],
+      "procedure": "1. 导出SAP权限分配表\n2. 核对主数据维护权限是否分离",
+      "sampling": "全量检查",
+      "data_source": "SAP权限报表SUIM",
+      "tool": "",
+      "criterion": "主数据维护与入库权限未分离即标记异常",
+      "test_method": "控制有效性测试",
+      "boundary_reason": "",
+      "clue_basis": "",
+      "is_errata": false,
+      "corrects": ""
+    },
+    {
+      "step_id": "A1.4",
+      "track": "A",
+      "risk_ref": "R-3",
+      "risk_refs": [
+        "R-3"
+      ],
+      "raw_risk_ids": [
+        "R03"
+      ],
+      "title": "客户集中导致呆滞",
+      "source_tag": "【公司类-推演】",
+      "related_controls": [],
+      "related_design_observations": [],
+      "procedure": "1. 导出近12个月成品库存周转\n2. 按客户分层统计呆滞天数",
+      "sampling": "分层抽样",
+      "data_source": "SAP库存报表MC.9",
+      "tool": "",
+      "criterion": "呆滞天数>180天且金额>50万元标记异常",
+      "test_method": "控制有效性测试",
+      "boundary_reason": "",
+      "clue_basis": "",
+      "is_errata": false,
+      "corrects": ""
+    },
+    {
+      "step_id": "A1.3",
+      "track": "A",
+      "risk_ref": "R-4",
+      "risk_refs": [
+        "R-4"
+      ],
+      "raw_risk_ids": [
+        "R04"
+      ],
+      "title": "盘点差异无分级",
+      "source_tag": "【制度类-设计缺陷：CP-N001-07（NPM001成品仓库管理标准）】",
+      "related_controls": [
+        "CP-N001-07"
+      ],
+      "related_design_observations": [],
+      "procedure": "1. 获取盘点制度\n2. 检查差异审批记录",
+      "sampling": "分层抽样",
+      "data_source": "OA审批流+盘点表",
+      "tool": "",
+      "criterion": "差异>1万元未分级审批标记异常",
+      "test_method": "控制有效性测试",
+      "boundary_reason": "",
+      "clue_basis": "",
+      "is_errata": false,
+      "corrects": ""
+    },
+    {
+      "step_id": "B1.1",
+      "track": "B",
+      "risk_ref": "R-1",
+      "risk_refs": [
+        "R-1"
+      ],
+      "raw_risk_ids": [
+        "R01"
+      ],
+      "title": "虚假入库",
+      "source_tag": "【经验类】",
+      "related_controls": [],
+      "related_design_observations": [],
+      "procedure": "1. 提取地磅过磅记录\n2. 比对SAP入库与采购订单",
+      "sampling": "",
+      "data_source": "地磅+ERP",
+      "tool": "",
+      "criterion": "入库重量偏离采购订单>3%需穿透",
+      "test_method": "舞弊实质性测试",
+      "boundary_reason": "",
+      "clue_basis": "",
+      "is_errata": false,
+      "corrects": ""
+    },
+    {
+      "step_id": "C1.1",
+      "track": "C",
+      "risk_ref": "R-2",
+      "risk_refs": [
+        "R-2"
+      ],
+      "raw_risk_ids": [
+        "R02"
+      ],
+      "title": "ERP权限越权",
+      "source_tag": "【系统类-推演】",
+      "related_controls": [],
+      "related_design_observations": [],
+      "procedure": "1. 导出SAP权限变更日志\n2. 分析异常变更",
+      "sampling": "",
+      "data_source": "SAP权限变更日志",
+      "tool": "",
+      "criterion": "非工时时段权限变更逐条核实",
+      "test_method": "系统/公司类实质性测试",
+      "boundary_reason": "",
+      "clue_basis": "",
+      "is_errata": false,
+      "corrects": ""
+    },
+    {
+      "step_id": "C1.2",
+      "track": "C",
+      "risk_ref": "R-5",
+      "risk_refs": [
+        "R-5"
+      ],
+      "raw_risk_ids": [
+        "R05"
+      ],
+      "title": "废料处置无复核",
+      "source_tag": "【跨类-Step2.5】",
+      "related_controls": [],
+      "related_design_observations": [],
+      "procedure": "1. 导出近6个月废料回收记录\n2. 比对产出与回收量",
+      "sampling": "",
+      "data_source": "废料台账+地磅",
+      "tool": "",
+      "criterion": "回收量偏离产出>10%需穿透",
+      "test_method": "系统/公司类实质性测试",
+      "boundary_reason": "",
+      "clue_basis": "",
+      "is_errata": false,
+      "corrects": ""
+    }
+  ],
+  "coverage": {
+    "covered_risks": [
+      "R-1",
+      "R-2",
+      "R-3",
+      "R-4",
+      "R-5"
+    ],
+    "uncovered_risks": [],
+    "coverage_rate": 1.0
+  },
+  "stats": {
+    "risk_count": 5,
+    "step_count": 7,
+    "tracks_with_steps": [
+      "A",
+      "B",
+      "C"
+    ]
+  }
+}

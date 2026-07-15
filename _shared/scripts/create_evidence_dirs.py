@@ -55,27 +55,45 @@ def _extract_title(description: str) -> str:
 
 
 def _parse_table_rows(text: str) -> list:
-    """从 Markdown 文本中提取符合 `| 编号 | 描述 | ...` 格式的表格行。
+    """从 Markdown 文本中提取程序编号和标题。
+
+    v2.0：不假设程序编号在固定列位置——新列结构中程序编号在第4列
+    （前面是风险编号/风险名称/来源标注）。改为扫描整行找 [A-H]\\d+.\\d+ 格式。
     返回 [(编号, 标题), ...] 列表。
     """
     results = []
-    # 匹配以程序编号开头的表格行（A-H + 数字，或纯数字编号）
-    pattern = re.compile(
-        r'^\|\s*([A-H]?\d+(?:\.\d+)?)\s*\|\s*(.+?)\s*\|',
-        re.MULTILINE
-    )
+    # 匹配所有表格行（| 开头 | 结尾）
+    table_row_pattern = re.compile(r'^\|.+\|$', re.MULTILINE)
+    # 程序编号格式：A1.1, B2.3 等（字母+数字.数字）
+    code_pattern = re.compile(r'^([A-H]\d+(?:\.\d+)?)$')
+
     seen = set()
-    for m in pattern.finditer(text):
-        code = m.group(1).strip()
-        desc = m.group(2).strip()
-        # 跳过表头行（编号列是 --- 或 序号 等）
-        if re.match(r'^[-:]+$', code) or code in ('序号', '编号'):
+    for m in table_row_pattern.finditer(text):
+        line = m.group(0)
+        parts = [p.strip() for p in line[1:-1].split('|')]
+
+        # 跳过分隔行（全是 --- 或 :---）
+        if all(re.match(r'^[-:]+$', p) or p == '' for p in parts):
             continue
-        if code in seen:
+
+        # 扫描整行找程序编号列（不假设位置）
+        code = None
+        code_idx = -1
+        for i, p in enumerate(parts):
+            if code_pattern.match(p):
+                code = p
+                code_idx = i
+                break
+
+        if not code or code in seen:
             continue
         seen.add(code)
-        title = _extract_title(desc)
+
+        # 标题取程序编号后面的下一列（通常是"测试程序"列）
+        title_raw = parts[code_idx + 1] if code_idx + 1 < len(parts) else ""
+        title = _extract_title(title_raw)
         results.append((code, title))
+
     return results
 
 

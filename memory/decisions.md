@@ -183,3 +183,20 @@
 - 内部接口不变：CLI 子命令名、参数、输出格式全部保持。queries.py 无 Python 导入者——纯 CLI 调用。
 - 撤回成本极低：一次 git revert。
 影响：queries.py 1327→795 行；新建 query_data_sources.py 536 行；cmd_* 函数从平均 90 行压到 20-35 行。
+
+## ADR-016
+日期：2026-07-14
+背景：源仓库 10 个审计技能在根目录，`.claude/skills/` 只有 2 个 geb-* 技能。`setup-project.ps1` 从根目录逐个部署（正确），`update-project.ps1` stable 模式整目录复制 `.claude/skills/`（只有 2 个），导致每次更新丢失 10 个审计技能。
+备选方案：
+- A) 修复 `update-project.ps1` 让它也从根目录读取技能列表（保持两个来源一致）
+- B) 统一到 `.claude/skills/` 作为唯一来源，setup 和 update 都从这读
+最终选择：B
+原因：
+- Claude Code 本身只看 `.claude/skills/` 发现技能——源仓库自己在本地也应该是自洽的
+- 统一来源消除"两个脚本读不同目录"的结构性不一致
+- 通过 junction 建立映射（不挪目录），保持向后兼容
+影响：
+- `.claude/skills/` 下新增 10 个目录 junction
+- `setup-project.ps1` 改为扫描 `.claude/skills/` 自动发现（消除硬编码列表）
+- `update-project.ps1` stable 模式改为逐技能合并
+- `.claude/settings.json` 和 `.claude/rules/` 补充到部署流程

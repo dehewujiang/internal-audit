@@ -24,6 +24,7 @@ AI 驱动的内部审计辅助流水线，帮 Flan（汽车零部件企业审计
 - **文档完整性改进（2026-07-13）**: CLAUDE.md + CLAUDE-project.md 新增技能阶段映射表、脚本速查表、部署架构说明、Architecture gotchas，两份文件 12 章节完全对齐
 - **审计程序追溯链（2026-07-13）**: program_index.json 伴生文件 + queries.py trace 三向追溯（finding/步骤/控制点双向链接）
 - **缺口补齐（2026-07-10）**: interview-designer Step 5.0 validate 调用、finding-debate Step 5 辩论充分性自检
+- **P0-1 程序 JSON 化（2026-07-14）**: `program_ir_parser.py`（MD→ProgramIR 确定性解析器）+ `validate-program.py --ir`（覆盖度/判定标准量化/数据来源比例三项 block）。AI 仍输出 MD，Flan 工作流零改动。ProgramIR 是 program_index.json 超集（schema 2.0.0，steps[] 兼容），替代 LLM 手写 JSON。闭环/工具/mandatory实质/查证有效性仍留 LLM。
 
 ## 正在开发
 - 无
@@ -32,6 +33,13 @@ AI 驱动的内部审计辅助流水线，帮 Flan（汽车零部件企业审计
 | 缺口 | 说明 |
 |------|------|
 | 无 | — |
+
+## 最近修复（2026-07-14）
+**技能注册缺陷**：源仓库 `.claude/skills/` 只有 2 个 geb-* 技能，10 个审计技能在根目录未注册。`update-project.ps1` 的 stable 模式整目录覆盖导致部署项目技能被清空。
+- **修复1**：`.claude/skills/` 下创建 10 个目录 junction 指向根目录技能
+- **修复2**：`setup-project.ps1` 改为扫描 `.claude/skills/` 自动发现技能（消除硬编码列表）
+- **修复3**：`update-project.ps1` stable 模式改为逐技能合并（不是整目录覆盖）
+- **修复4**：补充 `.claude/settings.json` 和 `.claude/rules/` 部署
 
 ## 最大风险
 🟢 无阻塞级风险。五层防御（三重闸机 + 决策追溯 + 跨项目可观测性）。

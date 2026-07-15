@@ -16,6 +16,7 @@ import os
 import sys
 import re
 import argparse
+from pathlib import Path
 
 
 # ── 校验项 ──────────────────────────────────────────────
@@ -83,16 +84,20 @@ def check_company_facts(text):
 
 
 def check_risk_coverage(text):
-    """[R] 风险点有对应的测试程序（粗略检查）"""
+    """[R] 风险点有对应的测试程序（粗略检查）
+
+    注：本检查为正则粗扫，结构化覆盖度请用 --ir 模式（check_ir_coverage_rate）。
+    风险编号兼容 R01 / R-001；程序编号兼容 A1.1 / B2.3-C。
+    """
     # 统计风险编号出现次数
-    risk_ids = re.findall(r'[Rr]-\d{3}', text)
-    test_ids = re.findall(r'[A-F]-\d{3}', text)
+    risk_ids = re.findall(r'[Rr]-?\d+', text)
+    test_ids = re.findall(r'[A-F]\d+(?:\.\d+)?(?:-C)?', text)
     unique_risks = set(risk_ids)
     unique_tests = set(test_ids)
     if not unique_risks:
-        return True, "未发现风险编号（R-XXX 格式），可能使用了不同的编号体系"
+        return True, "未发现风险编号（R01/R-001 格式），可能使用了不同的编号体系"
     if not unique_tests:
-        return False, f"发现了 {len(unique_risks)} 个风险点但无对应测试程序编号（A-XXX/B-XXX 格式）"
+        return False, f"发现了 {len(unique_risks)} 个风险点但无对应测试程序编号（A1.1/B2.3 格式）"
     return True, f"风险点 {len(unique_risks)} 个，测试程序 {len(unique_tests)} 个"
 
 
@@ -118,10 +123,179 @@ def check_decision_log(text):
     return True, None
 
 
+def check_column_consistency(text, config_path=None):
+    """[C] 列头一致性校验——MD各轨道程序表头必须与JSON的columns(risk+design层)一致
+
+    v2.0 新增：校验MD表格列名和列数是否与 program_templates.json 定义一致。
+    不一致则 block（阻断）。
+    """
+    if config_path is None:
+        config_path = Path(__file__).parent.parent.parent / \
+                      'internal-audit-program-generator' / 'config' / 'program_templates.json'
+
+    if not Path(config_path).exists():
+        return True, "配置文件不存在，跳过列头校验"
+
+    with open(config_path, 'r', encoding='utf-8') as f:
+        track_config = json.load(f)
+
+    issues = []
+    SECTION_TO_TRACK = {'三': 'A', '四': 'B', '五': 'C', '六': 'E', '七': 'F', '八': 'D'}
+
+    headings = list(re.finditer(r'^##\s+(.+?)(?:\[.+?\])?\s*$', text, re.MULTILINE))
+
+    for i, m in enumerate(headings):
+        title = m.group(1).strip()
+        num_match = re.match(r'([一二三四五六七八九十]+)[、．.]', title)
+        if not num_match:
+            continue
+        track_id = SECTION_TO_TRACK.get(num_match.group(1))
+        if not track_id:
+            continue
+
+        track_cfg = track_config.get('tracks', {}).get(track_id, {})
+        all_cols = track_cfg.get('columns', [])
+        expected_headers = [c['name'] for c in all_cols if c.get('layer') != 'execution']
+
+        if not expected_headers:
+            continue
+
+        start = m.end()
+        end = headings[i + 1].start() if i + 1 < len(headings) else len(text)
+        track_content = text[start:end]
+
+        track_lines = track_content.split('\n')
+        ALIGN_SEP = re.compile(r'^\|[:\-\s]+\|')
+
+        for j, line in enumerate(track_lines):
+            stripped = line.strip()
+            if ALIGN_SEP.match(stripped) and j > 0:
+                prev = track_lines[j - 1].strip()
+                if prev.startswith('|') and prev.endswith('|') and '程序编号' in prev:
+                    actual_headers = [p.strip() for p in prev[1:-1].split('|')]
+
+                    if len(actual_headers) != len(expected_headers):
+                        issues.append(f"轨道{track_id}表头列数不符：MD有{len(actual_headers)}列，JSON定义{len(expected_headers)}列（应为：{' | '.join(expected_headers)}）")
+                    else:
+                        for k, (actual, expected) in enumerate(zip(actual_headers, expected_headers)):
+                            if actual != expected:
+                                issues.append(f"轨道{track_id}第{k+1}列：MD为'{actual}'，应为'{expected}'")
+
+    return len(issues) == 0, "; ".join(issues) if issues else None
+
+
+# ── IR 结构化校验（--ir 模式）──────────────────────────
+
+# block 级检查（失败即阻断）。文本检查 + IR 检查统一在此声明。
+BLOCKER_KEYS = {
+    "no_placeholder", "track_activation", "column_consistency",
+    "ir_coverage_rate", "ir_criterion", "ir_data_source",
+}
+
+SWITCH_WORDS = {'是', '否', '有', '无', '存在', '不存在', '符合', '不符合',
+                'yes', 'no', 'true', 'false'}
+FUZZY_WORDS = ['较大', '过多', '不足', '一般', '偏高', '偏低', '显著', '基本']
+
+
+def check_ir_coverage_rate(ir):
+    """[IR] 覆盖度：风险清单 − 程序覆盖，覆盖率 < 80% → block"""
+    register_ids = {r['risk_id'] for r in ir.get('risk_register', []) if r['risk_id']}
+    if not register_ids:
+        return True, "未抽到风险清单，覆盖度检查跳过（请确认 2.1/2.2 风险识别清单表存在）"
+    rate = ir['coverage']['coverage_rate']
+    if rate < 0.8:
+        unc = [u['risk_id'] for u in ir['coverage']['uncovered_risks']]
+        return False, f"覆盖率 {rate*100:.0f}% < 80%（未覆盖：{', '.join(unc[:10])}）"
+    return True, f"覆盖率 {rate*100:.0f}%（{len(register_ids)} 个风险）"
+
+
+def check_ir_coverage_uncovered(ir):
+    """[IR] 有未覆盖风险但无理由 → warn（非阻断）"""
+    no_reason = [u['risk_id'] for u in ir['coverage']['uncovered_risks']
+                 if not u.get('reason', '').strip()]
+    if no_reason:
+        return False, f"{len(no_reason)} 个风险未覆盖且无理由：{', '.join(no_reason[:10])}（建议补充理由或加程序）"
+    return True, None
+
+
+def check_ir_criterion(ir):
+    """[IR] 判定标准量化：纯开关词 / 模糊词 / 空 → block"""
+    bad = []
+    for s in ir['steps']:
+        c = (s.get('criterion') or '').strip()
+        sid = s.get('step_id', '?')
+        if not c:
+            bad.append(f"{sid}:判定标准为空")
+            continue
+        if c.lower() in SWITCH_WORDS:
+            bad.append(f"{sid}:开关型('{c}')")
+            continue
+        if any(w in c for w in FUZZY_WORDS):
+            bad.append(f"{sid}:含模糊词('{c[:24]}')")
+    if bad:
+        return False, f"{len(bad)} 个程序判定标准不达标：{'; '.join(bad[:5])}"
+    return True, None
+
+
+def check_ir_data_source(ir):
+    """[IR] 数据来源比例：空 data_source 步骤 > 30% → block"""
+    steps = ir['steps']
+    if not steps:
+        return True, "无步骤，跳过"
+    empty = [s['step_id'] for s in steps if not (s.get('data_source') or '').strip()]
+    ratio = len(empty) / len(steps)
+    if ratio > 0.3:
+        return False, f"{len(empty)}/{len(steps)} ({ratio*100:.0f}%) 步骤无数据来源 > 30%"
+    return True, f"{len(empty)}/{len(steps)} 步骤无数据来源"
+
+
+def check_ir_sampling(ir):
+    """[IR] 轨道A 抽样方法缺失 → warn（非阻断）"""
+    missing = [s['step_id'] for s in ir['steps']
+               if s.get('track') == 'A' and not (s.get('sampling') or '').strip()]
+    if missing:
+        return False, f"{len(missing)} 个轨道A步骤缺抽样方法：{', '.join(missing[:10])}"
+    return True, None
+
+
+def check_ir_decision_rationale(ir):
+    """[IR] 决策理由字数：D-003≥30、D-004/D-005≥20 → warn（非阻断）"""
+    dl = ir.get('decision_log', {})
+    issues = []
+    for did, minn in [('D-003', 30), ('D-004', 20), ('D-005', 20)]:
+        r = (dl.get(did, {}) or {}).get('rationale', '').strip()
+        if not r:
+            issues.append(f"{did}缺理由")
+        elif len(r) < minn:
+            issues.append(f"{did}理由{len(r)}字<{minn}")
+    if issues:
+        return False, "; ".join(issues) + "（非阻断，建议补充）"
+    return True, None
+
+
+def run_ir_checks(ir):
+    """对 ProgramIR 执行全部 IR 结构化检查，返回 {check_name: {passed, message}}。"""
+    checks = {}
+    for name, fn in [
+        ("ir_coverage_rate", check_ir_coverage_rate),
+        ("ir_coverage_uncovered", check_ir_coverage_uncovered),
+        ("ir_criterion", check_ir_criterion),
+        ("ir_data_source", check_ir_data_source),
+        ("ir_sampling", check_ir_sampling),
+        ("ir_decision_rationale", check_ir_decision_rationale),
+    ]:
+        try:
+            passed, msg = fn(ir)
+        except Exception as e:
+            passed, msg = False, f"检查异常: {e}"
+        checks[name] = {"passed": passed, "message": msg}
+    return checks
+
+
 # ── 主校验 ──────────────────────────────────────────────
 
-def validate_program(text, filename=""):
-    """对审计程序文本执行全部校验"""
+def validate_program(text, filename="", ir=None):
+    """对审计程序文本执行全部校验。ir 非 None 时追加 IR 结构化检查。"""
     checks = {}
 
     passed, msg = check_no_placeholder(text)
@@ -142,10 +316,21 @@ def validate_program(text, filename=""):
     passed, msg = check_decision_log(text)
     checks["decision_log"] = {"passed": passed, "message": msg}
 
-    blockers = [k for k, v in checks.items() if not v["passed"]
-                and k in ("no_placeholder", "track_activation")]
-    warnings = [k for k, v in checks.items() if not v["passed"]
-                and k not in ("no_placeholder", "track_activation")]
+    passed, msg = check_column_consistency(text)
+    checks["column_consistency"] = {"passed": passed, "message": msg}
+
+    # IR 结构化检查（仅 --ir 模式）
+    ir_error = None
+    if ir is not None:
+        if isinstance(ir, dict) and ir.get("_parse_error"):
+            ir_error = ir.get("_parse_error")
+            checks["ir_parse"] = {"passed": False,
+                                  "message": f"ProgramIR 解析失败，IR 检查跳过：{ir_error}"}
+        else:
+            checks.update(run_ir_checks(ir))
+
+    blockers = [k for k, v in checks.items() if not v["passed"] and k in BLOCKER_KEYS]
+    warnings = [k for k, v in checks.items() if not v["passed"] and k not in BLOCKER_KEYS]
 
     action = "block" if blockers else ("warn" if warnings else "pass")
 
@@ -173,6 +358,8 @@ def main():
     parser = argparse.ArgumentParser(description="审计程序硬校验工具")
     parser.add_argument("path", help="审计程序 Markdown 文件路径（或目录）")
     parser.add_argument("--json", action="store_true", help="输出 JSON 格式")
+    parser.add_argument("--ir", action="store_true",
+                        help="追加 ProgramIR 结构化校验（覆盖度/判定标准量化/数据来源比例等）")
     parser.add_argument("--strict", action="store_true", help="block时exit 1而非exit 0")
     args = parser.parse_args()
 
@@ -193,6 +380,16 @@ def main():
         print("[ERROR] 未找到 .md 文件")
         sys.exit(2)
 
+    # --ir 模式：懒加载解析器（避免非 ir 模式依赖 program_generator）
+    build_ir = None
+    if args.ir:
+        try:
+            from program_ir_parser import build_ir as _build_ir
+            build_ir = _build_ir
+        except Exception as e:
+            print(f"[ERROR] 无法加载 program_ir_parser: {e}", file=sys.stderr)
+            sys.exit(2)
+
     results = []
     has_blocker = False
     has_warn = False
@@ -200,7 +397,13 @@ def main():
     for fpath in files:
         with open(fpath, "r", encoding="utf-8") as f:
             text = f.read()
-        report = validate_program(text, filename=os.path.basename(fpath))
+        ir = None
+        if args.ir and build_ir:
+            try:
+                ir = build_ir(Path(fpath))
+            except Exception as e:
+                ir = {"_parse_error": str(e)}
+        report = validate_program(text, filename=os.path.basename(fpath), ir=ir)
         results.append(report)
         if report["action"] == "block":
             has_blocker = True
@@ -211,7 +414,12 @@ def main():
             emoji = {"pass": "✅", "warn": "⚠️", "block": "🔴"}
             print(f"\n  {emoji[report['action']]} {os.path.basename(fpath)} — {report['action'].upper()}")
             for name, data in report["checks"].items():
-                status = "✅" if data["passed"] else "🔴" if name in ("no_placeholder", "track_activation") else "⚠️"
+                if data["passed"]:
+                    status = "✅"
+                elif name in BLOCKER_KEYS:
+                    status = "🔴"
+                else:
+                    status = "⚠️"
                 msg = data.get("message") or "通过"
                 print(f"    {status} [{name}] {msg[:100]}")
 

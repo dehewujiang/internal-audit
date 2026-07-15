@@ -1,7 +1,7 @@
 {
-  "version": "2026-07-14-15",
-  "git_commit": "bcada50",
-  "updated_at": "2026-07-14T16:28:15+08:00",
+  "version": "2026-07-15-2",
+  "git_commit": "271ac1d",
+  "updated_at": "2026-07-15T08:03:27+08:00",
   "changes": [
     {
       "type": "doc",
@@ -97,6 +97,11 @@
       "type": "fix",
       "file": "setup-project.ps1,update-project.ps1",
       "summary": "sync skill discovery via .claude/skills, deploy settings.json and rules"
+    },
+    {
+      "type": "feat",
+      "file": "列结构统一v2.0",
+      "summary": "三层columns(risk/design/execution)+validate-program列头校验+program_generator按layer导出+create_evidence_dirs正则修正+9文件数据源字段同步"
     }
   ]
 }
