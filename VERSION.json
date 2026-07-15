@@ -1,7 +1,7 @@
 {
-  "version": "2026-07-15-6",
-  "git_commit": "5eaaa6f",
-  "updated_at": "2026-07-15T15:44:44+08:00",
+  "version": "2026-07-15-7",
+  "git_commit": "4be0193",
+  "updated_at": "2026-07-15T15:45:21+08:00",
   "changes": [
     {
       "type": "doc",
@@ -122,6 +122,11 @@
       "type": "fix",
       "file": "_shared/scripts/create_evidence_dirs.py",
       "summary": "证据目录名改用程序编号+风险名称，去掉项目名中间层"
+    },
+    {
+      "type": "feat",
+      "file": "_shared/scripts/analysis_manifest.py",
+      "summary": "新增增量分析manifest数据管理"
     }
   ]
 }

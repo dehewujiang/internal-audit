@@ -36,7 +36,51 @@
 生成设计观察 D-XXX 编号 → design-assessments/
 ```
 
-## Step 0：批量扫描与索引建立（批量分析时执行）
+## Step -1：增量检测闸机（每次分析前必须执行）
+
+**⚠️ 硬约束：在任何制度分析操作之前，必须先执行本步骤。不可跳过。**
+
+### 执行闸机
+
+```bash
+python _shared/scripts/incremental_analysis_gate.py check --workspace .
+```
+
+闸机输出 JSON 中的 `mode` 字段决定后续路径：
+
+| mode | 含义 | 后续行为 |
+|------|------|---------|
+| `full` | manifest 不存在或全部文件未分析 | 走完整批量分析流程（继续执行本工作流的 Step 0 → Step 7） |
+| `incremental` | 存在新增或变更文件 | 进入增量分析模式（见下方），完成后必须走闸机2和闸机3 |
+| `no_change` | 所有文件已分析，无变化 | 告知用户无需分析，停止 |
+| `repair` | manifest 记录存在但产出 JSON 缺失 | 按闸机输出的 `new_files` 清单重新分析缺失的文件 |
+
+### 增量分析模式（mode=incremental 时触发）
+
+**核心理念**：内容提取走增量（省 token），交叉验证走全量（保质量）。
+
+```
+Step -1    → incremental_analysis_gate.py check（闸机1：确定增量清单）
+Step 0-N   → 正常分析流程，但只分析闸机清单中的 new_files
+             每份文件输出独立 JSON（不合并到已有 batch JSON）
+Step N+1   → incremental_analysis_gate.py verify（闸机2：校验产出，必须通过）
+Step N+2   → incremental_analysis_gate.py finalize（闸机3：标记完成）
+Step N+3   → 全量交叉验证：读取 policy-analyses/ 下所有 JSON
+             ——此时不重读原文，只读 JSON 摘要
+             ——重新执行跨文件对照、冲突检测、verification_status 更新
+             ——结果写入 _cross_validation_report.json
+```
+
+**关键约束**：
+
+- `unchanged_files` 中的文件**仅用于 Step N+3 交叉验证**，禁止重新读取原文
+- 闸机2（verify）返回非零退出码时，**必须修正后才能执行闸机3（finalize）**
+- 增量模式下每份新文件输出独立 JSON（命名：`{文件名}分析报告.json`）
+- 已有文件的 JSON 保持不变（除非交叉验证发现新的跨文件冲突）
+
+---
+
+## Step 0：批量扫描与索引建立（全量分析或增量模式共用）
 
 **⚠️ 本步骤只读文件名和目录，不读全文。**
 

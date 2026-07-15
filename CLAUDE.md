@@ -158,7 +158,7 @@ Every Python script call must pass `phase_gate.py tool-check` first. Exit 1 = bl
 | Phase | Allowed scripts (beyond globals) | Validate |
 |-------|----------------------------------|----------|
 | Phase 0 (init) | `project_init.py` | — |
-| Phase 1 (document) | `validate-policy-analysis.py`, `pdf_ocr_extractor.py` | policy-analysis |
+| Phase 1 (document) | `validate-policy-analysis.py`, `pdf_ocr_extractor.py`, `analysis_manifest.py`, `incremental_analysis_gate.py` | policy-analysis |
 | Phase 1.5 (interview) | `validate-interview.py` | interview |
 | Phase 2-3 (program) | `validate-program.py` | program |
 | Phase 4 (execution) | `validate-finding.py` | finding |
@@ -227,6 +227,12 @@ Pure engineering tasks (syntax fix, script repair, data structure optimization, 
 
 | Script | Role |
 |--------|------|
+| `analysis_manifest.py` | Document analysis manifest: diff/mark/status tracking |
+| `audit_styles.py` | Audit writing style definitions |
+| `create_evidence_dirs.py` | Auto-create evidence directory tree from program markdown |
+| `decisions_schema.py` | JSON schema for decision records |
+| `excel_core.py` | Excel read/write core (used by program-generator export) |
+| `incremental_analysis_gate.py` | Incremental analysis gate: check/verify/finalize (hard gate for document-organizer) |
 | `phase_gate.py` | Phase gate: check/advance/rollback/status/tool-check |
 | `queries.py` | CLI router for all query subcommands |
 | `query_commands.py` | Command implementations (findings/trace/errata/decide/...) |
@@ -238,12 +244,7 @@ Pure engineering tasks (syntax fix, script repair, data structure optimization, 
 | `validate-policy-analysis.py` | Validate policy analysis output |
 | `validate-interview.py` | Validate interview materials |
 | `validate-json.py` | Generic JSON schema validation |
-| `create_evidence_dirs.py` | Auto-create evidence directory tree from program markdown |
 | `project_init.py` | Project safety check before workspace creation |
-| `query_data_sources.py` | Backend data source queries (used by queries.py) |
-| `decisions_schema.py` | JSON schema for decision records |
-| `audit_styles.py` | Audit writing style definitions |
-| `excel_core.py` | Excel read/write core (used by program-generator export) |
 
 External evaluator scripts (Phase 1+): `record_evaluation.py`, `quality_gate.py`
 

@@ -100,6 +100,36 @@ Phase C：汇总（只读JSON，不读原文）
 
 **多文件交叉验证规则**：详见 [references/cross_doc_rules.md](./references/cross_doc_rules.md)，避免因单文件分析而误判"缺失控制"。
 
+## 增量分析（闸机强制）
+
+**硬约束**：在开始任何制度分析之前，必须先执行闸机检查。闸机输出是强制性的——**闸机给出的 `new_files` 清单是你唯一应该分析的文件，不得自行决定分析范围或合并批次。**
+
+```bash
+python _shared/scripts/incremental_analysis_gate.py check --workspace .
+```
+
+闸机输出的 `mode` 字段决定分析路径：
+
+| mode | 行为 |
+|------|------|
+| `full` | 首次全量分析，走完整工作流 |
+| `incremental` | 只分析 `new_files` 中的文件。每份输出独立 JSON。完成后必须依次执行 verify 和 finalize 闸机 |
+| `no_change` | 无需分析，告知用户 |
+
+**增量模式下三个闸机调用点不可跳过**：
+
+1. 分析前：`incremental_analysis_gate.py check` — 确定分析范围和模式
+2. 产出后：`incremental_analysis_gate.py verify --new-files "文件A,文件B"` — 校验 JSON 是否存在且通过 validate
+3. 收尾时：`incremental_analysis_gate.py finalize --new-files "文件A,文件B"` — 标记完成 + 触发交叉验证提醒
+
+**关键规则**：
+
+- 增量模式下，`unchanged_files` 中的文件**仅用于交叉验证阶段**（只读其 JSON 摘要，禁止重新读取原文）
+- verify 闸机返回非零退出码时，**必须修正缺失/不合格的产出后才能执行 finalize**
+- 每份新文件输出独立分析 JSON（命名：`{文件名}分析报告.json`），不合并到已有 batch JSON
+
+流程细节见 [references/workflow.md#step--1增量检测闸机](./references/workflow.md#step--1增量检测闸机)
+
 ## 流程重建（提取隐含控制）
 
 详见 [references/process_reconstruction.md](./references/process_reconstruction.md)
@@ -182,7 +212,12 @@ Phase C：汇总（只读JSON，不读原文）
 - `Glob` - 批量扫描文档
 - `Write` - 生成分析报告（Markdown + JSON）
 - `Grep` - 关键词搜索
-- **`python tools/pdf_ocr_extractor.py`** - 处理PDF扫描件OCR转换（中文制度文件推荐使用EasyOCR引擎）
+- `python tools/pdf_ocr_extractor.py` - 处理PDF扫描件OCR转换（中文制度文件推荐使用EasyOCR引擎）
+- `python _shared/scripts/incremental_analysis_gate.py check` — 闸机：确定增量/全量分析模式
+- `python _shared/scripts/incremental_analysis_gate.py verify` — 闸机：校验分析产出是否存在且合规
+- `python _shared/scripts/incremental_analysis_gate.py finalize` — 闸机：标记完成 + 触发交叉验证提醒
+- `python _shared/scripts/analysis_manifest.py diff` — 查询：对比文档与已分析清单
+- `python _shared/scripts/analysis_manifest.py status` — 查询：查看分析进度
 
 ### 扫描件识别技术规范
 
@@ -275,9 +310,11 @@ OCR 会自动检测并标记以下需要人工核对的内容：
    - 复杂判断点询问用户
    - 行业特殊要求请用户补充
 
-5. **批量分析优先**：
-   - 优先分析整个制度体系，而非单份文件
-   - 单文件分析时，所有control_gaps标记verification_status="待确认"
+5. **批量分析优先（含增量模式）**：
+    - **首次分析**：优先分析整个制度体系，而非单份文件
+    - **增量分析**：后续补充文件时，内容提取只分析新文件（省 token），但交叉验证重新覆盖全量 JSON（保质量）
+    - **单文件分析时**，所有 control_gaps 标记 verification_status="待确认"
+    - **增量分析时**，每份新文件输出独立 JSON，不合并到已有 batch JSON
 
 6. **JSON输出必须包含**：
    - `schema_version` 字段
