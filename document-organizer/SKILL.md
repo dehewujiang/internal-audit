@@ -29,16 +29,16 @@ description: |
 
 ## 核心功能
 
-| 功能模块       | 说明                                                     |
-| ---------- | ------------------------------------------------------ |
-| **文档类型识别** | 自动识别管理制度、流程文件、操作手册、岗位职责、表单模板、内控手册                      |
-| **批量扫描**   | 扫描文件夹，建立"文件-章节-业务领域"索引                                 |
-| **控制点提取**  | 识别审批权限控制、职责分离控制、定期检查控制、文档记录控制                          |
-| **风险点识别**  | 发现流程断裂点、权限集中点、监督盲区、信息不对称点                              |
-| **跨文件验证**  | 追踪制度间引用关系，检测冲突，确认缺失（verification_status）               |
-| **版本对比**   | 识别同一制度的不同版本，自动对比差异                                     |
+| 功能模块 | 说明 |
+|---------|------|
+| **文档类型识别** | 自动识别管理制度、流程文件、操作手册、岗位职责、表单模板、内控手册 |
+| **批量扫描** | 扫描文件夹，建立"文件-章节-业务领域"索引 |
+| **控制点提取** | 识别审批权限控制、职责分离控制、定期检查控制、文档记录控制 |
+| **风险点识别** | 发现流程断裂点、权限集中点、监督盲区、信息不对称点 |
+| **跨文件验证** | 追踪制度间引用关系，检测冲突，确认缺失（verification_status） |
+| **版本对比** | 识别同一制度的不同版本，自动对比差异 |
 | **程序基线输出** | 为每个控制点输出baseline_audit_program模板（供program-generator消费） |
-| **JSON输出** | 结构化输出，供internal-audit-program-generator消费              |
+| **JSON输出** | 结构化输出，供internal-audit-program-generator消费 |
 
 ## 支持的文档类型
 
@@ -65,19 +65,9 @@ description: |
 - 用户说"帮我看看这份管理制度"
 - 用户要求"根据制度提取控制点"
 
-## 方法论总纲
-
-详见 [references/document_analysis_guide.md](./references/document_analysis_guide.md)
-
-**前置参考**：分析方法论总纲，包含制度文档类型、分析基本原则、以及如何将制度内容转化为审计程序。LLM 在进入具体工作流程前应先了解此总纲。
-
 ## 工作流程
 
 详见 [references/workflow.md](./references/workflow.md)
-
-**分析模式**：采用两遍法——
-1. 第一遍：LLM 快速扫读全文，建立"业务对象索引"（哪些章节在讲同一件事）
-2. 第二遍：对每个业务对象，把散落在各章节的原文归拢后一次性交给 LLM 分析，确保拿到的是完整上下文而非碎片
 
 **分治法（6+文件时必须使用）**：
 
@@ -98,38 +88,6 @@ Phase C：汇总（只读JSON，不读原文）
 → 上下文占用：N × 800 tokens（10个文件 = 8,000 tokens）
 ```
 
-**多文件交叉验证规则**：详见 [references/cross_doc_rules.md](./references/cross_doc_rules.md)，避免因单文件分析而误判"缺失控制"。
-
-## 增量分析（闸机强制）
-
-**硬约束**：在开始任何制度分析之前，必须先执行闸机检查。闸机输出是强制性的——**闸机给出的 `new_files` 清单是你唯一应该分析的文件，不得自行决定分析范围或合并批次。**
-
-```bash
-python _shared/scripts/incremental_analysis_gate.py check --workspace .
-```
-
-闸机输出的 `mode` 字段决定分析路径：
-
-| mode | 行为 |
-|------|------|
-| `full` | 首次全量分析，走完整工作流 |
-| `incremental` | 只分析 `new_files` 中的文件。每份输出独立 JSON。完成后必须依次执行 verify 和 finalize 闸机 |
-| `no_change` | 无需分析，告知用户 |
-
-**增量模式下三个闸机调用点不可跳过**：
-
-1. 分析前：`incremental_analysis_gate.py check` — 确定分析范围和模式
-2. 产出后：`incremental_analysis_gate.py verify --new-files "文件A,文件B"` — 校验 JSON 是否存在且通过 validate
-3. 收尾时：`incremental_analysis_gate.py finalize --new-files "文件A,文件B"` — 标记完成 + 触发交叉验证提醒
-
-**关键规则**：
-
-- 增量模式下，`unchanged_files` 中的文件**仅用于交叉验证阶段**（只读其 JSON 摘要，禁止重新读取原文）
-- verify 闸机返回非零退出码时，**必须修正缺失/不合格的产出后才能执行 finalize**
-- 每份新文件输出独立分析 JSON（命名：`{文件名}分析报告.json`），不合并到已有 batch JSON
-
-流程细节见 [references/workflow.md#step--1增量检测闸机](./references/workflow.md#step--1增量检测闸机)
-
 ## 流程重建（提取隐含控制）
 
 详见 [references/process_reconstruction.md](./references/process_reconstruction.md)
@@ -141,8 +99,6 @@ python _shared/scripts/incremental_analysis_gate.py check --workspace .
 ## 控制点提取
 
 详见 [references/control-points.md](./references/control-points.md)
-
-**控制点分类标准**：详见 [references/control_taxonomy.md](./references/control_taxonomy.md)，定义了审批(AP)、检查(RC)、记录(DR)、职责分离(SS)等控制类型的标准代码和命名规则。
 
 **双通道提取机制**：
 
@@ -178,8 +134,6 @@ python _shared/scripts/incremental_analysis_gate.py check --workspace .
 
 详见 [references/industry-specific.md](./references/industry-specific.md)
 
-**汽车零部件行业基准**：详见 [references/industry_benchmarks.md](./references/industry_benchmarks.md)，定义了紧固件/冲焊件企业各业务领域"应该建立什么制度"——用于在 Phase 1 启动时与 topic.json 的 mandatory 模块对照，判断某领域是否制度缺失。
-
 ## 输出格式规范
 
 ### Markdown + JSON 双输出
@@ -212,12 +166,7 @@ python _shared/scripts/incremental_analysis_gate.py check --workspace .
 - `Glob` - 批量扫描文档
 - `Write` - 生成分析报告（Markdown + JSON）
 - `Grep` - 关键词搜索
-- `python tools/pdf_ocr_extractor.py` - 处理PDF扫描件OCR转换（中文制度文件推荐使用EasyOCR引擎）
-- `python _shared/scripts/incremental_analysis_gate.py check` — 闸机：确定增量/全量分析模式
-- `python _shared/scripts/incremental_analysis_gate.py verify` — 闸机：校验分析产出是否存在且合规
-- `python _shared/scripts/incremental_analysis_gate.py finalize` — 闸机：标记完成 + 触发交叉验证提醒
-- `python _shared/scripts/analysis_manifest.py diff` — 查询：对比文档与已分析清单
-- `python _shared/scripts/analysis_manifest.py status` — 查询：查看分析进度
+- **`python tools/pdf_ocr_extractor.py`** - 处理PDF扫描件OCR转换（中文制度文件推荐使用EasyOCR引擎）
 
 ### 扫描件识别技术规范
 
@@ -310,11 +259,9 @@ OCR 会自动检测并标记以下需要人工核对的内容：
    - 复杂判断点询问用户
    - 行业特殊要求请用户补充
 
-5. **批量分析优先（含增量模式）**：
-    - **首次分析**：优先分析整个制度体系，而非单份文件
-    - **增量分析**：后续补充文件时，内容提取只分析新文件（省 token），但交叉验证重新覆盖全量 JSON（保质量）
-    - **单文件分析时**，所有 control_gaps 标记 verification_status="待确认"
-    - **增量分析时**，每份新文件输出独立 JSON，不合并到已有 batch JSON
+5. **批量分析优先**：
+   - 优先分析整个制度体系，而非单份文件
+   - 单文件分析时，所有control_gaps标记verification_status="待确认"
 
 6. **JSON输出必须包含**：
    - `schema_version` 字段
@@ -323,36 +270,8 @@ OCR 会自动检测并标记以下需要人工核对的内容：
    - `risk_points` 数组
    - `conflicts` 数组（如有）
    - `summary` 对象
-   - `decision_log` 数组 — 必须包含 D-001 和 D-002（详见下方）
 
-7. **决策理由记录（decision_log）**：
-   每份制度分析 JSON 必须包含 `decision_log` 数组，记录本阶段做出的关键判断。
-   
-   ```json
-   "decision_log": [
-     {
-       "decision_id": "D-001",
-       "decision_point": "policy_focus",
-       "decision": "<为什么重点看这5个控制点而不是其他？>",
-       "rationale": "<理由：基于哪些因素（制度覆盖度、历史发现、公司特征）确定了分析重点？≥20字>",
-       "alternatives_considered": [],
-       "context_refs": ["<引用的制度文件路径>"],
-       "timestamp": "<ISO 8601>"
-     },
-     {
-       "decision_id": "D-002",
-       "decision_point": "design_observation_escalation",
-       "decision": "<为什么这些纸面问题需要去现场验证？>",
-       "rationale": "<理由：哪些设计观察满足升级条件（控制缺口严重程度、影响范围、无法通过制度文本确认）？≥20字>",
-       "context_refs": ["<关联的 design-assessment ID 列表>"],
-       "timestamp": "<ISO 8601>"
-     }
-   ]
-   ```
-   
-   **硬性要求**：D-001 和 D-002 的 `rationale` 必须 ≥20 字，不得用通用模板语言。
-
-8. **双目录输出**（批量分析时）：
+7. **双目录输出**（批量分析时）：
    - `policy-analyses/`：完整分析报告（JSON + Markdown）
    - `design-assessments/`：设计观察（D-XXX 编号，供 Phase 4 验证升级）
 
@@ -360,23 +279,9 @@ OCR 会自动检测并标记以下需要人工核对的内容：
 
 ## Step 5：质量评估（引用评估框架）
 
-**执行前加载**：`D:/Nut/00_my_digital/12_AGI/skills/internal-audit/internal-audit-evaluator/SKILL.md`，定位 **policy_analysis** 的检查清单。
+**执行前加载**：`~/.claude/skills/internal-audit/internal-audit-evaluator/SKILL.md`，定位 **policy_analysis** 的检查清单。
 
 **时机**：批量分析完成，输出全部 JSON 后自动执行。
-
-### 5.0 格式硬校验（validate-policy-analysis.py，不可跳过）
-
-在所有推理检查之前，先用确定性脚本做结构校验：
-
-```bash
-python D:/Nut/00_my_digital/12_AGI/skills/internal-audit/_shared/scripts/validate-policy-analysis.py policy-analyses/ --json
-```
-
-| 输出 | 处理 |
-|------|------|
-| action=block | 根据 blockers 逐项修正，重新运行直到通过 |
-| action=warn | 标记 warnings，可接受则继续 |
-| action=pass | 继续进入 5.1 |
 
 ### 5.1 格式检查
 
@@ -407,8 +312,8 @@ python D:/Nut/00_my_digital/12_AGI/skills/internal-audit/_shared/scripts/validat
 
 ```bash
 echo '{json格式检查结果}' > /tmp/eval_result.json
-python D:/Nut/00_my_digital/12_AGI/skills/internal-audit/internal-audit-evaluator/record_evaluation.py --input /tmp/eval_result.json
-python D:/Nut/00_my_digital/12_AGI/skills/internal-audit/internal-audit-evaluator/quality_gate.py --input /tmp/eval_result.json
+python ~/.claude/skills/internal-audit/internal-audit-evaluator/record_evaluation.py --input /tmp/eval_result.json
+python ~/.claude/skills/internal-audit/internal-audit-evaluator/quality_gate.py --input /tmp/eval_result.json
 ```
 
 ---

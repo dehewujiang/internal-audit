@@ -45,7 +45,7 @@ def parse_args():
     parser.add_argument("--eval-id", help="评估 ID（不指定则自动生成）")
     parser.add_argument("--content-type", default="audit_program",
                         choices=["audit_program", "finding", "audit_report",
-                                 "policy_analysis", "interview", "program_quality"])
+                                 "policy_analysis", "interview"])
     parser.add_argument("--judgment", default="pass",
                         choices=["pass", "warn", "fail"],
                         help="总体判定")

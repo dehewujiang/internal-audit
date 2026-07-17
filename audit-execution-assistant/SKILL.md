@@ -1,6 +1,6 @@
 ---
 name: audit-execution-assistant
-description: |-
+description: |
   按审计程序执行取证、分析证据、生成finding。
   不替代实地盘点、系统登录、人员访谈等现场工作。
   职责边界：执行审计过程中逐项记录异常和分析证据。审计完成后汇总报告请使用 internal-audit-report-generator。
@@ -50,9 +50,6 @@ description: |-
 | `references/analysis_patterns.md` | 数据分析模式（金额阈值、时间序列、分布异常等） | Step 2（证据数据分析时） |
 | `references/finding_rules.md` | Finding判定规则（重要性水平、风险级别判定） | Step 3（判定是否生成Finding时） |
 
-## MANDATORY_OUTPUT 标记说明
-本文档中所有 MANDATORY_OUTPUT 标记的段落，在对应步骤中必须输出，不可省略或简化。
-
 ## 工作流程
 
 ### Step 0：读取审计程序
@@ -60,7 +57,7 @@ description: |-
 **时机**：收到执行请求后，第一步。
 
 1. 读取 `internal-audit-workspace/audit-programs/` 中最新的审计程序文档
-2. 提取所有审计程序清单（风险编号、程序名称、取证方式、测试步骤）
+2. 提取所有审计程序清单（风险编号、程序名称、取数来源、测试步骤）
 3. 初始化执行进度追踪
 4. **读取 design-assessments/ 中的设计观察**（如存在）
    - 记录待验证的设计观察清单
@@ -86,7 +83,7 @@ findings/ 存储经证实的发现，origin="design"，关联 design_observation
 | Phase 1 制度分析 | `"document-organizer"` | 基于制度文本，含 source_doc/source_section |
 | Phase 1.5 访谈回填 | `"interview"` | 含 source_role/source_id/interview_snippet，可能含 contradiction |
 
-interview 来源的验证需额外处理（详见 `D:/Nut/00_my_digital/12_AGI/skills/internal-audit/document-organizer/references/design-observation-format.md`）：
+interview 来源的验证需额外处理（详见 document-organizer/references/design-observation-format.md）：
 
 | 条件 | 验证要求 |
 |------|---------|
@@ -132,7 +129,7 @@ interview 来源的验证需额外处理（详见 `D:/Nut/00_my_digital/12_AGI/s
 📊 需要的证据：
   1. [证据1]
   2. [证据2]
-📁 取证方式：[系统/文件]
+📁 取数来源：[系统/文件]
 📂 证据存放路径：
   evidence/{project_name}/{程序编号}_{程序关键词}/
   
@@ -140,7 +137,6 @@ interview 来源的验证需额外处理（详见 `D:/Nut/00_my_digital/12_AGI/s
 
 ⚠️ 注意事项：[如有]
 
-<!-- MANDATORY_OUTPUT -->
 操作选项：
 - "完成" → 我去读取 evidence 目录中的文件
 - "跳过" → 进入下一程序
@@ -152,15 +148,6 @@ interview 来源的验证需额外处理（详见 `D:/Nut/00_my_digital/12_AGI/s
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
-**未消费设计观察提醒**（如有）：若 Step 0 读取的 design-assessments 中存在 pending risk_clue，必须在程序清单下方展示：
-
-| 来源编号 | 线索摘要 | 来源岗位 | 建议操作 |
-|---------|---------|---------|---------|
-| (从 design-assessments 动态生成) | ... | ... | 输入"新增"补充测试 |
-
-如无未消费线索 → 不展示此段落。
-
-<!-- MANDATORY_OUTPUT -->
 ### Step 1a：程序变更管理
 
 当用户选择"替代"、"新增"或"删除"时，进入程序变更流程。详见 [references/program_change.md](./references/program_change.md)。
@@ -298,7 +285,6 @@ interview 来源的验证需额外处理（详见 `D:/Nut/00_my_digital/12_AGI/s
 
 ### Step 3：异常判定与Finding生成
 
-<!-- MANDATORY_OUTPUT -->
 **发现异常时**：
 
 ```
@@ -360,7 +346,7 @@ Step 3b-2: 根因质证（切换推理视角，读-only审查）
     ↓
 Step 3b-3: 确定性验证（脚本检查 - 根因部分）
     → 将 finding 初稿（CCEER 初版 + 根因部分）写入临时 JSON 文件
-    → 运行: `python D:/Nut/00_my_digital/12_AGI/skills/internal-audit/_shared/scripts/validate-finding.py <temp_file>`
+    → 运行: `python ~/.claude/skills/internal-audit/_shared/scripts/validate-finding.py <temp_file>`
     → 读取输出：
         action=block → 根据 blockers 逐项修正，重新运行直到通过
         action=warn  → 逐项确认 warnings，可接受则继续，不接受则修正
@@ -390,49 +376,11 @@ Step 3f: 证据等级强制核验
     → 核验通过后进入 Step 3f-2
     ↓
 Step 3f-2: 最终硬校验（脚本检查 - 完整finding）
-    → 运行: `python D:/Nut/00_my_digital/12_AGI/skills/internal-audit/_shared/scripts/validate-finding.py <完整finding JSON文件路径>`
+    → 运行: `python ~/.claude/skills/internal-audit/_shared/scripts/validate-finding.py <完整finding JSON文件路径>`
     → 读取输出：
         action=block → 阻断，根据 blockers 逐项修正后重跑
         action=warn  → 标记 warnings 列表并在生成摘要中告知用户
         action=pass  → 放行
-    ↓
-Step 3f-3: 决策理由记录（必填）
-    → 回顾本次 finding 生成过程中的所有关键判断，写入 finding JSON 的 `decision_rationale` 字段
-    → 必填子字段：
-        risk_level: 为什么评为此风险等级（引用具体事实：金额/影响范围/系统性特征）
-        category: 为什么归为此类别
-        cause_category: 为什么选此根因类别
-        evidence_grade_summary: 证据等级判定依据
-        key_judgment: 本次 finding 中最核心的一个判断点
-    → 高风险 finding 的 risk_level 和 evidence_grade_summary 为硬必填，缺一 block
-    → 同时写入 `decision_log` 数组字段，记录 D-006（证据充分性）和 D-007（风险定级）：
-    
-    ```json
-    "decision_log": [
-      {
-        "decision_id": "D-006",
-        "decision_point": "evidence_sufficiency",
-        "decision": "<充足 / 部分充足 / 不足>",
-        "rationale": "<为什么当前证据水平足够（或不够）支撑本 finding 的结论？引用证据等级、数量、交叉验证结果。≥20字>",
-        "alternatives_considered": [{"option": "<补充证据方案>", "rejected_reason": "<为何未采纳>"}],
-        "context_refs": ["<引用的 evidence 条目>"],
-        "timestamp": "<ISO 8601>"
-      },
-      {
-        "decision_id": "D-007",
-        "decision_point": "risk_classification",
-        "decision": "<高 / 中 / 低>",
-        "rationale": "<为什么评此风险等级？引用金额、影响范围、系统性特征等具体事实。≥30字>",
-        "alternatives_considered": [{"option": "<其他定级>", "rejected_reason": "<为何未采纳>"}],
-        "context_refs": ["<引用的 finding ID 和 evidence>"],
-        "parent_decisions": ["D-006"],
-        "timestamp": "<ISO 8601>"
-      }
-    ]
-    ```
-    
-    → 硬性要求：D-006 rationale ≥20 字，D-007 rationale ≥30 字。不得使用通用模板语言。
-    → 参考 finding_schema.md 的 decision_rationale 章节
     ↓
 Step 3g: 输出finding JSON
     ↓
@@ -492,8 +440,8 @@ Step 3h: 业务现实性检验（可选）
 详见 [references/quality_check.md](./references/quality_check.md)。
 
 **执行前加载**：
-1. `D:/Nut/00_my_digital/12_AGI/skills/internal-audit/internal-audit-evaluator/SKILL.md`，定位 **finding** 的检查清单
-2. 确保 `validate-finding.py` 存在于 `D:/Nut/00_my_digital/12_AGI/skills/internal-audit/_shared/scripts/validate-finding.py`
+1. `~/.claude/skills/internal-audit/internal-audit-evaluator/SKILL.md`，定位 **finding** 的检查清单
+2. 确保 `validate-finding.py` 存在于 `~/.claude/skills/internal-audit/_shared/scripts/validate-finding.py`
 
 **顺序**：5.0 validate-finding → 5.1 格式检查 → 5.2 推理检查（质量回溯） → 5.3 质量判定 → 5.4 结果存储+质量门
 

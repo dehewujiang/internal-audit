@@ -54,45 +54,88 @@ def _extract_title(description: str) -> str:
     return desc[:30].rstrip()
 
 
+def _find_risk_name(parts: list, code_idx: int, headers: list) -> str:
+    """根据表头关键词匹配找到 risk name，带三级降级策略。
+
+    优先匹配表头中含"风险名称"或"风险"（但不含"编号"）的列，
+    降级到位置偏移，再降到相邻列，最终返回"未命名"。
+    """
+    # 策略 A：扫描表头找到含"风险名称"的列
+    for i, hdr in enumerate(headers):
+        if i < len(parts) and isinstance(hdr, str) and "风险名称" in hdr:
+            val = parts[i]
+            if val:
+                return val
+
+    # 策略 B：扫描表头找到以"风险"开头但不含"编号"的列
+    for i, hdr in enumerate(headers):
+        if i < len(parts) and isinstance(hdr, str) and hdr.startswith("风险") and "编号" not in hdr:
+            val = parts[i]
+            if val:
+                return val
+
+    # 策略 C：降级到位置偏移 code_idx - 2（历史兼容）
+    if code_idx >= 2:
+        val = parts[code_idx - 2]
+        if val:
+            return val
+
+    # 策略 D：降级到相邻位置 code_idx + 1
+    if code_idx + 1 < len(parts):
+        val = parts[code_idx + 1]
+        if val:
+            return val
+
+    return "未命名"
+
+
 def _parse_table_rows(text: str) -> list:
     """从 Markdown 文本中提取程序编号和风险名称。
 
-    v2.0：不假设程序编号在固定列位置——新列结构中程序编号在第4列
-    （前面是风险编号/风险名称/来源标注）。改为扫描整行找 [A-H]\\d+.\\d+ 格式。
+    v3.0：先提取表头行（分隔符前行），再用 _find_risk_name() 按表头关键词
+    匹配 risk name 列，支持不同轨道（A/B/C/D/E/F）列结构差异。
+    回退到位置偏移（code_idx - 2 → code_idx + 1 → "未命名"）。
+
     返回 [(编号, 风险名称), ...] 列表。
     """
     results = []
-    # 匹配所有表格行（| 开头 | 结尾）
-    table_row_pattern = re.compile(r'^\|.+\|$', re.MULTILINE)
-    # 程序编号格式：A1.1, B2.3 等（字母+数字.数字）
     code_pattern = re.compile(r'^([A-H]\d+(?:\.\d+)?)$')
 
+    lines = text.strip().split('\n')
     seen = set()
-    for m in table_row_pattern.finditer(text):
-        line = m.group(0)
-        parts = [p.strip() for p in line[1:-1].split('|')]
+    headers = []  # 当前表格的表头
 
-        # 跳过分隔行（全是 --- 或 :---）
-        if all(re.match(r'^[-:]+$', p) or p == '' for p in parts):
+    for i, line in enumerate(lines):
+        stripped = line.strip()
+
+        # 跳过非表格行
+        if not stripped.startswith('|') or not stripped.endswith('|'):
             continue
 
-        # 扫描整行找程序编号列（不假设位置）
+        parts = [p.strip() for p in stripped[1:-1].split('|')]
+
+        # 跳过分隔行（全是 --- 或 :---），并提取前一行作为表头
+        if all(re.match(r'^[-:]+$', p) or p == '' for p in parts):
+            if i > 0:
+                prev = lines[i - 1].strip()
+                if prev.startswith('|') and prev.endswith('|'):
+                    headers = [p.strip() for p in prev[1:-1].split('|')]
+            continue
+
+        # 数据行：扫描整行找程序编号列（不假设位置）
         code = None
         code_idx = -1
-        for i, p in enumerate(parts):
+        for j, p in enumerate(parts):
             if code_pattern.match(p):
                 code = p
-                code_idx = i
+                code_idx = j
                 break
 
         if not code or code in seen:
             continue
         seen.add(code)
 
-        # 风险名称在程序编号左两列（跳过来源标注列）
-        risk_name = parts[code_idx - 2] if code_idx >= 2 else ""
-        if not risk_name:
-            risk_name = parts[code_idx + 1] if code_idx + 1 < len(parts) else "未命名"
+        risk_name = _find_risk_name(parts, code_idx, headers)
         results.append((code, risk_name))
 
     return results

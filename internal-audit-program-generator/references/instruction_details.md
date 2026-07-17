@@ -43,26 +43,14 @@ Step 0.1 和 0.2 完成后，Step 1 之前。
 
 所有制度冲突，这些作为特殊风险输入 Step 2。
 
-#### 6. 构建制度ID→信息映射表
+#### 6. 构建制度ID→制度名称映射表
 
 遍历每个 JSON 文件：
 - 读取 `document_info.name`（如"NPM001成品仓库管理标准"）
-- **遍历该文件中的全部四类编号**，建立映射表供 Step 2 来源标注使用：
-
-| ID类型 | 映射内容 | 示例 |
-|--------|---------|------|
-| `control_points[].id`（CP-XXX） | → 制度名称 | `{"CP-N001-07": "NPM001成品仓库管理标准"}` |
-| `control_gaps[].id`（CG-XXX） | → 制度名称 | `{"CG-N007-02": "NPM007材料仓库管理标准"}` |
-| `risk_points[].id`（RP-XXX） | → 制度名称 + 风险描述摘要 | `{"RP-007": "NPM005废料管理办法 — 废料处置缺少定期检查"}` |
-| `conflicts[].id`（CF-XXX） | → 冲突摘要 | `{"CF-001": "NPM003采购部职责 vs NPM007材料仓库管理标准 — 审批权归属冲突"}` |
-
+- 遍历该文件中的 `control_points[].id` 和 `control_gaps[].id`
+- 建立映射表：`{制度编号ID: 制度名称}`
+- 示例：`{"CP-N001-07": "NPM001成品仓库管理标准", "CG-N007-02": "NPM007材料仓库管理标准"}`
 - 存储在工作内存中，供 Step 2 查询使用
-
-#### 7. 读取设计观察（用于增量更新模式）
-检查 `internal-audit-workspace/design-assessments/` 中的 JSON 文件：
-- `design_observations[]` 中 `type="risk_clue"` 且 `status="pending"` → 转为【访谈类-线索】风险
-- 每个条目的 `source_role`/`source_id`/`interview_snippet`/`contradiction` 作为风险描述依据
-- 同时检查 current-audit.json `whistleblower_pending` → 生成【举报类-线索】风险
 
 ### 如未找到 JSON 文件
 

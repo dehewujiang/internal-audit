@@ -36,10 +36,10 @@ description: |
 
 **输入源**：
 1. `internal-audit-workspace/policy-analyses/*.json`（制度分析结果）
-2. `D:/Nut/00_my_digital/12_AGI/skills/internal-audit/audit-topics/about-me.md`（公司背景）
-3. `D:/Nut/00_my_digital/12_AGI/skills/internal-audit/internal-audit-program-generator/references/internal_audit_risk_framework.md`（**核心输入：过往审计经验与风险库**）
+2. `~/.claude/skills/internal-audit/audit-topics/about-me.md`（公司背景）
+3. `~/.claude/skills/internal-audit/internal-audit-program-generator/references/internal_audit_risk_framework.md`（**核心输入：过往审计经验与风险库**）
 4. `internal-audit-workspace/findings/index.json`（历史发现，如存在）
-5. `D:/Nut/00_my_digital/12_AGI/skills/internal-audit/audit-interview-designer/references/interview_templates.md`（各领域问题模板库）
+5. `~/.claude/skills/internal-audit/audit-interview-designer/references/interview_templates.md`（各领域问题模板库）
 6. 用户指定的审计主题/范围
 
 **分析逻辑**：
@@ -50,7 +50,7 @@ description: |
 | **过往经验** | 读取 `internal_audit_risk_framework.md`，匹配审计主题相关的已验证风险 | 探测性问题（基于真实案例） |
 | **公司背景** | 查找子公司结构、系统架构、特殊业务模式 | 针对性问题 |
 | **历史发现** | 查找同主题的历史 Finding | 追踪性问题（整改验证） |
-| **行业基准** | 基于 `D:/Nut/00_my_digital/12_AGI/skills/internal-audit/document-organizer/references/industry_benchmarks.md` | 补充性问题（行业通用风险） |
+| **行业基准** | 基于 `document-organizer/references/industry_benchmarks.md` | 补充性问题（行业通用风险） |
 
 ### Step 2：生成 Excel 访谈问卷
 
@@ -202,10 +202,6 @@ description: |
   - 3月份盘点表（请放入对应目录）
 ```
 
-**分流后更新 consumed 标记**：
-
-若本次分流产生了新的 risk_clue 或有 contradiction 标记，更新 current-audit.json: audit_state.design_observations_consumed = false。若仅配置更新或流程事实，不修改 flag。
-
 ## Excel 生成技术规范
 
 使用 Python 的 `openpyxl` 库生成 Excel 文件：
@@ -267,21 +263,9 @@ wb.save(output_path)
 
 ## Step 5：质量评估（引用评估框架）
 
-**执行前加载**：`D:/Nut/00_my_digital/12_AGI/skills/internal-audit/internal-audit-evaluator/SKILL.md`，定位 **interview** 的检查清单。
+**执行前加载**：`~/.claude/skills/internal-audit/internal-audit-evaluator/SKILL.md`，定位 **interview** 的检查清单。
 
 **时机**：访谈问卷生成后，输出 Excel 前自动执行。
-
-### 5.0 格式硬校验（validate-interview.py，不可跳过）
-
-**时机**：Mode A 访谈问卷 Excel 生成后，Step 5.1 之前立即执行。
-
-```bash
-python D:/Nut/00_my_digital/12_AGI/skills/internal-audit/_shared/scripts/validate-interview.py internal-audit-workspace/interview-materials/[主题]_访谈问卷.xlsx --strict
-```
-
-**检查项**（9项）：文件可打开 / Sheet1表头 / Sheet2表头 / Sheet3存在 / Sheet4可选 / 问题数量≥5 / 开放问题比例≥70% / 制度依据覆盖率≥50% / DRL条目≥3
-
-**不可跳过，必须在此步骤通过后方可进入 5.1**。
 
 ### 5.1 格式检查
 
@@ -314,8 +298,8 @@ python D:/Nut/00_my_digital/12_AGI/skills/internal-audit/_shared/scripts/validat
 
 ```bash
 echo '{json格式检查结果}' > /tmp/eval_result.json
-python D:/Nut/00_my_digital/12_AGI/skills/internal-audit/internal-audit-evaluator/record_evaluation.py --input /tmp/eval_result.json
-python D:/Nut/00_my_digital/12_AGI/skills/internal-audit/internal-audit-evaluator/quality_gate.py --input /tmp/eval_result.json
+python ~/.claude/skills/internal-audit/internal-audit-evaluator/record_evaluation.py --input /tmp/eval_result.json
+python ~/.claude/skills/internal-audit/internal-audit-evaluator/quality_gate.py --input /tmp/eval_result.json
 ```
 
 ## 版本历史

@@ -2,7 +2,6 @@
 paths:
   - "**/api/**"
   - "**/interface/**"
-  - "**/public/**"
 ---
 
 # 兼容性铁律（Never break userspace）

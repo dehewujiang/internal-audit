@@ -72,7 +72,7 @@ paths:
 下一步建议：
 ```
 
-**INDEX.md**（原 MEMORY.md，见 memory_rules.md 第 3 节改名理由）
+**INDEX.md**（记忆索引表）
 
 ```
 # 记忆索引

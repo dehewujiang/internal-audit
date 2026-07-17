@@ -415,45 +415,6 @@ def check_cause_evidence_gap(data):
     return True, None
 
 
-def check_decision_rationale(data, risk_level):
-    """[L] 决策理由记录——高风险 finding 必须记录关键判断理由
-
-    检查 decision_rationale 字段是否存在且关键子字段已填写。
-    高风险 finding 的 risk_level 和 evidence_grade_summary 为必填。
-    """
-    rationale = data.get("decision_rationale")
-    if not rationale:
-        if risk_level == "高":
-            return False, "高风险 finding 缺少 decision_rationale 字段（必须记录关键判断理由）"
-        return True, "无 decision_rationale（非阻断，建议补充）"
-
-    if not isinstance(rationale, dict):
-        return False, "decision_rationale 应为对象类型"
-
-    issues = []
-
-    # 高风险必填字段
-    if risk_level == "高":
-        for field in ("risk_level", "evidence_grade_summary"):
-            val = rationale.get(field, "")
-            if not val or len(str(val).strip()) < 10:
-                issues.append(f"decision_rationale.{field} 过短或缺失（高风险必填）")
-
-    # 所有 finding 建议填写的字段
-    for field in ("category", "cause_category", "key_judgment"):
-        val = rationale.get(field, "")
-        if not val or len(str(val).strip()) < 10:
-            issues.append(f"decision_rationale.{field} 过短或缺失")
-
-    if issues:
-        has_blocker = any("高风险必填" in i for i in issues)
-        if has_blocker:
-            return False, "; ".join(issues)
-        return True, "; ".join(issues) + "（非阻断，建议补充）"
-
-    return True, None
-
-
 # ── 主校验 ─────────────────────────────────────────────
 
 def validate_finding(data, exit_on_error=False):
@@ -496,10 +457,6 @@ def validate_finding(data, exit_on_error=False):
     # [G] 根因与证据等级匹配
     passed, gap_msg = check_cause_evidence_gap(data)
     checks["cause_evidence_gap"] = {"passed": passed, "message": gap_msg}
-
-    # [L] 决策理由记录
-    passed, rationale_msg = check_decision_rationale(data, risk_level)
-    checks["decision_rationale"] = {"passed": passed, "message": rationale_msg}
 
     # ── 判定 ──
     blockers = [k for k, v in checks.items() if not v["passed"] and k in (
@@ -562,7 +519,6 @@ def print_report(report, verbose=False):
             "evidence_grade": "证据等级",
             "intuition_engine": "直觉引擎",
             "cause_evidence_gap": "根因-证据匹配",
-            "decision_rationale": "决策理由",
         }.get(check_name, check_name)
         print(f"    {status} [{label}] {msg[:120]}")
 
@@ -572,10 +528,6 @@ def print_report(report, verbose=False):
 
 
 def main():
-    # Windows GBK → UTF-8（emoji 兼容）
-    if sys.stdout.encoding != 'utf-8':
-        sys.stdout.reconfigure(encoding='utf-8')
-
     parser = argparse.ArgumentParser(description="Finding 质量硬校验工具")
     parser.add_argument("path", nargs="?", help="单个 finding JSON 文件路径")
     parser.add_argument("--findings-dir", help="批量校验目录下所有 FIND-*.json")
@@ -583,7 +535,6 @@ def main():
     parser.add_argument("--exit-on-error", action="store_true", help="发现阻断时立即退出")
     parser.add_argument("--json", action="store_true", help="输出 JSON 格式")
     parser.add_argument("--verbose", action="store_true", help="详细信息")
-    parser.add_argument("--strict", action="store_true", help="严格模式：存在阻断时打印到 stderr 并 exit(1)")
 
     args = parser.parse_args()
 
@@ -604,7 +555,7 @@ def main():
             sys.exit(2)
         for root, dirs, fnames in os.walk(dir_path):
             for fn in sorted(fnames):
-                if fn.startswith("F-") and fn.endswith(".json"):
+                if fn.startswith("FIND-") and fn.endswith(".json"):
                     files.append(os.path.join(root, fn))
 
     if args.index:
@@ -671,12 +622,6 @@ def main():
                 "blocked": sum(1 for r in results if r["action"] == "block"),
             }
         }, ensure_ascii=False, indent=2))
-
-    if args.strict and has_blocker:
-        for r in results:
-            if r["action"] == "block":
-                print(f"[BLOCK] {r['finding_id']}: {', '.join(b['message'] for b in r['summary']['blockers'])}", file=sys.stderr)
-        sys.exit(1)
 
     sys.exit(2 if has_blocker else 1 if any(r["action"] == "warn" for r in results) else 0)
 

@@ -31,7 +31,7 @@ from datetime import datetime
 def get_my_config_path() -> str:
     """查找 my-config.md"""
     candidates = [
-        os.path.expanduser("D:/Nut/00_my_digital/12_AGI/skills/internal-audit/audit-topics/my-config.md"),
+        os.path.expanduser("~/.claude/skills/internal-audit/audit-topics/my-config.md"),
         os.path.join(os.getcwd(), "internal-audit-workspace", "..", "..", "my-config.md"),
     ]
     for p in candidates:
@@ -41,7 +41,7 @@ def get_my_config_path() -> str:
 
 
 def get_eval_dir() -> str:
-    return os.path.expanduser("D:/Nut/00_my_digital/12_AGI/skills/internal-audit/data/evaluations")
+    return os.path.expanduser("~/.claude/skills/internal-audit/data/evaluations")
 
 
 # ── 阈值读取 ──────────────────────────────────────────

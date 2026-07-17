@@ -20,7 +20,15 @@ from typing import Dict, List, Optional, Tuple
 from datetime import datetime
 
 # 引用共享库
-sys.path.insert(0, str(Path(__file__).parent.parent.parent / '_shared' / 'scripts'))
+def find_project_root():
+    p = Path(__file__).resolve().parent
+    for _ in range(10):
+        if (p / '_shared' / 'scripts').is_dir():
+            return p
+        p = p.parent
+    raise FileNotFoundError("Cannot locate project root with _shared/scripts/")
+
+sys.path.insert(0, str(find_project_root() / '_shared' / 'scripts'))
 from excel_core import ExcelCore
 from audit_styles import FILLS, COLORS
 from openpyxl.styles import Font, PatternFill

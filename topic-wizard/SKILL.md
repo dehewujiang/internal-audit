@@ -2,13 +2,14 @@
 name: topic-wizard
 description: 引导用户创建新的审计主题配置。用户输入"新建审计主题""配置审计主题""创建主题配置"时触发。逐步引导创建 topic.json、about-me.md、my-config.md。
 ---
+
 # 审计主题配置向导
 
 ## 核心原则
 
 **每个审计主题只需配置一次，全局复用。**
 
-主题配置存储在 `D:/Nut/00_my_digital/12_AGI/skills/internal-audit/audit-topics/`，分两层：
+主题配置存储在 `~/.claude/skills/internal-audit/audit-topics/`，分两层：
 - **公司级**（所有主题共用）：
   - `about-me.md` — 公司背景（用户手动维护，AI 辅助初稿）
   - `my-config.md` — 系统配置（用户手动维护，AI 辅助初稿）
@@ -42,7 +43,7 @@ description: 引导用户创建新的审计主题配置。用户输入"新建审
 ### 1.3 检查是否已存在
 
 ```bash
-检查路径：D:/Nut/00_my_digital/12_AGI/skills/internal-audit/audit-topics/{topic}/
+检查路径：~/.claude/skills/internal-audit/audit-topics/{topic}/
 ```
 
 若已存在：
@@ -303,7 +304,7 @@ B) 否，重新输入（适用于多公司或多子公司场景）
 ✅ 审计主题配置完成
 
 主题：{topic}
-路径：D:/Nut/00_my_digital/12_AGI/skills/internal-audit/audit-topics/{topic}/
+路径：~/.claude/skills/internal-audit/audit-topics/{topic}/
 
 已创建：
   ✓ topic.json（结构化默认值）
@@ -317,8 +318,8 @@ B) 否，重新输入（适用于多公司或多子公司场景）
 
 ```
 下一步：
-  1. 手动完善 D:/Nut/00_my_digital/12_AGI/skills/internal-audit/audit-topics/about-me.md
-  2. 手动完善 D:/Nut/00_my_digital/12_AGI/skills/internal-audit/audit-topics/my-config.md
+  1. 手动完善 ~/.claude/skills/internal-audit/audit-topics/about-me.md
+  2. 手动完善 ~/.claude/skills/internal-audit/audit-topics/my-config.md
   3. 输入"创建审计项目"在新目录中初始化项目
 ```
 

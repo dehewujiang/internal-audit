@@ -124,25 +124,18 @@ def check_decision_log(text):
 
 
 def check_column_consistency(text, config_path=None):
-    """[C] 列头一致性校验——MD各轨道程序表头必须与JSON的columns(risk+design层)一致
+    """[C] 表格结构合法性校验——验证MD各轨道表格列数一致性
 
-    v2.0 新增：校验MD表格列名和列数是否与 program_templates.json 定义一致。
-    不一致则 block（阻断）。
+    v3.0 重写：不再与 program_templates.json 比对列名/列数。
+    只校验表格结构的合法性：
+    - 每个轨道至少有一个表格
+    - 每个表格的数据行与表头列数一致
     """
-    if config_path is None:
-        config_path = Path(__file__).parent.parent.parent / \
-                      '.claude' / 'skills' / 'internal-audit-program-generator' / 'config' / 'program_templates.json'
-
-    if not Path(config_path).exists():
-        return True, "配置文件不存在，跳过列头校验"
-
-    with open(config_path, 'r', encoding='utf-8') as f:
-        track_config = json.load(f)
-
     issues = []
     SECTION_TO_TRACK = {'三': 'A', '四': 'B', '五': 'C', '六': 'E', '七': 'F', '八': 'D'}
 
     headings = list(re.finditer(r'^##\s+(.+?)(?:\[.+?\])?\s*$', text, re.MULTILINE))
+    ALIGN_SEP = re.compile(r'^\|[:\-\s|]+\|?\s*$')
 
     for i, m in enumerate(headings):
         title = m.group(1).strip()
@@ -153,33 +146,53 @@ def check_column_consistency(text, config_path=None):
         if not track_id:
             continue
 
-        track_cfg = track_config.get('tracks', {}).get(track_id, {})
-        all_cols = track_cfg.get('columns', [])
-        expected_headers = [c['name'] for c in all_cols if c.get('layer') != 'execution']
-
-        if not expected_headers:
-            continue
-
         start = m.end()
         end = headings[i + 1].start() if i + 1 < len(headings) else len(text)
         track_content = text[start:end]
-
         track_lines = track_content.split('\n')
-        ALIGN_SEP = re.compile(r'^\|[:\-\s]+\|')
+        table_count = 0
 
-        for j, line in enumerate(track_lines):
-            stripped = line.strip()
+        j = 0
+        while j < len(track_lines):
+            stripped = track_lines[j].strip()
             if ALIGN_SEP.match(stripped) and j > 0:
-                prev = track_lines[j - 1].strip()
-                if prev.startswith('|') and prev.endswith('|') and '程序编号' in prev:
-                    actual_headers = [p.strip() for p in prev[1:-1].split('|')]
+                header_line = track_lines[j - 1].strip()
+                if not (header_line.startswith('|') and header_line.endswith('|')):
+                    j += 1
+                    continue
 
-                    if len(actual_headers) != len(expected_headers):
-                        issues.append(f"轨道{track_id}表头列数不符：MD有{len(actual_headers)}列，JSON定义{len(expected_headers)}列（应为：{' | '.join(expected_headers)}）")
-                    else:
-                        for k, (actual, expected) in enumerate(zip(actual_headers, expected_headers)):
-                            if actual != expected:
-                                issues.append(f"轨道{track_id}第{k+1}列：MD为'{actual}'，应为'{expected}'")
+                header_cols = [c.strip() for c in header_line[1:-1].split('|')]
+                header_count = len(header_cols)
+                table_count += 1
+
+                # 验证数据行（从分隔行下一行到下一个分隔行或非表格行）
+                k = j + 1
+                row_num = 1
+                while k < len(track_lines):
+                    data_line = track_lines[k].strip()
+                    if ALIGN_SEP.match(data_line):
+                        break
+                    if not data_line.startswith('|') or not data_line.endswith('|'):
+                        if data_line == '' or not data_line.startswith('|'):
+                            break
+                        k += 1
+                        continue
+
+                    data_cols = [c.strip() for c in data_line[1:-1].split('|')]
+                    if len(data_cols) != header_count:
+                        issues.append(
+                            f"轨道{track_id} 表格行{row_num}列数不一致："
+                            f"表头有{header_count}列，数据行有{len(data_cols)}列"
+                        )
+                    row_num += 1
+                    k += 1
+
+                j = k
+                continue
+            j += 1
+
+        if table_count == 0:
+            issues.append(f"轨道{track_id} 未找到任何表格")
 
     return len(issues) == 0, "; ".join(issues) if issues else None
 

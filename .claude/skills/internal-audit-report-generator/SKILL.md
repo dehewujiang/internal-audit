@@ -32,9 +32,59 @@ description: |
 
 ## 核心功能
 
-> **职责变更**：finding 的查询、筛选、统计功能已迁移至 `_shared/scripts/queries.py`（独立查询工具，全阶段可用）。本 skill 回归单一职责：**汇总 findings 生成正式审计报告**。
+### 功能1：管理审计发现（Finding Management）
 
-### 功能1：生成审计报告（Report Generation）
+**时机**：审计执行完成后，生成报告前
+
+**职责边界**：本功能负责读取和管理已由 `audit-execution-assistant` 生成的 finding，不替代执行过程中的逐项取证。
+
+**Finding 数据结构**（与 audit-execution-assistant schema 1.2.0 对齐）：
+
+```json
+{
+  "schema_version": "1.2.0",
+  "finding_id": "F-YYYY-NNN",
+  "origin": "design|execution",
+  "design_observation_id": "D-XXX|null",
+  "audit_program": "审计程序名称",
+  "audit_date": "2026-04-03",
+  "category": "内控缺陷|舞弊风险|合规问题|效率问题",
+  "risk_level": "高|中|低",
+  "title": "一句话描述问题",
+  "criteria": "审计依据（具体制度条款）",
+  "condition": "实际发现的情况（量化）",
+  "cause": "根本原因分析（到达控制设计/环境层）",
+  "cause_category": "ENV-01|DES-01|DES-02|...",
+  "consequence": "潜在影响（量化）",
+  "recommendation": "整改建议（具体可执行）",
+  "responsible": "整改责任人",
+  "deadline": "整改期限",
+  "status": "待整改|整改中|已整改|延期",
+  "evidence": [{"name": "...", "source": "...", "reliability_grade": "A|B|C|D|E"}],
+  "related_procedures": ["关联的审计程序"],
+  "related_control": "CP-XXX",
+  "management_response": {
+    "response": "被审计方回复",
+    "response_date": "回复日期",
+    "management_action_plan": "整改计划",
+    "target_completion_date": "计划完成日期",
+    "auditor_assessment": "充分|不充分|需补充证据"
+  }
+}
+```
+
+**支持输入方式**：
+- 交互式增强表单（推荐）：使用 `finding_capture_guide.md` 提供的Markdown表格引导填写
+* 逐字段模式：回复 `字段=值`
+* 批量模式：一次性发送多行字段
+* 自然语言提取：粘贴描述自动解析
+- 从自然语言提取：解析自由文本生成结构化数据
+
+👉 **快速开始**：直接说"/new-finding"或"记录一个审计发现"
+
+---
+
+### 功能2：生成审计报告（Report Generation）
 
 **时机**：审计完成后，需要输出正式报告
 
@@ -73,10 +123,7 @@ description: |
 ```
 用户：把最近的3个发现汇总成一份报告
 
-### Step 1：选择 findings（强制）
-1. 运行 `python ~/.claude/skills/internal-audit/_shared/scripts/queries.py list --status all`
-2. 展示 findings 列表，用户选择后存入 current-audit.json audit_state.selected_findings
-<!-- MANDATORY_GATE: 未完成 findings 选择前不得进入 Step 2 -->
+Step 1: 列出可用 findings（让用户选择）
 Step 2: 询问报告类型
 Step 3: 询问基本信息（审计期间、被审计部门、审计组长）
 Step 4: 读取模板 → 填充变量 → 生成报告
@@ -326,16 +373,19 @@ F-2024-015 = 2024年第15号发现
 
 读取 about-me.md 和 my-config.md，获取公司信息和操作配置。
 
-### Step 1：查询审计发现（使用 queries.py）
+### Step 1：管理审计发现
 
-<!-- 注意：此详细 Step 1 的强制流程定义在场景层上方（场景1），见 MANDATORY_GATE -->
+**指令**：
+- "汇总审计发现"
+- "列出所有待整改发现"
+- "查询 F-2024-003 详情"
 
-> Finding 的查询、筛选、统计功能已迁移至 `_shared/scripts/queries.py`。查询 findings 请直接使用 queries.py（触发词："查询 findings""列出高风险发现""汇总统计"）。
+> ⚠️ 注意：逐项记录 finding 请使用 `audit-execution-assistant`（触发词："执行审计过程中记录异常"）。本技能仅负责审计完成后的发现管理和报告生成。
 
-**本 skill 的工作流**：
-1. 用户指定要包含在报告中的 findings（手动指定或通过 queries.py 列出后选择）
-2. 选择报告模板
-3. 填充变量 → 生成报告
+**流程**：
+1. 读取 `internal-audit-workspace/findings/index.json`
+2. 列出可用 findings（按风险等级/状态/origin分类）
+3. 支持查询、筛选、统计
 
 ### Step 2：生成审计报告
 
@@ -349,51 +399,14 @@ F-2024-015 = 2024年第15号发现
 2. 选择报告模板
 3. 填写报告基本信息
 4. 填充模板，生成报告
-5. **记录决策理由** → 报告末尾附加"审计决策理由"段（D-008/D-009）
-6. **调用评估中枢** → 输出质量评估报告
-7. 询问保存位置；报告末尾自动附加质量评估
-
-### 4.X 决策理由记录（报告生成时必做）
-
-生成报告时，必须在报告末尾附上以下决策理由段：
-
-```markdown
----
-
-## 审计决策理由（decision_log）
-
-### D-008 纳入报告判断
-- 本报告包含 finding 数：[X] 个（高 [Y] 中 [Z] 低 [W]）
-- 筛选标准说明：哪些 finding 被纳入？哪些被排除？排除理由？
-- 如全部纳入，说明判断依据（≥20字）
-
-### D-009 报告结论
-- 审计结论：[无保留意见 / 保留意见 / 否定意见 / 无法表示]
-- 结论理由：为什么出此结论？（≥30字，引用核心 finding 和证据等级）
-- 考虑过但未选的结论：[其他意见类型] — 为什么不选？
-```
-
-**硬性要求**：D-008 rationale ≥20 字，D-009 rationale ≥30 字。不得使用通用模板语言。
+5. **调用评估中枢** → 输出质量评估报告
+6. 询问保存位置；报告末尾自动附加质量评估
 
 ### Step 3：质量评估（引用评估框架）
 
-**执行前加载**：`D:/Nut/00_my_digital/12_AGI/skills/internal-audit/internal-audit-evaluator/SKILL.md`，定位 **audit_report** 的检查清单。
+**执行前加载**：`~/.claude/skills/internal-audit/internal-audit-evaluator/SKILL.md`，定位 **audit_report** 的检查清单。
 
 **时机**：报告模板填充完成后，输出前自动执行。
-
-#### 3.0 格式硬校验（validate-report.py，不可跳过）
-
-在所有推理检查之前，先用确定性脚本做格式校验：
-
-```bash
-python D:/Nut/00_my_digital/12_AGI/skills/internal-audit/_shared/scripts/validate-report.py reports/ --json
-```
-
-| 输出 | 处理 |
-|------|------|
-| action=block | 根据 blockers 逐项修正（占位符残留、空白日期），重新运行直到通过 |
-| action=warn | 标记 warnings，可接受则继续 |
-| action=pass | 继续进入 3.1 |
 
 #### 3.1 格式检查
 
@@ -447,8 +460,8 @@ python D:/Nut/00_my_digital/12_AGI/skills/internal-audit/_shared/scripts/validat
 
 ```bash
 echo '{json格式检查结果}' > /tmp/eval_result.json
-python D:/Nut/00_my_digital/12_AGI/skills/internal-audit/internal-audit-evaluator/record_evaluation.py --input /tmp/eval_result.json
-python D:/Nut/00_my_digital/12_AGI/skills/internal-audit/internal-audit-evaluator/quality_gate.py --input /tmp/eval_result.json
+python ~/.claude/skills/internal-audit/internal-audit-evaluator/record_evaluation.py --input /tmp/eval_result.json
+python ~/.claude/skills/internal-audit/internal-audit-evaluator/quality_gate.py --input /tmp/eval_result.json
 ```
 
 ### Step 4：跟踪整改进度（可选）

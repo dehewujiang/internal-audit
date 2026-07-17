@@ -10,7 +10,7 @@ description: 一键创建新审计项目目录和配置文件。自动创建 int
 **零代码复制。一句话创建审计项目。**
 
 用户只需指定审计主题名称，系统自动：
-1. 查找全局主题配置（`D:/Nut/00_my_digital/12_AGI/skills/internal-audit/audit-topics/{topic}/`）
+1. 查找全局主题配置（`~/.claude/skills/internal-audit/audit-topics/{topic}/`）
 2. 创建项目目录结构
 3. 生成 `current-audit.json`
 4. 生成精简 `CLAUDE.md`
@@ -47,7 +47,7 @@ description: 一键创建新审计项目目录和配置文件。自动创建 int
 
 ```bash
 检查路径：
-  D:/Nut/00_my_digital/12_AGI/skills/internal-audit/audit-topics/
+  ~/.claude/skills/internal-audit/audit-topics/
   ├── about-me.md        （公司级，所有主题共用，必须存在）
   ├── my-config.md       （公司级，所有主题共用，必须存在）
   └── {topic}/
@@ -62,19 +62,6 @@ description: 一键创建新审计项目目录和配置文件。自动创建 int
 | 仅缺 topic.json | 自动从模板生成 |
 | 仅缺 about-me.md | 提示用户创建（内容重要，不能自动生成） |
 | 仅缺 my-config.md | 提示用户创建（内容重要，不能自动生成） |
-
----
-
-### Step 2.5：安全检查（强制）
-
-在创建任何文件之前，运行：
-
-```bash
-python _shared/scripts/project_init.py --workspace <workspace_path> --skills-dir <skills_dir>
-```
-
-若 exit code != 0 → 展示错误信息给用户，停止创建。用户修正后重试。
-若 exit code = 0 → 继续 Step 3。
 
 ---
 
@@ -115,7 +102,7 @@ C) 取消
 
 ### 4.1 读取主题配置
 
-从 `D:/Nut/00_my_digital/12_AGI/skills/internal-audit/audit-topics/{topic}/topic.json` 读取：
+从 `~/.claude/skills/internal-audit/audit-topics/{topic}/topic.json` 读取：
 - `topic_name`
 - `topic_description`
 - `audit_defaults`（focus, warehouses, processes, departments, risk_areas）
@@ -127,6 +114,7 @@ C) 取消
 {project_dir}/
 ├── CLAUDE.md                      ← 精简版（指向全局工具）
 ├── internal-audit-workspace/
+│   ├── constitution.md            ← 中央大脑宪法（从全局复制或引用）
 │   ├── current-audit.json         ← 项目状态 + 审计状态
 │   ├── tools/                     ← 工具能力声明（从全局 tools/ 复制）
 │   ├── documents/                 # 待分析的源文档（用户放入）
@@ -135,7 +123,6 @@ C) 取消
 │   ├── interview-materials/       # Phase 1.5 输出
 │   ├── audit-programs/            # Phase 3 输出
 │   ├── findings/                  # Phase 4 输出
-│   ├── evidence/                  # Phase 4 证据存放（执行时由用户放入）
 │   ├── debates/                   # Phase 4.5 输出
 │   └── reports/                   # Phase 5 输出
 ```
@@ -171,13 +158,7 @@ C) 取消
     "signals": [], "uncertainties": [], "backlog": [], "scope_changes": [],
     "summary": {"last_updated": "", "programs": "", "findings": "", "signals": "", "evidence": "", "pending_decisions": ""},
     "audit_trail": [],
-    "current_focus": "",
-    "audit_purpose": "",
-    "report_type": "",
-    "program_version": "v1.0",
-    "design_observations_consumed": true,
-    "whistleblower_pending": false,
-    "program_update_history": []
+    "current_focus": ""
   }
 }
 ```
@@ -198,26 +179,11 @@ C) 取消
 - Excel 工具说明（全局管理）
 - 详细规则说明（由宪法定义）
 
-### 4.5 创建 tools/
+### 4.5 创建 constitution.md 和 tools/
 
-- 将 `D:/Nut/00_my_digital/12_AGI/skills/internal-audit/tools/*.md`（工具能力声明）复制到项目 `internal-audit-workspace/tools/`。
-  ⚠️ 复制全部 13 个能力声明文件，忽略 tools/ 中的非能力说明文件（pdf_ocr_extractor.py、PDF_OCR_README.md）：document-organizer.md、execution-assistant.md、finding-debate.md、interview-designer.md、phase_gate.md、program-generator.md、program-quality-evaluator.md、queries.md、report-generator.md、validate-finding.md、validate-policy-analysis.md、validate-program.md、validate-report.md
-
-> ⚠️ `constitution.md` 不复制到 workspace。setup-project.ps1 已经在项目根目录放置了宪法（与 CLAUDE.md 同级），workspace 是审计产物目录，不需要再放一份。
-
-### 4.6 自动注册到跨项目索引
-
-项目创建完成后，自动注册到 `projects-index.json`，使跨项目查询立即可用：
-
-```bash
-python _shared/scripts/queries.py register --path <project_dir> --topic <topic> --period <period>
-```
-
-- `<project_dir>`：Step 3 确认的项目目录绝对路径
-- `<topic>`：审计主题名（与 current-audit.json 中的 `audit_topic` 一致）
-- `<period>`：从 `audit_period` 提取，格式 `YYYY`（如 `2026`）。若 `audit_period` 为对象 `{start_date, end_date}`，取 `start_date` 前 4 位年份。
-
-若注册命令失败（exit ≠ 0）：**不阻断项目创建**，显示警告 `⚠️ 跨项目索引注册失败，可稍后手动运行 queries.py register --path <project_dir>`，继续 Step 5。
+- 将 `~/.claude/skills/internal-audit/constitution.md`（全局共享宪法）复制到项目 `internal-audit-workspace/constitution.md`。如全局宪法尚不存在，先生成初始版本再复制。
+- 将 `~/.claude/skills/internal-audit/tools/*.md`（工具能力声明）复制到项目 `internal-audit-workspace/tools/`。
+  ⚠️ 只复制以下 7 个能力声明文件，忽略全局 tools/ 中的其他文件：document-organizer.md、interview-designer.md、program-generator.md、execution-assistant.md、finding-debate.md、report-generator.md、validate-finding.md
 
 ---
 
@@ -231,7 +197,8 @@ python _shared/scripts/queries.py register --path <project_dir> --topic <topic> 
 状态：phase_1_document_analysis
 
 已创建：
-✓ tools/（13个工具能力声明，存放于 internal-audit-workspace/tools/）
+✓ constitution.md（中央大脑运行宪法）
+✓ tools/（7个工具能力声明）
 ✓ internal-audit-workspace/current-audit.json（含 audit_state）
 ✓ internal-audit-workspace/documents/
 ✓ internal-audit-workspace/policy-analyses/
@@ -239,12 +206,9 @@ python _shared/scripts/queries.py register --path <project_dir> --topic <topic> 
 ✓ internal-audit-workspace/interview-materials/
 ✓ internal-audit-workspace/audit-programs/
 ✓ internal-audit-workspace/findings/
-✓ internal-audit-workspace/evidence/
 ✓ internal-audit-workspace/debates/
 ✓ internal-audit-workspace/reports/
-✓ CLAUDE.md（项目根目录，setup-project.ps1 已创建）
-✓ constitution.md（项目根目录，setup-project.ps1 已创建）
-{auto_register_result}
+✓ CLAUDE.md
 
 下一步：
 1. 将制度文档放入 internal-audit-workspace/documents/

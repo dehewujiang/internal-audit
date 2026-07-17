@@ -25,8 +25,8 @@ description: 为汽车零部件（紧固件/冲焊件）企业生成内部审计
 
 | 文件 | 用途 | 读取时机 |
 |------|------|---------|
-| `D:/Nut/00_my_digital/12_AGI/skills/internal-audit/audit-topics/about-me.md` | 公司背景（每次必须重新读取，禁用缓存） | Step 0 |
-| `D:/Nut/00_my_digital/12_AGI/skills/internal-audit/audit-topics/my-config.md` | 系统名称、阈值、已积累配置 | Step 0 |
+| `~/.claude/skills/internal-audit/audit-topics/about-me.md` | 公司背景（每次必须重新读取，禁用缓存） | Step 0 |
+| `~/.claude/skills/internal-audit/audit-topics/my-config.md` | 系统名称、阈值、已积累配置 | Step 0 |
 | [references/instruction_details.md](./references/instruction_details.md) | 完整步骤说明 | 各Step执行时 |
 | [references/step2_risk_identification.md](./references/step2_risk_identification.md) | Step 2 风险识别详细规范 | Step 2 |
 | [references/step3_program_generation.md](./references/step3_program_generation.md) | Step 3 程序生成详细规范 | Step 3 |
@@ -82,17 +82,17 @@ Step 5: 质量评估（自动）
 
 ### 0.0 定位当前项目
 
-从 CWD 向上搜索 `internal-audit-workspace/current-audit.json` → 读取 `audit_topic` → 确定主题配置路径：`D:/Nut/00_my_digital/12_AGI/skills/internal-audit/audit-topics/{audit_topic}/`
+从 CWD 向上搜索 `internal-audit-workspace/current-audit.json` → 读取 `audit_topic` → 确定主题配置路径：`~/.claude/skills/internal-audit/audit-topics/{audit_topic}/`
 
 ### 0.1 读取公司背景
 
-完整读取 `D:/Nut/00_my_digital/12_AGI/skills/internal-audit/audit-topics/about-me.md`，提取：公司规模、产品线、客户、原材料、ERP/MES系统、已知风险、审计部门信息。
+完整读取 `~/.claude/skills/internal-audit/audit-topics/about-me.md`，提取：公司规模、产品线、客户、原材料、ERP/MES系统、已知风险、审计部门信息。
 
 **降级策略**：若文件不存在，向用户询问5项核心信息。
 
 ### 0.2 读取操作配置
 
-读取 `D:/Nut/00_my_digital/12_AGI/skills/internal-audit/audit-topics/my-config.md`，获取：系统名称、实际阈值、已配置主题。
+读取 `~/.claude/skills/internal-audit/audit-topics/my-config.md`，获取：系统名称、实际阈值、已配置主题。
 
 ### 0.3 读取制度分析报告（可选）
 
@@ -294,8 +294,6 @@ EXPOSED（风险敞口）：
 
 **章节激活规则**：若某轨道未被激活，对应章节输出"本次审计目的不含此轨道，已跳过"。
 
-**列头一致性（硬规则）**：每张轨道表格的列名和列数必须与 `config/program_templates.json` 中对应轨道的 `columns`（layer=risk + layer=design）完全一致。MD输出①②层（风险溯源+程序设计），Excel导出追加③层（执行记录留空）。不允许增减列、改列名、改列顺序。validate-program.py 的 check_column_consistency 会校验，不一致则阻断。每张轨道表格必须以 `<!-- track X -->` 和 `<!-- end track X -->` 注释包裹。
-
 ```markdown
 # [审计主题]审计程序
 
@@ -319,151 +317,35 @@ EXPOSED（风险敞口）：
 ## 八、测试程序（轨道D：边界探测）
 
 ## 九、数据来源与资料清单
-
-## 十、审计程序决策理由（decision_log）
 ```
 
 **完整模板**：见 [references/output_template.md](./references/output_template.md)
 
-### 4.X 导出 Excel（Markdown → 多 Sheet 审计程序表）
+**🚨 强制要求**：每个轨道的全部表格内容必须用 HTML 注释标记包裹，导出脚本依赖此标记定位各轨道数据：
 
-Markdown 输出确认无误后，将程序导出为 Excel 格式，方便现场执行时打印/填写：
+```markdown
+<!-- track A -->
+### 三、测试程序（轨道A：控制有效性测试）
+| 风险编号 | 风险名称 | ... |
+|---|---|
+| R01 | ... | ... |
+<!-- end track A -->
 
-```bash
-python D:/Nut/00_my_digital/12_AGI/skills/internal-audit/internal-audit-program-generator/script/program_generator.py \
-    internal-audit-workspace/audit-programs/[审计主题]_审计程序_v1.0.md \
-    internal-audit-workspace/audit-programs/[审计主题]_审计程序_v1.0.xlsx \
-    --tracks <激活的轨道字母，如 A,B,C,E>
+<!-- track B -->
+### 四、测试程序（轨道B：舞弊实质性测试）
+| 风险编号 | 舞弊情景 | ... |
+|---|---|
+| R01 | ... | ... |
+<!-- end track B -->
 ```
 
-- `<激活的轨道字母>`：与 Step 4 输出的 Markdown 中实际激活的轨道一致（跳过未激活的轨道，不生成空 Sheet）
-- 每个轨道生成一个独立 Sheet（轨道A-控制测试、轨道B-舞弊测试…），列名、列宽、行高均按 `config/program_templates.json` 的预设自动排版
-- Excel 输出后，`audit-programs/` 下应同时存在 `.md`（给 AI 读）和 `.xlsx`（给人执行）两个文件
-
-### 4.X+1 创建证据存放目录
-
-审计程序确定后，预先为每个程序创建对应的证据目录，审计员执行时直接往里放文件即可：
-
-```bash
-python D:/Nut/00_my_digital/12_AGI/skills/internal-audit/_shared/scripts/create_evidence_dirs.py \
-    --program-md internal-audit-workspace/audit-programs/[审计主题]_审计程序_v1.0.md
-```
-
-脚本自动从 Markdown 中提取所有程序编号和名称，在 `evidence/{project_name}/` 下创建 `{编号}_{关键词}/` 目录树。已存在的目录静默跳过。
-
-> 如果 Excel 导出和证据目录都成功生成，此时 `audit-programs/` 下有 `.md` + `.xlsx` 两份文件，`evidence/` 下有对应的空目录结构，审计员可以直接开始执行。`create_evidence_dirs.py` 属于 Phase 2-3 白名单工具，无需 --force。
-
-### 4.X+2 生成审计程序索引（program_index.json）
-
-审计程序 Markdown 输出后，**调用确定性脚本**从 MD 提取结构化索引，写入 `audit-programs/[审计主题]_program_index.json`。该文件是 `queries.py trace` 追溯链的关键一环，也是 Step 5.0 `validate-program.py --ir` 结构化校验的输入。
-
-> v2.0 起，索引由脚本 `program_ir_parser.py` 自动生成（替代此前 LLM 手写 JSON 的做法——消除手写 JSON 漏字段/格式漂移的不可靠步骤）。LLM 只需输出 Markdown，无需手写 JSON。
-
-**操作**：运行解析器，从已生成的 Markdown 提取 ProgramIR（索引的超集）：
-
-```bash
-python D:/Nut/00_my_digital/12_AGI/skills/internal-audit/_shared/scripts/program_ir_parser.py \
-    internal-audit-workspace/audit-programs/[审计主题]_审计程序_v1.0.md \
-    --out internal-audit-workspace/audit-programs/[审计主题]_program_index.json
-```
-
-解析器自动完成：
-- 风险清单表（2.1/2.2）→ `risk_register`，风险编号归一化（`R01`→`R-1`）
-- 各轨道程序表（含 `<!-- track X -->` 包裹）→ `steps[]`，按表头列名映射命名字段
-- 增量章节十/十一（S 编号，在 track 注释外）→ 并入 `steps[]`，计入覆盖度
-- 来源标注列正则提取 `CP-/CG-/RP-/CF-/D-` 编号 → `related_controls` / `related_design_observations`
-- `-C` 勘误后缀识别 → `is_errata` / `corrects`
-- 覆盖度计算 → `coverage`（covered_risks / uncovered_risks / coverage_rate）
-
-**输出 schema（v2.0.0，program_index 的超集，`steps[]` 字段名严格兼容旧版）**：
-
-```json
-{
-  "schema_version": "2.0.0",
-  "audit_topic": "[审计主题]",
-  "generated_date": "[YYYY-MM-DD]",
-  "program_version": "v1.0",
-  "program_md_file": "[审计主题]_审计程序_v1.0.md",
-  "activated_tracks": ["A","B","C"],
-  "decision_log": {"D-003":{"result","rationale"}, "D-004":{...}, "D-005":{...}},
-  "risk_register": [{"risk_id":"R-1","raw_id":"R01","type":"经验类","title":"...","fact_anchors":["CP-..."]}],
-  "steps": [
-    {
-      "step_id": "A1.1", "track": "A",
-      "risk_ref": "R-1", "risk_refs": ["R-1"],
-      "title": "...", "related_controls": ["CP-..."], "related_design_observations": ["D-..."],
-      "procedure": "...", "sampling": "...", "data_source": "...", "tool": "",
-      "criterion": "...", "test_method": "控制有效性测试",
-      "is_errata": false, "corrects": ""
-    }
-  ],
-  "coverage": {"covered_risks":[...], "uncovered_risks":[{"risk_id","reason"}], "coverage_rate": 1.0}
-}
-```
-
-**兼容性**：`steps[]` 保留旧版全部字段名（`step_id`/`track`/`risk_ref`/`title`/`related_controls`/`related_design_observations`/`data_source`/`test_method`），`queries.py trace` 无需改动。新增 `risk_refs`（数组）、`criterion`、`sampling` 等字段供 `validate-program.py --ir` 校验。
-
-> `queries.py trace A1.1` 和 `queries.py trace CP-N001-07` 依赖此文件。缺失索引文件时，trace 命令会提示重新运行 program-generator。
-
-### 4.X 决策理由记录（decision_log，第十章）
-
-审计程序文档的第十章，必须记录本阶段做出的 3 个关键判断的理由：
-
-```
-## 十、审计程序决策理由
-
-### D-003 审计目的选择
-- 决策结果：[舞弊调查 / 内控效果评估 / 运营效率审计 / 合规性审计]
-- 选择理由：为什么选这个而不是其他目的？（≥30字，引用具体线索或公司特征）
-- 考虑过但未选的方案：[其他目的] — 为什么不选？
-
-### D-004 审计范围定义
-- 决策结果：[本次审计覆盖的范围]
-- 范围边界理由：为什么包含 A、排除 B？（≥20字）
-- 排除项说明：哪些领域未纳入审计范围，为什么？
-
-### D-005 程序轨道激活
-- 决策结果：[激活的轨道列表，如 B+E]
-- 激活理由：为什么激活这些轨道而不是其他组合？（≥20字，引用审计目的和风险识别结果）
-- 未激活轨道说明：哪些轨道被跳过，为什么？（如"本次属于舞弊调查，不激活轨道 E 运营效率"）
-```
-
-**硬性要求**：D-003 rationale ≥30 字，D-004/D-005 rationale ≥20 字。不得使用通用模板语言（如"根据审计准则要求"），必须引用公司具体信息。
+标记缺失会导致导出脚本无法识别轨道边界，整个轨道被跳过。
 
 ---
 
 ## Step 5: 质量评估（引用评估框架）
 
-**执行前加载**：
-- `D:/Nut/00_my_digital/12_AGI/skills/internal-audit/internal-audit-evaluator/SKILL.md`，定位 **audit_program** 的检查清单
-- `D:/Nut/00_my_digital/12_AGI/skills/internal-audit/program-quality-evaluator/SKILL.md`，程序质量深度评估
-
-### 5.0 格式硬校验（validate-program.py，不可跳过）
-
-在所有推理检查之前，先用确定性脚本做格式校验 + 结构化校验：
-
-```bash
-python D:/Nut/00_my_digital/12_AGI/skills/internal-audit/_shared/scripts/validate-program.py audit-programs/ --json --ir
-```
-
-`--ir` 模式会先调 `program_ir_parser.py` 把 MD 解析成 ProgramIR，再跑结构化确定性检查（与现有 7 项文本检查合并输出）：
-
-| IR 检查项 | 性质 | 触发阻断（block）条件 |
-|----------|:----:|----------------------|
-| `ir_coverage_rate` | block | 风险覆盖率 < 80%（风险清单 − 程序覆盖） |
-| `ir_criterion` | block | 任一程序判定标准为纯开关词（是/否/符合）或含模糊词（较大/过多）或为空 |
-| `ir_data_source` | block | 无数据来源的步骤占比 > 30% |
-| `ir_coverage_uncovered` | warn | 有未覆盖风险且无理由 |
-| `ir_sampling` | warn | 轨道A 步骤缺抽样方法 |
-| `ir_decision_rationale` | warn | D-003 理由 <30 字 / D-004、D-005 <20 字 |
-
-> 闭环逻辑、工具明确性、助理可执行性、mandatory 实质覆盖、查证有效性仍由 5.2 推理检查与 program-quality-evaluator（LLM）覆盖——这些是判断题，确定性代码不碰。
-
-| 输出 | 处理 |
-|------|------|
-| action=block | 根据 blockers 逐项修正，重新运行直到通过 |
-| action=warn | 标记 warnings，可接受则继续，不接受则修正 |
-| action=pass | 继续进入 5.1 |
+**执行前加载**：`~/.claude/skills/internal-audit/internal-audit-evaluator/SKILL.md`，定位 **audit_program** 的检查清单。以下检查项与框架定义一致。
 
 ### 5.1 格式检查
 
@@ -552,42 +434,14 @@ echo '{
 }' > /tmp/eval_result.json
 
 # 写入历史库
-python D:/Nut/00_my_digital/12_AGI/skills/internal-audit/internal-audit-evaluator/record_evaluation.py --input /tmp/eval_result.json
+python ~/.claude/skills/internal-audit/internal-audit-evaluator/record_evaluation.py --input /tmp/eval_result.json
 
 # 执行质量门（低于阈值自动标记 regenerate）
-python D:/Nut/00_my_digital/12_AGI/skills/internal-audit/internal-audit-evaluator/quality_gate.py --input /tmp/eval_result.json
+python ~/.claude/skills/internal-audit/internal-audit-evaluator/quality_gate.py --input /tmp/eval_result.json
 
 # 如果 quality_gate.py 输出 action="regenerate" → 回到 Step 1 重新生成
 # 如果 quality_gate.py 输出 action="pass" → 继续输出
 ```
-
-### 5.7 程序质量深度评估（program-quality-evaluator，不可跳过）
-
-evaluator 的 5.0-5.6 只管"格式对不对"。本步骤管"程序能不能用"。
-
-**执行**：读取 `D:/Nut/00_my_digital/12_AGI/skills/internal-audit/program-quality-evaluator/SKILL.md`，按四层评估体系（覆盖度+检测力+可执行性+防绕过声明）逐项评估。
-
-**重写触发**：
-- 层级 1 覆盖率 <80% → 🔴 重写缺失覆盖的轨道
-- 层级 1 mandatory 模块遗漏 → 🔴 立即补齐
-- 层级 2 判定标准为开关型 → 🔴 重写该程序
-- 层级 3 >30% 步骤无数据来源 → 🔴 重写
-
-**存储**：评估结果通过 `record_evaluation.py --content-type program_quality` + `quality_gate.py` 写入历史库。
-
----
-
-## Step 6：增量更新模式（条件触发）
-触发条件：phase_gate.py 返回 action=prompt_program_update 时进入。
-前置确认：展示待补充线索清单，用户逐条确认是否纳入。
-执行：按 references/incremental_update.md 执行增量生成。
-输出后：更新 current-audit.json (design_observations_consumed/whistleblower_pending/program_version/program_update_history)
-
-**勘误模式**：当用户指出已有程序存在根本性错误（系统归属、业务范围、风险假设）时，
-按 incremental_update.md§勘误模式 处理——勘误注记 + 追加修正步骤（-C 后缀），
-已有步骤编号永久保留，证据链不可断裂。详见 incremental_update.md。
-
-**详细规范**：见 [references/incremental_update.md](./references/incremental_update.md)
 
 ---
 

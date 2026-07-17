@@ -119,7 +119,21 @@ claude
 
 ## 升级系统
 
-系统不定期更新。如果你用的是 `--stable` 模式部署的项目，需要手动升级：
+系统不定期更新。升级分两步：先在黄金源打版本标签，再在各项目执行升级。
+
+### 第一步：打版本标签（在黄金源做）
+
+修改过系统的任何文件（规则、脚本、配置等）之后，**必须先跑**：
+
+```
+python D:\Nut\00_my_digital\12_AGI\skills\internal-audit\bump-version.py
+```
+
+这会生成一个新版本号。**不跑这步，部署项目检测不到变化**——升级脚本只比版本号，不检查文件内容。
+
+### 第二步：升级项目（在每个部署项目做）
+
+只适用于 `--stable` 模式部署的项目：
 
 ```
 powershell -File D:\Nut\00_my_digital\12_AGI\skills\internal-audit\update-project.ps1 -ProjectDir .
