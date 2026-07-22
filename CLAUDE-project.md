@@ -212,3 +212,32 @@ Pure engineering tasks (syntax fix, script repair, data structure optimization, 
 12. **When a Skill or script is unavailable**, halt and report; never generate or simulate its output yourself
 13. **When a Skill or script IS available**, you MUST use it; never bypass a working Skill/script to produce equivalent content yourself
 14. **Every output must declare its source** — user must see which content passed through quality gates
+
+## 更新已部署项目 (System Upgrade)
+
+当用户在已部署项目中表示"更新系统"、"升级到最新版"、"检查更新"时：
+
+1. 读取当前项目的 `VERSION.lock.json` 获取 `locked_version`
+2. 读取金源（`D:\Nut\00_my_digital\12_AGI\skills\internal-audit\VERSION.json`）获取当前版本
+3. 若版本一致 → 告知用户"已是最新版本（{version}）"
+4. 若版本落后 → 展示 VERSION.json 中的 changes 变更列表（含风险等级），询问用户确认
+5. 用户确认后执行：
+   ```
+   powershell -File "D:\Nut\00_my_digital\12_AGI\skills\internal-audit\update-project.ps1" -ProjectDir .
+   ```
+6. 报告升级结果。若失败，告知用户 `.backup/` 中保留了旧版本备份
+
+⚠️ `update-project.ps1` 不触碰 `audit-topics/`、`memory/`、`internal-audit-workspace/` —— 项目数据绝对安全。
+
+## 质量闸机 (Quality Gate)
+
+在以下关键动作完成后，必须运行对应的闸机检查：
+
+| 动作 | 命令 |
+|------|------|
+| 生成 finding 后 | `python _shared/scripts/audit_gate.py postcheck --action validate_finding --file <finding路径>` |
+| 生成审计程序后 | `python _shared/scripts/audit_gate.py postcheck --action validate_program --file <程序路径>` |
+| 生成审计报告后 | `python _shared/scripts/audit_gate.py postcheck --action validate_report --file <报告路径>` |
+| 查看项目状态 | `python _shared/scripts/audit_gate.py status` |
+
+闸机校验不通过（exit 1）时，LLM 必须根据错误详情修正输出后重新过闸，不得绕过。
