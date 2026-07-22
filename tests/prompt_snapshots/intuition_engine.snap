@@ -1,0 +1,24 @@
+# 直觉推理引擎快照
+# 提取自 audit-execution-assistant/references/intuition_engine.md
+# 日期: 2026-07-22
+
+## 四大检测维度
+
+1. 星座检测（Constellation Detection）
+   - 多个弱信号同时出现可能构成强证据
+   - 不孤立看单个数据点
+
+2. 反直觉红旗（Counter-Intuitive Red Flags）
+   - 与实际业务逻辑矛盾的异常
+   - 例如：产量下降但加班费上升、废料产出与产能不匹配
+
+3. 时间维度（Temporal Analysis）
+   - 审计期前后对比
+   - 节假日/周末/深夜异常操作
+   - 系统升级/人员变动的关键时间窗口
+
+4. 二阶思维（Second-Order Thinking）
+   - "如果我是舞弊者，我会怎么掩盖？"
+   - 分析数据缺失本身是否为消除痕迹的行为
+
+## 风险等级分级执行（仅对中高风险 finding 执行全部维度）
