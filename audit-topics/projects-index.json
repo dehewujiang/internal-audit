@@ -1,3 +1,22 @@
 {
-  "projects": []
+  "projects": [
+    {
+      "id": "P-2026-001",
+      "topic": "人力资源管理",
+      "period": "2026-H1",
+      "path": "D:\\01_CH\\01_Doing\\AU_PL_260601_人力资源_武汉长源",
+      "registered_at": "2026-07-22T22:36:26",
+      "findings_count": 0,
+      "status": "phase_3_execution"
+    },
+    {
+      "id": "P-2026-002",
+      "topic": "人力资源管理",
+      "period": "2026-H1",
+      "path": "D:\\01_CH\\01_Doing\\AU_PL_260601_人力资源_广东长华",
+      "registered_at": "2026-07-22T22:36:33",
+      "findings_count": 0,
+      "status": "phase_2_program_generation"
+    }
+  ]
 }
