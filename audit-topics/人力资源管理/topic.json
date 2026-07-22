@@ -41,7 +41,9 @@
       {"id": "training", "name": "培训与发展管理"},
       {"id": "performance", "name": "绩效管理"},
       {"id": "labor_relation", "name": "劳动关系管理"},
-      {"id": "work_injury", "name": "工伤管理"}
+      {"id": "work_injury", "name": "工伤管理"},
+      {"id": "social_insurance", "name": "社会保险与公积金管理",
+       "cover_content": "社保缴纳基数核定、参保人员管理、公积金缴存比例、代扣代缴流程"}
     ],
     "recommended": [
       {"id": "cadre", "name": "干部培养与选拔管理"},
@@ -60,6 +62,7 @@
     "劳动关系管理制度",
     "工伤管理制度",
     "职业健康管理制度",
-    "员工激励制度"
+    "员工激励制度",
+    "社会保险与公积金管理制度"
   ]
 }
