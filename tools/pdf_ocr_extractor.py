@@ -1,31 +1,29 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-PDF扫描件OCR解析工具（EasyOCR版本）
+PDF扫描件OCR解析工具（PaddleOCR版本）
 将PDF图片转换为可提取的文本
 
 依赖安装:
-    pip install pdf2image pillow easyocr
+    pip install pdf2image pillow paddlepaddle paddleocr
 
 系统依赖:
     Windows: 安装Poppler https://github.com/oschwartz10612/poppler-windows/releases/
     Linux: sudo apt-get install poppler-utils
     Mac: brew install poppler
 
-首次使用EasyOCR时会自动下载模型（约100MB），需联网
+首次使用PaddleOCR时会自动下载模型（约300-500MB），需联网
 
 使用方法:
     python pdf_ocr_extractor.py <pdf文件路径> [输出目录] [语言]
 
 示例:
-    python pdf_ocr_extractor.py "NPM001.pdf" "./output" "ch_sim"
-    python pdf_ocr_extractor.py --batch "./policies" "ch_sim"
+    python pdf_ocr_extractor.py "NPM001.pdf" "./output" "ch"
+    python pdf_ocr_extractor.py --batch "./policies" "ch"
 
 语言代码参考:
-    ch_sim  - 简体中文
-    ch_tra  - 繁体中文
-    en      - 英文
-    ch_sim+en - 中英文混合
+    ch  - 简体中文（推荐）
+    en  - 英文
 """
 
 import os
@@ -44,9 +42,9 @@ def check_dependencies():
         missing.append("pdf2image")
 
     try:
-        import easyocr
+        import paddleocr
     except ImportError:
-        missing.append("easyocr")
+        missing.append("paddleocr")
 
     try:
         from PIL import Image
@@ -58,7 +56,7 @@ def check_dependencies():
         for pkg in missing:
             print(f"  - {pkg}")
         print(f"\n请运行: pip install {' '.join(missing)}")
-        print("\n注意: 首次安装easyocr后，首次使用时会自动下载模型文件（约100MB）")
+        print("\n注意: 首次安装paddleocr后，首次使用时会自动下载模型文件（约300-500MB，保存至D:\\90_software\\PaddleOCR）")
         return False
 
     return True
@@ -79,37 +77,35 @@ def check_system_dependencies():
     return True
 
 
-def detect_table_regions(ocr_result, img_height, img_width):
-    """
-    检测可能的表格区域
-    表格特征：文本块在行和列上呈规律性分布
-    """
-    if len(ocr_result) < 4:
+def detect_table_regions_paddle(ocr_result, img_height, img_width):
+    """PaddleOCR版本的表格区域检测"""
+    if not ocr_result or not ocr_result[0]:
+        return []
+    
+    lines = ocr_result[0]
+    if len(lines) < 4:
         return []
     
     tables = []
-    # 简单的表格检测：文本块呈网格状分布
     y_positions = []
-    for bbox, text, conf in ocr_result:
-        if conf > 0.3:
-            # bbox格式: [[x1,y1], [x2,y1], [x2,y2], [x1,y2]]
+    for line in lines:
+        if line and line[1][1] > 0.4:
+            bbox = line[0]
+            text = line[1][0]
             y_center = (bbox[0][1] + bbox[2][1]) / 2
             y_positions.append((y_center, bbox, text))
     
-    # 按Y坐标排序，查找行
     y_positions.sort(key=lambda x: x[0])
-    
-    # 检测行（Y坐标接近的文本块）
     rows = []
     current_row = []
     last_y = None
-    y_threshold = img_height * 0.03  # 3%高度作为行间距
+    y_threshold = img_height * 0.03
     
     for y, bbox, text in y_positions:
         if last_y is None or abs(y - last_y) < y_threshold:
             current_row.append((y, bbox, text))
         else:
-            if len(current_row) >= 3:  # 一行至少有3个文本块才可能是表格
+            if len(current_row) >= 3:
                 rows.append(current_row)
             current_row = [(y, bbox, text)]
         last_y = y
@@ -117,7 +113,6 @@ def detect_table_regions(ocr_result, img_height, img_width):
     if len(current_row) >= 3:
         rows.append(current_row)
     
-    # 检测连续的行（可能是表格）
     if len(rows) >= 3:
         tables.append({
             "type": "可能的表格区域",
@@ -129,48 +124,47 @@ def detect_table_regions(ocr_result, img_height, img_width):
     return tables
 
 
-def detect_seal_regions(ocr_result, img_width, img_height):
-    """
-    检测可能的印章/签名区域
-    印章特征：小块、圆形分布、通常在角落
-    """
-    seals = []
+def detect_seal_regions_paddle(ocr_result, img_width, img_height):
+    """PaddleOCR版本的印章/签名区域检测"""
+    if not ocr_result or not ocr_result[0]:
+        return []
     
-    for bbox, text, conf in ocr_result:
-        if conf > 0.7:  # 高置信度
-            # 计算块的大小
+    seals = []
+    for line in ocr_result[0]:
+        if line and line[1][1] > 0.7:
+            bbox = line[0]
+            text = line[1][0]
             width = bbox[1][0] - bbox[0][0]
             height = bbox[2][1] - bbox[1][1]
             
-            # 印章通常是小块，文字短
             if width < img_width * 0.15 and height < img_height * 0.1:
-                if len(text) < 10 and any(char in text for char in ['章', '印', '签名', '签字']):
+                if len(text) < 10 and any(ch in text for ch in ['章', '印', '签名', '签字']):
                     seals.append({
                         "text": text,
-                        "confidence": round(conf, 2),
+                        "confidence": round(line[1][1], 2),
                         "suggestion": "可能是印章或签名，建议核对"
                     })
     
     return seals
 
 
-def extract_pdf_ocr(pdf_path, output_dir=None, lang="ch_sim", dpi=300):
+def extract_pdf_ocr(pdf_path, output_dir=None, lang="ch", dpi=300):
     """
-    从PDF扫描件中提取OCR文本（使用EasyOCR）
-    
+    从PDF扫描件中提取OCR文本（使用PaddleOCR）
+
     新增：输出待办清单，标记可疑识别和遗漏区域
 
     Args:
         pdf_path: PDF文件路径
         output_dir: 输出目录（默认为PDF所在目录）
-        lang: OCR语言，默认为简体中文。支持: ch_sim(简中), ch_tra(繁中), en(英), 组合如"ch_sim+en"
+        lang: OCR语言，默认为简体中文。支持: ch(简中), en(英)
         dpi: 图像分辨率，默认300
 
     Returns:
         dict: 包含提取结果的字典，新增 review_items 字段
     """
     from pdf2image import convert_from_path
-    import easyocr
+    from paddleocr import PaddleOCR
 
     pdf_path = Path(pdf_path)
     if not pdf_path.exists():
@@ -188,7 +182,7 @@ def extract_pdf_ocr(pdf_path, output_dir=None, lang="ch_sim", dpi=300):
     output_json = output_dir / f"{base_name}_ocr.json"
 
     print(f"正在处理: {pdf_path.name}")
-    print(f"OCR引擎: EasyOCR")
+    print(f"OCR引擎: PaddleOCR")
     print(f"语言: {lang}")
     print(f"DPI: {dpi}")
     print("-" * 50)
@@ -203,13 +197,18 @@ def extract_pdf_ocr(pdf_path, output_dir=None, lang="ch_sim", dpi=300):
         print("  请确认Poppler已正确安装并添加到PATH")
         return None
 
-    # 初始化EasyOCR阅读器（只初始化一次，复用）
-    print("\n步骤2: 初始化EasyOCR引擎...")
-    print("  （首次使用会自动下载模型，约100MB，请耐心等待）")
+    # 初始化PaddleOCR（只初始化一次，复用）
+    print("\n步骤2: 初始化PaddleOCR引擎...")
+    print("  （首次使用会自动下载模型到 D:\\90_software\\PaddleOCR，约300-500MB，请耐心等待）")
     try:
-        # 解析语言列表
-        lang_list = lang.split('+')
-        reader = easyocr.Reader(lang_list, gpu=False, verbose=False)
+        lang_code = 'ch' if 'ch' in lang else 'en'
+        ocr = PaddleOCR(
+            use_angle_cls=True,
+            lang=lang_code,
+            det_model_dir=None,
+            rec_model_dir=None,
+            rec_char_dict_path=None
+        )
         print("  * OCR引擎初始化完成")
     except Exception as e:
         print(f"  - 初始化失败: {e}")
@@ -223,9 +222,9 @@ def extract_pdf_ocr(pdf_path, output_dir=None, lang="ch_sim", dpi=300):
         "pages": len(images),
         "dpi": dpi,
         "language": lang,
-        "ocr_engine": "EasyOCR",
+        "ocr_engine": "PaddleOCR",
         "pages_content": [],
-        "review_items": []  # 新增：待人工核对清单
+        "review_items": []
     }
 
     full_text_parts = []
@@ -233,87 +232,68 @@ def extract_pdf_ocr(pdf_path, output_dir=None, lang="ch_sim", dpi=300):
     for i, image in enumerate(images, 1):
         print(f" 处理第 {i}/{len(images)} 页...", end=" ")
         try:
-            # 将PIL Image转换为numpy数组
             import numpy as np
             img_array = np.array(image)
             img_height, img_width = img_array.shape[:2]
 
-            # 进行OCR
-            # result格式: [[bbox, text, confidence], ...]
-            ocr_result = reader.readtext(img_array, detail=1)
+            # PaddleOCR识别
+            result = ocr.ocr(img_array, cls=True)
             
-            # 页面级审查项
             page_review_items = {
                 "page": i,
-                "low_confidence_items": [],  # 低置信度文本
-                "possible_tables": [],       # 可能的表格区域
-                "possible_seals": [],        # 可能的印章/签名
-                "special_chars": []          # 特殊字符/乱码
+                "low_confidence_items": [],
+                "possible_tables": [],
+                "possible_seals": [],
+                "special_chars": []
             }
 
-            # 提取文本并按行组织
             lines = []
-            current_line_y = None
-            line_threshold = img_height * 0.02
+            ocr_blocks = 0
+            
+            if result and result[0]:
+                for line in result[0]:
+                    if line is None:
+                        continue
+                    bbox = line[0]
+                    text = line[1][0]
+                    conf = line[1][1]
+                    ocr_blocks += 1
 
-            for bbox, text, conf in ocr_result:
-                # 低置信度检测（< 0.5）
-                if conf < 0.5:
-                    page_review_items["low_confidence_items"].append({
-                        "text": text,
-                        "confidence": round(conf, 2),
-                        "suggestion": "置信度低，建议人工核对"
-                    })
-                
-                # 特殊字符/乱码检测
-                if text and (len(text) < 2 or any(ord(c) > 0x9FFF or ord(c) < 0x4E00 for c in text if '\u4e00' <= c <= '\u9fff')):
-                    # 包含非中文字符或太短
-                    if any(c.isdigit() or c.isalpha() for c in text):
-                        pass  # 数字或字母是正常的
-                    else:
-                        page_review_items["special_chars"].append({
+                    if conf < 0.7:
+                        page_review_items["low_confidence_items"].append({
                             "text": text,
                             "confidence": round(conf, 2),
-                            "suggestion": "可能包含乱码或特殊符号，建议核对"
+                            "suggestion": "置信度较低，建议人工核对"
                         })
-                
-                if conf > 0.3: # 只保留置信度>30%的结果用于正文
-                    lines.append(text)
+                    
+                    if conf > 0.4:
+                        lines.append(text)
 
-            # 检测表格区域
-            page_review_items["possible_tables"] = detect_table_regions(ocr_result, img_height, img_width)
+            # 检测表格和印章区域
+            page_review_items["possible_tables"] = detect_table_regions_paddle(result, img_height, img_width)
+            page_review_items["possible_seals"] = detect_seal_regions_paddle(result, img_width, img_height)
             
-            # 检测印章区域
-            page_review_items["possible_seals"] = detect_seal_regions(ocr_result, img_width, img_height)
-            
-            # 汇总审查项
             if any(page_review_items[k] for k in ["low_confidence_items", "possible_tables", "possible_seals", "special_chars"]):
                 results["review_items"].append(page_review_items)
 
             text = '\n'.join(lines)
-
             page_data = {
                 "page": i,
                 "text": text,
                 "char_count": len(text.strip()),
-                "ocr_blocks": len(ocr_result),
-                "review_count": len([x for x in [page_review_items["low_confidence_items"], 
-                                                 page_review_items["special_chars"]] if x])
+                "ocr_blocks": ocr_blocks,
+                "review_count": len(page_review_items.get("low_confidence_items", []))
             }
             results["pages_content"].append(page_data)
             full_text_parts.append(f"\n=== PAGE {i} ===\n{text}")
             
-            review_marker = " ⚠️" if results["review_items"] and results["review_items"][-1]["page"] == i else ""
-            print(f"* ({len(text.strip())} 字符, {len(ocr_result)} 文本块){review_marker}")
+            review_marker = " ⚠️" if page_review_items.get("low_confidence_items") else ""
+            print(f"* ({len(text.strip())} 字符, {ocr_blocks} 文本块){review_marker}")
 
         except Exception as e:
             print(f"- 错误: {e}")
             results["pages_content"].append({
-                "page": i,
-                "text": "",
-                "char_count": 0,
-                "error": str(e),
-                "review_count": 0
+                "page": i, "text": "", "char_count": 0, "error": str(e), "review_count": 0
             })
 
     # 保存文本文件
@@ -329,14 +309,13 @@ def extract_pdf_ocr(pdf_path, output_dir=None, lang="ch_sim", dpi=300):
     print(f"  JSON文件: {output_json}")
 
     # 生成待办核对清单文件
-    print("\n步骤4: 生成待办核对清单...")
+    print(f"\n步骤4: 生成待办核对清单...")
     review_md_path = output_dir / f"{base_name}_ocr_待办核对.md"
     
     review_md_content = f"""# OCR 识别待办核对清单
 
 **源文件**: {pdf_path.name}
-**处理时间**: {results['pages_content'][0].get('analyzed_at', 'N/A') if results['pages_content'] else 'N/A'}
-**OCR引擎**: EasyOCR
+**OCR引擎**: PaddleOCR
 **语言**: {lang}
 **总页数**: {len(images)}
 
@@ -463,7 +442,7 @@ def extract_pdf_ocr(pdf_path, output_dir=None, lang="ch_sim", dpi=300):
     return results
 
 
-def batch_process(directory, lang="ch_sim"):
+def batch_process(directory, lang="ch"):
     """批量处理目录中的所有PDF"""
     pdf_files = sorted(Path(directory).glob("*.pdf"))
 
@@ -498,13 +477,13 @@ def show_help():
     print('    python pdf_ocr_extractor.py "NPM001.pdf" "./output" "ch_sim"')
     print("  " + "-" * 60)
     print("  指定语言（中英文混合）:")
-    print('    python pdf_ocr_extractor.py "NPM001.pdf" "./output" "ch_sim+en"')
+    print('    python pdf_ocr_extractor.py "NPM001.pdf" "./output" "ch"')
     print("  " + "-" * 60)
     print("  批量处理（推荐用于制度分析）:")
-    print('    python pdf_ocr_extractor.py --batch "./policies" "ch_sim"')
+    print('    python pdf_ocr_extractor.py --batch "./policies" "ch"')
     print("=" * 60)
 print("\n推荐用于内部审计制度分析:")
-print(" python pdf_ocr_extractor.py --batch \"internal-audit-workspace/documents\" \"ch_sim\"")
+print(' python pdf_ocr_extractor.py --batch "internal-audit-workspace/documents" "ch"')
 
 
 def main():
@@ -525,14 +504,14 @@ def main():
         # 批量模式
         if len(sys.argv) < 3:
             print("错误: 批量模式需要指定目录")
-            print("示例: python pdf_ocr_extractor.py --batch \"./policies\" \"ch_sim\"")
+            print("示例: python pdf_ocr_extractor.py --batch \"./policies\" \"ch\"")
             sys.exit(1)
-        batch_process(sys.argv[2], lang=sys.argv[3] if len(sys.argv) > 3 else "ch_sim")
+        batch_process(sys.argv[2], lang=sys.argv[3] if len(sys.argv) > 3 else "ch")
     else:
         # 单文件模式
         pdf_path = sys.argv[1]
         output_dir = sys.argv[2] if len(sys.argv) > 2 else None
-        lang = sys.argv[3] if len(sys.argv) > 3 else "ch_sim"
+        lang = sys.argv[3] if len(sys.argv) > 3 else "ch"
 
         try:
             result = extract_pdf_ocr(pdf_path, output_dir, lang)
