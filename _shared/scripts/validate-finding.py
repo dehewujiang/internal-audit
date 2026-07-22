@@ -242,12 +242,9 @@ def check_cceer_completeness(data):
     if not criteria_sources:
         issues.append("Criteria（审计依据）: 未找到制度/法规引用")
 
-    # Condition: finding_description.current_state
-    condition_text = ""
-    if isinstance(fd, dict):
-        condition_text = fd.get("current_state", "")
-    if not condition_text:
-        issues.append("Condition（实际情况）: 缺少 finding_description.current_state")
+    # Condition: finding condition field
+    if not condition:
+        issues.append("Condition（实际情况）: 缺少 condition 字段")
 
     # Cause
     has_cause = "cause" in data
