@@ -94,3 +94,21 @@
 - `risk_points` 数组
 - `conflicts` 数组（如有）
 - `summary` 对象
+- `baseline_audit_program` 数组（每个控制点输出一个基线测试模板，供 program-generator 消费）
+
+## baseline_audit_program 字段结构
+
+```json
+{
+  "baseline_audit_program": [
+    {
+      "control_point_id": "PUR-AP-001",
+      "objective": "测试目标（一句话）",
+      "sample_criteria": "样本选择标准",
+      "evidence_source": "证据来源系统/文档",
+      "test_steps": ["步骤1", "步骤2", "步骤3"],
+      "pass_criteria": "通过标准"
+    }
+  ]
+}
+```

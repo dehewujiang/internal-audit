@@ -152,6 +152,9 @@ C) 取消
   "updated_at": "{今天日期}",
   "audit_state": {
     "known_facts": {"company": "", "systems": "", "risk_areas": []},
+    "audit_purpose": "",
+    "report_type": "",
+    "design_observations_consumed": false,
     "evidence_pool": [],
     "programs": {"initial_list": [], "current_priority": [], "completed": [], "pending": [], "deferred": [], "added": []},
     "findings": {"draft": [], "confirmed": [], "rejected": []},

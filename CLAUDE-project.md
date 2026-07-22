@@ -129,8 +129,8 @@ Every Python script call must pass `phase_gate.py tool-check` first. Exit 1 = bl
 | Phase 1 (document) | `validate-policy-analysis.py`, `pdf_ocr_extractor.py` | policy-analysis |
 | Phase 1.5 (interview) | `validate-interview.py` | interview |
 | Phase 2-3 (program) | `validate-program.py` | program |
-| Phase 4 (execution) | `validate-finding.py` | finding |
-| Phase 5 (report) | `validate-report.py` | report |
+| Phase 3 (execution) | `validate-finding.py` | finding |
+| Phase 4 (report) | `validate-report.py` | report |
 
 **Globals** (all phases): `phase_gate.py`, `queries.py`, `validate-json.py`, `audit_styles.py`, `excel_core.py`, `decisions_schema.py`
 
@@ -190,13 +190,13 @@ Pure engineering tasks (syntax fix, script repair, data structure optimization, 
 | `audit-topics/about-me.md` | company background (read every time, no cache) |
 | `audit-topics/my-config.md` | system names, thresholds, config |
 | `audit-topics/topic.json` | audit topic definition + mandatory modules |
-| `constitution.md` | the 14 hard constraints |
+| `constitution.md` | the 10 hard constraints |
 | `CLAUDE.md` | this file — tool registry + phase routing |
 | `OPS.md` | user-facing operations manual |
 | `memory/project.md` | project state (the source of truth) |
 | `memory/context.md` | technical context for agents after compact |
 
-## 14 hard constraints (from constitution.md)
+## 10 hard constraints (from constitution.md)
 
 1. No finding without sufficient evidence
 2. Fraud suspicion → always mark as high risk

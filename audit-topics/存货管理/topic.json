@@ -24,5 +24,19 @@
     "NPM007材料仓库管理标准",
     "NPM001成品仓库管理标准",
     "NXM003一般可回收废弃物资处置管理标准"
-  ]
+  ],
+  "reference_framework": {
+    "mandatory": [
+      {"id": "warehouse_in", "name": "入库管理"},
+      {"id": "warehouse_out", "name": "出库管理"},
+      {"id": "inventory_count", "name": "盘点管理"},
+      {"id": "obsolete_mgmt", "name": "呆滞物料管理"},
+      {"id": "planning", "name": "计划管理"},
+      {"id": "waste_disposal", "name": "废料处置管理"}
+    ],
+    "recommended": [
+      {"id": "aux_materials", "name": "低值易耗品及辅材管理"},
+      {"id": "logistics", "name": "物流仓库管理"}
+    ]
+  }
 }
