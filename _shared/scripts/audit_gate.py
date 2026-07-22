@@ -135,7 +135,13 @@ def do_postcheck(action: str, file_path: str) -> int:
         return 0
 
     target = file_path or ""
-    cmd = [sys.executable, str(script_path), target, "--strict"]
+    # 不同脚本使用不同的硬校验参数
+    if script_name == "validate-finding.py":
+        cmd = [sys.executable, str(script_path), target, "--exit-on-error"]
+    elif script_name == "validate-policy-analysis.py":
+        cmd = [sys.executable, str(script_path), target, "--json"]
+    else:
+        cmd = [sys.executable, str(script_path), target, "--strict"]
 
     print(f"[GATE] 后置校验: {action} → {script_name} {target}")
     result = subprocess.run(cmd, capture_output=True, text=True)

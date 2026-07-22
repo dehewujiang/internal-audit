@@ -116,30 +116,22 @@ def load_finding(path):
 # ── 校验器 ─────────────────────────────────────────────
 
 def check_schema_compliance(data):
-    """[S] 必要字段完整性"""
-    required = ["finding_id", "finding_title", "finding_metadata", "risk_classification"]
-    missing = [k for k in required if k not in data]
+    """[S] 必要字段完整性（schema 1.2.0）"""
+    required_top = ["finding_id", "title", "risk_level", "origin", "criteria", "condition", "cause", "recommendation", "evidence"]
+    missing = [k for k in required_top if k not in data]
     if missing:
         return False, f"缺少必要字段: {', '.join(missing)}"
 
-    # 子结构检查
-    fm = data.get("finding_metadata", {})
-    rc = data.get("risk_classification", {})
+    # evidence 数组非空检查
+    evidence = data.get("evidence", [])
+    if not isinstance(evidence, list) or len(evidence) == 0:
+        return False, "evidence 数组不能为空"
 
-    meta_required = ["origin", "status", "verification_status"]
-    risk_required = ["risk_level"]
+    # evidence 条目必含 reliability_grade
+    for i, ev in enumerate(evidence):
+        if "reliability_grade" not in ev:
+            return False, f"evidence[{i}] 缺少 reliability_grade"
 
-    meta_missing = [k for k in meta_required if k not in fm]
-    risk_missing = [k for k in risk_required if k not in rc]
-
-    issues = []
-    if meta_missing:
-        issues.append(f"finding_metadata 缺少: {', '.join(meta_missing)}")
-    if risk_missing:
-        issues.append(f"risk_classification 缺少: {', '.join(risk_missing)}")
-
-    if issues:
-        return False, "; ".join(issues)
     return True, None
 
 
@@ -233,13 +225,14 @@ def check_cceer_completeness(data):
     issues = []
 
     # Criteria: 检查是否有制度引用
-    fd = data.get("finding_description", {})
+    # 从新 schema 字段中找
+    description = data.get("description", "")
+    condition = data.get("condition", "")
+    criteria_text = data.get("criteria", "")
     criteria_sources = []
-    # 从 finding_description 中找
-    if isinstance(fd, dict):
-        for v in fd.values():
-            if isinstance(v, str) and re.search(r'[A-Z]{3,4}-?\d{2,4}', v):
-                criteria_sources.append(v[:60])
+    # 从 description 和 condition 中找
+    if re.search(r'[A-Z]{3,4}-?\d{2,4}', description + " " + condition):
+        criteria_sources.append("from finding body")
     # 从 cross_references 找
     cr = data.get("cross_references", {})
     docs = cr.get("documents", []) if isinstance(cr, dict) else []
@@ -289,8 +282,7 @@ def check_evidence_grade(data):
     高风险 finding 必须有 ≥1 个 A 级或 E 级证据。
     """
     issues = []
-    rc = data.get("risk_classification", {})
-    risk_level = normalize_level(rc.get("risk_level"))
+    risk_level = normalize_level(data.get("risk_level"))
 
     evidence = data.get("evidence", {})
     if not evidence:
@@ -422,7 +414,7 @@ def validate_finding(data, exit_on_error=False):
     rc = data.get("risk_classification", {})
     risk_level = normalize_level(rc.get("risk_level"))
     finding_id = data.get("finding_id", "UNKNOWN")
-    finding_title = data.get("finding_title", "")
+    finding_title = data.get("title", "")
 
     checks = {}
 
@@ -530,7 +522,7 @@ def print_report(report, verbose=False):
 def main():
     parser = argparse.ArgumentParser(description="Finding 质量硬校验工具")
     parser.add_argument("path", nargs="?", help="单个 finding JSON 文件路径")
-    parser.add_argument("--findings-dir", help="批量校验目录下所有 FIND-*.json")
+    parser.add_argument("--findings-dir", help="批量校验目录下所有 F-*.json")
     parser.add_argument("--index", help="从 index.json 读取 finding 列表")
     parser.add_argument("--exit-on-error", action="store_true", help="发现阻断时立即退出")
     parser.add_argument("--json", action="store_true", help="输出 JSON 格式")
@@ -555,7 +547,7 @@ def main():
             sys.exit(2)
         for root, dirs, fnames in os.walk(dir_path):
             for fn in sorted(fnames):
-                if fn.startswith("FIND-") and fn.endswith(".json"):
+                if fn.startswith("F-") and fn.endswith(".json"):
                     files.append(os.path.join(root, fn))
 
     if args.index:
@@ -570,7 +562,7 @@ def main():
                 # 查找对应的 json 文件
                 for root, dirs, fnames in os.walk(base_dir):
                     for fn in fnames:
-                        if fn.startswith(f"{fid}_") and fn.endswith(".json"):
+                        if fn == f"{fid}.json":
                             files.append(os.path.join(root, fn))
 
     if not files:

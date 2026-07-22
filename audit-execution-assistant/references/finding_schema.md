@@ -89,7 +89,21 @@
     "management_action_plan": "管理层整改计划",
     "target_completion_date": "计划完成日期",
     "auditor_assessment": "充分|不充分|需补充证据"
-  }
+  },
+  "business_validation": {
+    "overall_assessment": "业务现实性评估结论",
+    "score": 8.5,
+    "key_gaps": ["发现与业务现实的偏差"],
+    "recommendations": ["对 finding 描述的修正建议"]
+  },
+  "debate_sessions": [
+    {
+      "role": "辩论角色名",
+      "difficulty": "初级|中级|高级",
+      "key_points": "关键论点摘要",
+      "conclusion": "审计方应对策略"
+    }
+  ]
 }
 ```
 

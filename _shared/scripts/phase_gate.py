@@ -44,7 +44,7 @@ PHASE_TOOLS = {
     "phase_1_document_analysis":       {"validate-policy-analysis.py", "pdf_ocr_extractor.py"},
     "phase_1_5_interview":            {"validate-interview.py"},
     "phase_2_program_generation":      {"validate-program.py", "create_evidence_dirs.py"},
-    "phase_3_execution":               {"validate-finding.py"},
+    "phase_3_execution":               {"validate-finding.py", "data_executor.py"},
     "phase_4_report":                  {"validate-report.py"},
 }
 
@@ -55,6 +55,8 @@ GLOBAL_TOOLS = {
     "audit_styles.py",
     "excel_core.py",
     "decisions_schema.py",
+    "data_executor.py",
+    "audit_gate.py",
 }
 
 # Evaluator scripts — allowed from Phase 1 onward (no init-phase eval)

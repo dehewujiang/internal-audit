@@ -28,8 +28,6 @@ import json
 import csv
 import traceback
 from pathlib import Path
-from io import StringIO
-import signal
 import builtins
 
 
@@ -209,12 +207,17 @@ TOOL_DESCRIPTIONS = {
 
 # ── 沙箱执行 ──────────────────────────────────────────────
 
+def _safe_import(name, *args, **kwargs):
+    """白名单 import：只允许 pandas/numpy 及标准科学库"""
+    allowed = {'pandas', 'numpy', 'math', 'datetime', 'collections', 'itertools', 'json', 'csv', 're', 'functools'}
+    top_level = name.split('.')[0]
+    if top_level not in allowed:
+        raise ImportError(f"安全沙箱禁止导入模块: {name}")
+    return __import__(name, *args, **kwargs)
+
+
 class TimeoutError(Exception):
     pass
-
-
-def _timeout_handler(signum, frame):
-    raise TimeoutError("代码执行超时（30秒）")
 
 
 def execute(code: str, data_files: dict, output_dir: str = None) -> dict:
@@ -253,7 +256,7 @@ def execute(code: str, data_files: dict, output_dir: str = None) -> dict:
 
     # 构建沙箱命名空间
     safe_builtins = {
-        '__import__': __import__,
+        '__import__': _safe_import,
         'True': True, 'False': False, 'None': None,
         'int': int, 'float': float, 'str': str, 'bool': bool,
         'list': list, 'dict': dict, 'set': set, 'tuple': tuple,
@@ -271,25 +274,21 @@ def execute(code: str, data_files: dict, output_dir: str = None) -> dict:
     for tool_name, tool_fn in PREDEFINED_TOOLS.items():
         namespace[tool_name] = tool_fn
 
-    # 执行代码
-    old_handler = signal.signal(signal.SIGALRM, _timeout_handler) if hasattr(signal, 'SIGALRM') else None
+    # 执行代码（使用 threading.Timer 实现跨平台超时）
+    import threading
+    timed_out = [False]
+    timer = threading.Timer(30.0, lambda: timed_out.__setitem__(0, True))
+    timer.daemon = True
+    timer.start()
     try:
-        if hasattr(signal, 'SIGALRM'):
-            signal.alarm(30)
         exec(code, namespace)
-        if hasattr(signal, 'SIGALRM'):
-            signal.alarm(0)
-    except TimeoutError:
-        if old_handler:
-            signal.signal(signal.SIGALRM, old_handler)
-        return {"error": "代码执行超时（30秒）", "rows": 0}
     except Exception as e:
-        if old_handler:
-            signal.signal(signal.SIGALRM, old_handler)
+        timer.cancel()
         return {"error": f"执行错误: {str(e)}\n{traceback.format_exc()}", "rows": 0}
     finally:
-        if old_handler:
-            signal.signal(signal.SIGALRM, old_handler)
+        timer.cancel()
+    if timed_out[0]:
+        return {"error": "代码执行超时（30秒）", "rows": 0}
 
     output = namespace.get('OUTPUT', None)
     if output is None:
