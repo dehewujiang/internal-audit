@@ -12,7 +12,7 @@ PDF扫描件OCR解析工具（PaddleOCR版本）
     Linux: sudo apt-get install poppler-utils
     Mac: brew install poppler
 
-首次使用PaddleOCR时会自动下载模型（约300-500MB），需联网
+首次使用PaddleOCR时会自动下载模型（约300-500MB，保存至 %USERPROFILE%\.paddlex\），需联网
 
 使用方法:
     python pdf_ocr_extractor.py <pdf文件路径> [输出目录] [语言]
@@ -56,7 +56,7 @@ def check_dependencies():
         for pkg in missing:
             print(f"  - {pkg}")
         print(f"\n请运行: pip install {' '.join(missing)}")
-        print("\n注意: 首次安装paddleocr后，首次使用时会自动下载模型文件（约300-500MB，保存至D:\\90_software\\PaddleOCR）")
+        print("\n注意: 首次安装paddleocr后，首次使用时会自动下载模型文件（约300-500MB，保存至 %USERPROFILE%\\.paddlex\\）")
         return False
 
     return True
@@ -78,22 +78,23 @@ def check_system_dependencies():
 
 
 def detect_table_regions_paddle(ocr_result, img_height, img_width):
-    """PaddleOCR版本的表格区域检测"""
-    if not ocr_result or not ocr_result[0]:
+    """PaddleOCR 3.x OCRResult 版本的表格区域检测"""
+    if not ocr_result or len(ocr_result) == 0:
         return []
     
-    lines = ocr_result[0]
-    if len(lines) < 4:
+    r = ocr_result[0]
+    polys = r.get('dt_polys', []) if isinstance(r, dict) else getattr(r, 'dt_polys', [])
+    texts = r.get('rec_texts', []) if isinstance(r, dict) else getattr(r, 'rec_texts', [])
+    
+    if len(polys) < 4:
         return []
     
     tables = []
     y_positions = []
-    for line in lines:
-        if line and line[1][1] > 0.4:
-            bbox = line[0]
-            text = line[1][0]
-            y_center = (bbox[0][1] + bbox[2][1]) / 2
-            y_positions.append((y_center, bbox, text))
+    for idx, poly in enumerate(polys):
+        if idx < len(texts) and poly is not None and len(poly) >= 4:
+            y_center = (poly[0][1] + poly[2][1]) / 2
+            y_positions.append((y_center, poly, texts[idx]))
     
     y_positions.sort(key=lambda x: x[0])
     rows = []
@@ -101,13 +102,13 @@ def detect_table_regions_paddle(ocr_result, img_height, img_width):
     last_y = None
     y_threshold = img_height * 0.03
     
-    for y, bbox, text in y_positions:
+    for y, poly, text in y_positions:
         if last_y is None or abs(y - last_y) < y_threshold:
-            current_row.append((y, bbox, text))
+            current_row.append((y, poly, text))
         else:
             if len(current_row) >= 3:
                 rows.append(current_row)
-            current_row = [(y, bbox, text)]
+            current_row = [(y, poly, text)]
         last_y = y
     
     if len(current_row) >= 3:
@@ -125,23 +126,28 @@ def detect_table_regions_paddle(ocr_result, img_height, img_width):
 
 
 def detect_seal_regions_paddle(ocr_result, img_width, img_height):
-    """PaddleOCR版本的印章/签名区域检测"""
-    if not ocr_result or not ocr_result[0]:
+    """PaddleOCR 3.x OCRResult 版本的印章/签名区域检测"""
+    if not ocr_result or len(ocr_result) == 0:
         return []
     
+    r = ocr_result[0]
+    polys = r.get('dt_polys', []) if isinstance(r, dict) else getattr(r, 'dt_polys', [])
+    texts = r.get('rec_texts', []) if isinstance(r, dict) else getattr(r, 'rec_texts', [])
+    scores = r.get('rec_scores', []) if isinstance(r, dict) else getattr(r, 'rec_scores', [])
+    
     seals = []
-    for line in ocr_result[0]:
-        if line and line[1][1] > 0.7:
-            bbox = line[0]
-            text = line[1][0]
-            width = bbox[1][0] - bbox[0][0]
-            height = bbox[2][1] - bbox[1][1]
+    for idx, poly in enumerate(polys):
+        if idx < len(texts) and poly is not None and len(poly) >= 4:
+            conf = scores[idx] if idx < len(scores) else 0.0
+            text = texts[idx]
+            width = poly[1][0] - poly[0][0]
+            height = poly[2][1] - poly[1][1]
             
-            if width < img_width * 0.15 and height < img_height * 0.1:
+            if conf > 0.7 and width < img_width * 0.15 and height < img_height * 0.1:
                 if len(text) < 10 and any(ch in text for ch in ['章', '印', '签名', '签字']):
                     seals.append({
                         "text": text,
-                        "confidence": round(line[1][1], 2),
+                        "confidence": round(conf, 2),
                         "suggestion": "可能是印章或签名，建议核对"
                     })
     
@@ -199,15 +205,13 @@ def extract_pdf_ocr(pdf_path, output_dir=None, lang="ch", dpi=300):
 
     # 初始化PaddleOCR（只初始化一次，复用）
     print("\n步骤2: 初始化PaddleOCR引擎...")
-    print("  （首次使用会自动下载模型到 D:\\90_software\\PaddleOCR，约300-500MB，请耐心等待）")
+    print("  （首次使用会自动下载模型到 %USERPROFILE%\\.paddlex\\，约300-500MB，请耐心等待）")
     try:
         lang_code = 'ch' if 'ch' in lang else 'en'
         ocr = PaddleOCR(
-            use_angle_cls=True,
-            lang=lang_code,
-            det_model_dir=None,
-            rec_model_dir=None,
-            rec_char_dict_path=None
+            use_doc_orientation_classify=True,
+            use_doc_unwarping=False,
+            enable_mkldnn=False,  # 绕过 PaddlePaddle 3.3.x Windows oneDNN bug
         )
         print("  * OCR引擎初始化完成")
     except Exception as e:
@@ -236,8 +240,8 @@ def extract_pdf_ocr(pdf_path, output_dir=None, lang="ch", dpi=300):
             img_array = np.array(image)
             img_height, img_width = img_array.shape[:2]
 
-            # PaddleOCR识别
-            result = ocr.ocr(img_array, cls=True)
+            # PaddleOCR 3.x 识别（返回 OCRResult 对象列表）
+            result = ocr.ocr(img_array)
             
             page_review_items = {
                 "page": i,
@@ -250,13 +254,15 @@ def extract_pdf_ocr(pdf_path, output_dir=None, lang="ch", dpi=300):
             lines = []
             ocr_blocks = 0
             
-            if result and result[0]:
-                for line in result[0]:
-                    if line is None:
-                        continue
-                    bbox = line[0]
-                    text = line[1][0]
-                    conf = line[1][1]
+            if result and len(result) > 0:
+                ocr_result = result[0]
+                # 新格式: OCRResult 对象含 rec_texts/rec_scores/dt_polys
+                texts = ocr_result.get('rec_texts', []) if isinstance(ocr_result, dict) else getattr(ocr_result, 'rec_texts', [])
+                scores = ocr_result.get('rec_scores', []) if isinstance(ocr_result, dict) else getattr(ocr_result, 'rec_scores', [])
+                polys = ocr_result.get('dt_polys', []) if isinstance(ocr_result, dict) else getattr(ocr_result, 'dt_polys', [])
+                
+                for idx, text in enumerate(texts):
+                    conf = scores[idx] if idx < len(scores) else 0.0
                     ocr_blocks += 1
 
                     if conf < 0.7:
