@@ -85,7 +85,8 @@ Phase flow: `phase_0_init → phase_1_document_analysis → phase_1_5_interview 
 | `validate-policy-analysis.py` | Validate policy analysis output |
 | `validate-interview.py` | Validate interview materials |
 | `validate-json.py` | Generic JSON schema validation |
-| `create_evidence_dirs.py` | Auto-create evidence directory tree from program markdown |
+| `create_evidence_dirs.py` | Auto-create evidence dirs + generate `_evidence_catalog.json` from program markdown (v2.0) |
+| `evidence_catalog.py` | Evidence catalog CRUD: scan files, suggest matches, update slots, status summary |
 | `project_init.py` | Project safety check before workspace creation |
 | `query_data_sources.py` | Backend data source queries (used by queries.py) |
 | `decisions_schema.py` | JSON schema for decision records |
@@ -129,7 +130,7 @@ Every Python script call must pass `phase_gate.py tool-check` first. Exit 1 = bl
 | Phase 1 (document) | `validate-policy-analysis.py`, `pdf_ocr_extractor.py` | policy-analysis |
 | Phase 1.5 (interview) | `validate-interview.py` | interview |
 | Phase 2-3 (program) | `validate-program.py` | program |
-| Phase 3 (execution) | `validate-finding.py` | finding |
+| Phase 3 (execution) | `validate-finding.py`, `evidence_catalog.py`, `data_executor.py` | finding |
 | Phase 4 (report) | `validate-report.py` | report |
 
 **Globals** (all phases): `phase_gate.py`, `queries.py`, `validate-json.py`, `audit_styles.py`, `excel_core.py`, `decisions_schema.py`
@@ -161,6 +162,7 @@ Blocked tools suggest `--force` only when the user explicitly approves a cross-p
 - `current-audit.json` stores BOTH business state AND audit execution state. Two flags: `design_observations_consumed` (hard gate — Phase 2→3 blocked when `false`) and `whistleblower_pending`.
 - `audit_state.artifacts` tracks **freshness** of each phase's output — a soft reminder, NOT a gate. Values: `fresh` | `stale`. phase_gate does NOT read freshness; each Skill checks it at Step 1.
 - `internal-audit-workspace/` subdirectories map to phases: `policy-analyses/` (P1), `design-assessments/` (P1), `interview-materials/` (P1.5), `audit-programs/` (P2-3), `findings/` (P4), `reports/` (P5), `evidence/` (P4).
+  - **Evidence v2.0**: `evidence/_files/` = centralized shared storage (one copy, multi-program reference). `evidence/_evidence_catalog.json` = auto-generated evidence slot catalog (Phase 2) with `file: null` slots filled during Phase 3 via `evidence_catalog.py`.
 - Finding files are named `F-YYYY-NNN.json`, NOT `FIND-*.json`.
 - Audit program index (`audit-programs/*_program_index.json`) links step_id → related_controls → policy-analyses. `queries.py trace A7.2` and `queries.py trace CP-HR-006` consume it.
 
@@ -191,6 +193,8 @@ Pure engineering tasks (syntax fix, script repair, data structure optimization, 
 | `audit-topics/my-config.md` | system names, thresholds, config |
 | `audit-topics/topic.json` | audit topic definition + mandatory modules |
 | `constitution.md` | the 10 hard constraints |
+| `internal-audit-workspace/evidence/_evidence_catalog.json` | evidence catalog v2.0 (slot→program mapping + collection status) |
+| `internal-audit-workspace/evidence/_files/` | centralized evidence storage (v2.0, one copy only) |
 | `CLAUDE.md` | this file — tool registry + phase routing |
 | `OPS.md` | user-facing operations manual |
 | `memory/project.md` | project state (the source of truth) |
