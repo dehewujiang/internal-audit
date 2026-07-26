@@ -112,13 +112,35 @@ interview 来源的验证需额外处理（详见 document-organizer/references/
 
 对每个审计程序，引导用户提供所需证据。
 
-**证据存放路径规则**：`internal-audit-workspace/evidence/{project_name}/{程序编号}_{程序关键词}/`
+**证据存放路径规则（v2.0 集中存储）**：
 
-- `{project_name}` 从 `current-audit.json` 的 `project_name` 字段读取
-- `{程序编号}` 使用程序编号（如 A-001、B-003）
-- `{程序关键词}` 使用程序名去掉前缀后的核心词（如 "入库完整性穿行测试"）
-- 用户将导出的原始文件放入此目录，文件名自定
-- AI 从该目录读取文件进行分析
+```
+evidence/{project_name}/
+├── _files/                      ← 所有共享证据集中存放（只放一份）
+├── _evidence_catalog.json       ← 证据清单（Phase 2 Python自动生成）
+└── {程序编号}_{程序关键词}/      ← 仅存放程序专有的零散截图/笔记
+```
+
+**关键变化（v2.0）**：
+- 被多个程序引用的文件只放一份到 `_files/`，不再复制到每个程序目录
+- 引用关系记录在 `_evidence_catalog.json` 的 `source_programs` 字段
+- 证据槽位由 `create_evidence_dirs.py` 从程序 Markdown 的"取证方式"列自动生成
+
+**Step 1 执行时的证据状态展示**：
+
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📋 程序 A1.1：考勤数据手工传递篡改
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+需要的证据（来自 catalog）：
+  ✅ 打卡系统导出文件        → _files/考勤原始记录_2026.xlsx
+  ✅ 人事科考勤汇总表          → _files/人事科考勤汇总表_2026.xlsx
+  ❌ 考勤调整单                → 未收集
+
+⚠️ 缺失 1 项证据。输入"跳过"继续，或补充后重新载入。
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
 
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -193,27 +215,67 @@ interview 来源的验证需额外处理（详见 document-organizer/references/
 
 **接收证据后**：
 
-0. **从 evidence 目录读取文件**：
+0. **读取证据清单**：
 
-   当用户反馈"完成"后，程序优先从 evidence 目录读取，其次才是对话中发送的附件。
+   在读取任何证据文件之前，先读取 `evidence/{project_name}/_evidence_catalog.json`。
 
-   ```bash
-   # 路径格式
-   evidence/{project_name}/{程序编号}_{程序关键词}/
-   # 示例
-   evidence/存货管理审计_2025年度/A-001_入库完整性穿行测试/
+   - 查找当前程序编号（如 A1.1）出现在哪些槽位的 `source_programs` 中
+   - 检查这些槽位的 `file` 字段：
+     - `file` 已填充 → 从 `_files/` 读取该文件
+     - `file` 为 `null` → 提示用户"以下证据缺失"，询问是否跳过或补充
+   - 读取后立即在 finding JSON 的 evidence 条目中写入 `storage_path`
+
+0.1 **证据匹配与收集**（当用户说"帮我匹配证据"或"查看收集状态"时）：
+
+   前提：Phase 2 已生成 `_evidence_catalog.json`（所有槽位的 `file` 为 `null`），
+   用户已将收集到的文件放入 `_files/` 目录。
+
+   ```
+   Step 0.1a — Python 扫描文件结构指纹：
+     python _shared/scripts/evidence_catalog.py scan <workspace>
+     → 获取每个文件的名称、类型、列名（Excel/CSV）、行数
+
+   Step 0.1b — Python 初步匹配：
+     python _shared/scripts/evidence_catalog.py match <workspace>
+     → 文件名关键词 + 列名匹配，输出初步匹配建议
+
+   Step 0.1c — LLM 综合判断 + 用户确认（展示全量状态表）：
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+     📋 证据收集状态总览
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+     ✅ 已匹配（N/TOTAL）
+     | 槽位 | 证据名称 | 匹配文件 | 关联程序 | 置信度 |
+     | EVD-003 | Excel工资表 | 2025年薪资数据.xlsx | A5.1,B5.1,... | 高 |
+
+     ❌ 缺失（M/TOTAL）
+     | 槽位 | 证据名称 | 关联程序 | 取数来源 |
+     | EVD-025 | 考勤调整单 | A1.1 | 管理部 |
+
+     ⚠️ 未匹配文件
+     | 文件名 | 最可能槽位 | 操作 |
+     | 临时截图.png | — | [指定槽位] [移除] |
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
    ```
 
-   - 使用 `ls` 命令列出该目录下的所有文件
-   - 根据文件扩展名判断类型并读取：
-     | 扩展名 | 处理方式 |
-     |--------|---------|
-     | .xlsx / .xls / .csv | 用 Python 或直接读取并分析 |
-     | .pdf | 提取文本和表格 |
-     | .jpg / .png / .bmp | OCR 识别关键数据，或提示用户手动提取 |
-     | .txt / .md | 直接读取 |
-   - 读取后立即在 finding JSON 的 evidence 条目中写入 `storage_path`（即该文件的完整路径）
-   - 如果目录不存在或为空，回退到"用户通过对话发送"模式
+   **未匹配文件的处理**：
+   - 手动指定到已有槽位 → 调用 `evidence_catalog.py update --slot <id> --file <path>`
+   - 在 catalog 中新增槽位 → 追加到 items 数组并保���
+   - 误放的文件 → 从 `_files/` 移除
+
+   **确认后**：LLM 调用 `evidence_catalog.py update` 逐条写回 catalog，填充 `file` 字段。
+
+1. **从 `_files/` 读取文件**：
+
+   根据 catalog 中当前程序的槽位路径，从 `_files/` 读取文件：
+   | 扩展名 | 处理方式 |
+   |--------|---------|
+   | .xlsx / .xls / .csv | 用 Python 或直接读取并分析 |
+   | .pdf | 提取文本和表格 |
+   | .jpg / .png / .bmp | OCR 识别关键数据，或提示用户手动提取 |
+   | .txt / .md | 直接读取 |
+
+   如果 catalog 中无匹配或 `_files/` 为空，回退到"用户通过对话发送"模式。
 
 1. **识别证据类型**（当用户通过对话发送时）：
    | 类型 | 处理方式 |
