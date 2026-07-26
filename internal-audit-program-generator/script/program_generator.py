@@ -244,8 +244,13 @@ def generate_audit_program_xlsx(
             if ws_rows and not ws_rows[-1]:
                 ws_rows.pop()
 
-            # 列宽：从 JSON 配置读取，不足列补默认值 20
-            col_widths_cfg = [c['width'] for c in cfg.get('columns', [])]
+            # 列宽：从 JSON 配置读取，兼容 column_widths（扁平数组）和 columns（对象数组）两种格式
+            if 'column_widths' in cfg:
+                col_widths_cfg = list(cfg['column_widths'])
+            elif 'columns' in cfg:
+                col_widths_cfg = [c['width'] for c in cfg['columns']]
+            else:
+                col_widths_cfg = []
             while len(col_widths_cfg) < max_cols:
                 col_widths_cfg.append(20)
             col_widths = col_widths_cfg[:max_cols] if max_cols else col_widths_cfg

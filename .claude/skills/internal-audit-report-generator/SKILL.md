@@ -149,7 +149,7 @@ Step 4: 填充模板 → 生成带"已执行程序清单"的报告
 用户：生成存货管理审计报告
 
 Step 0: 读取 about-me.md（获取公司背景）
-Step 1: 读取 design-assessments/*.md（制度设计评估）
+Step 1: 读取 design-assessments/*.json（制度设计评估，如 JSON 不可用则回退读取同目录 *.md 摘要）
         → 提取设计观察（design observations）
         → 注意：这些是未经实地验证的假设，不是审计发现
 Step 2: 读取 findings/*.json（审计发现）

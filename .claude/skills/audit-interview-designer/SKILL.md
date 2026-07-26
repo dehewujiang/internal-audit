@@ -52,37 +52,90 @@ description: |
 | **历史发现** | 查找同主题的历史 Finding | 追踪性问题（整改验证） |
 | **行业基准** | 基于 `document-organizer/references/industry_benchmarks.md` | 补充性问题（行业通用风险） |
 
-### Step 2：生成 Excel 访谈问卷
+### Step 2a：生成 interview_content.json（LLM 深度推理）
 
-**输出位置**：`internal-audit-workspace/interview-materials/[审计主题]_访谈问卷.xlsx`
+> **关键**：追问提示不能是模板套话——必须结合具体业务场景逐条推理。
 
-**Sheet 1: 访谈问卷**
+**输出位置**：`internal-audit-workspace/interview-materials/interview_content.json`
 
-列结构：
-| A | B | C | D | E | F | G | H |
-|---|---|---|---|---|---|---|---|
-| 模块 | 序号 | 问题 | 追问提示 | 制度依据 | 访谈记录 | 证据索引 | 风险标记 |
+**生成规则**：
 
-- **模块**：按业务流程切分（如：入库管理、出库管理、盘点管理）
-- **序号**：Q1, Q2, Q3...
-- **问题**：开放式问题，以"请描述"、"如何"开头
-- **追问提示**：2-3个追问方向
-- **制度依据**：对应的制度条款（如"仓储管理制度 §3.1"）
-- **访谈记录**：留空，供用户手写
-- **证据索引**：留空，供用户记录收集到的证据编号
-- **风险标记**：留空，供用户标记⚠️
+对 Step 1 产出的每个知识缺口，逐条推理以下字段：
 
-**Sheet 2: 资料需求清单 (DRL)**
+| 字段 | 要求 | 示例 |
+|------|------|------|
+| `question` | 开放式，锚定具体制度条款和风险点 | "考勤数据从打卡机到工资表经4个手工传递环节，制度未要求签收确认。请描述实际传递流程。" |
+| `probe_hints` | **2-3 个针对性追问方向**，不允许通用句式 | "① 谁负责导出考勤数据？ ② 导出后如何传递给薪酬岗？有无签收单？ ③ 最近一次发现数据不一致是什么时候？" |
+| `policy_ref` | 制度编号 + 条款号 | "《GDCH-QP-005》§5.2 / 《GDCH-W-HR-007》§6.1.3" |
 
-列结构：
-| A | B | C | D | E | F |
-|---|---|---|---|---|---|
-| 序号 | 资料名称 | 格式 | 责任部门 | 是否获取 | 备注 |
+**DRL 生成规则**：
 
-**Sheet 3: 访谈指南与红旗提示（仅供审计师参考）**
+资料需求清单必须列出**具体的数据类型**，不能只写制度编号。例如：
+- ✅ "最近6个月考勤系统打卡记录（含修改日志）"
+- ❌ "《GDCH-W-HR-007》及相关记录"
 
-列结构：
-| 场景 | 红旗信号 | 应对策略 |
+**访谈指南生成规则**：
+
+为每种典型访谈场景设计应对策略，至少覆盖：
+- 高风险：受访者无法提供书面证据
+- 中风险：受访者描述模糊、回避细节
+- 低风险：受访者认为"没问题"
+- 岗位矛盾：不同岗位对同一流程描述不一致
+- 敏感话题：涉及舞弊风险时的降压话术
+
+**interview_content.json 完整 schema**：
+
+```json
+{
+  "questions": [
+    {
+      "module": "考勤管理 ⚠️高风险",
+      "id": "DA-001",
+      "question": "开放式问题，锚定具体制度条款",
+      "probe_hints": "追问①：...\n追问②：...\n追问③：...",
+      "policy_ref": "《GDCH-QP-005》§5.2",
+      "risk_flag": "⚠️"
+    }
+  ],
+  "drl": [
+    {
+      "name": "最近6个月考勤系统打卡记录（含修改日志）",
+      "format": "Excel/CSV导出",
+      "dept": "综合管理部",
+      "note": "要求含修改人、修改时间、修改内容"
+    }
+  ],
+  "interview_guide": [
+    {
+      "scenario": "询问考勤数据修改权限时",
+      "red_flag": "受访者说"系统没有日志"或"我不知道有没有"",
+      "strategy": "追问：谁是系统管理员？能否现场登录系统查看设置？IT部门是否参与维护？"
+    }
+  ]
+}
+```
+
+### Step 2b：生成 Excel 访谈问卷（Python 格式化）
+
+将 Step 2a 生成的 `interview_content.json` 传入格式化脚本，产出 Excel：
+
+```bash
+python audit-interview-designer/script/interview_generator.py \
+    internal-audit-workspace/interview-materials/interview_content.json \
+    internal-audit-workspace/interview-materials/[审计主题]_访谈问卷.xlsx
+```
+
+> `interview_generator.py` 支持两种输入格式：
+> - **新格式（推荐）**：含 `questions` 键 → 直接读字段写入，Python 仅做排版
+> - **旧格式（兼容）**：含 `design_observations` 键 → 模板渲染，severity 已修复中英文对齐
+
+**输出 Excel 列结构**：
+
+| Sheet | 列 |
+|-------|-----|
+| 访谈问卷 | 模块、序号、问题、追问提示、制度依据、访谈记录、证据索引、风险标记 |
+| 资料需求清单 | 序号、资料名称、格式、责任部门、是否获取、备注 |
+| 访谈指南 | 场景、红旗信号、应对策略 |
 
 ### Step 3：输出确认
 
@@ -308,3 +361,4 @@ python ~/.claude/skills/internal-audit/internal-audit-evaluator/quality_gate.py 
 |------|------|---------|
 | 1.0 | 2026-04-03 | 初始版本，支持 Excel 输出和智能分流 |
 | 2.0 | 2026-05-12 | 新增 Step 5 质量评估框架，校验问题锚定性 |
+| 3.0 | 2026-07-17 | 重构内容生成链路：新增 interview_content.json 中间格式，LLM 负责逐题追问推理，Python 脚本降级为纯格式化器；修复 severity 中英文 mismatch；probe_hints 模板增加动态占位符 |

@@ -200,3 +200,49 @@
 - `setup-project.ps1` 改为扫描 `.claude/skills/` 自动发现（消除硬编码列表）
 - `update-project.ps1` stable 模式改为逐技能合并
 - `.claude/settings.json` 和 `.claude/rules/` 补充到部署流程
+
+## ADR-017
+日期：2026-07-22
+背景：全系统数据流转审查发现 27 个问题，其中 validate-finding.py 校验的 schema 与 finding_schema.md 定义完全不同。这导致 audit-execution-assistant 按新 schema 生成的 finding 必定校验失败。
+备选方案：
+- A) 修改 finding_schema.md 以匹配 validate-finding.py 的旧 schema
+- B) 重写 validate-finding.py 以匹配 finding_schema.md 的新 schema 1.2.0
+最终选择：B
+原因：
+- finding_schema.md 1.2.0 的扁平结构（title/risk_level/origin/evidence[]）更适合 LLM 生成
+- 旧 schema（finding_title/finding_metadata/risk_classification）是嵌套结构，LLM 容易出错
+- 统一后 report-generator、finding-debate 也使用同一套字段名
+影响：validate-finding.py check_schema_compliance 重写；filename 匹配 FIND- → F-；finding_schema.md 补充辩论字段；CLAUDE-project.md 更新引用
+
+## ADR-018
+日期：2026-07-22
+背景：三个新需求出现：1) LLM 无法处理数万行数据 → 需要 Python 预处理；2) LLM 推理前后的校验脚本可能被跳过 → 需要硬闸机；3) constitution #10 制度完整性检查一直无执行代码。
+备选方案：
+- A) 在 SKILL.md 中加强描述性检查流程，靠 LLM 自觉
+- B) 新增三个确定性 Python 脚本
+最终选择：B
+原因：
+- 与 ADR-005/ADR-009 一致：代码闸机是唯一可靠的执行保障
+- data_executor 解决 LLM token 窗口限制问题（与 ADR-005 的"LLM 会忘"同理——LLM 也读不完大数据）
+- audit_gate 填补了"生成后、输出前"的空窗期——phase_gate 管阶段，validate 管格式，但"刚生成完"这一步无人看守
+- check_mandatory_coverage 把 constitution #10 从纯文本约束变成可执行检查
+影响：
+- 新增 _shared/scripts/data_executor.py（沙箱 + 8 预制工具）
+- 新增 _shared/scripts/audit_gate.py（precheck/postcheck/status）
+- 新增 _shared/scripts/check_mandatory_coverage.py（mandatory 模块覆盖检查）
+- phase_gate GLOBAL_TOOLS 和 PHASE_TOOLS 扩展
+- CLAUDE-project.md 新增升级指令和质量闸机调用点
+
+## ADR-019
+日期：2026-07-22
+背景：EasyOCR 在中文扫描件上的识别率仅 50-60%，大量制度文档被标记为"【OCR待确认】"，导致 Phase 1 制度分析不完整。
+备选方案：
+- A) 保持 EasyOCR，增加人工核对指引
+- B) 升级到 PaddleOCR（百度开源，专门为中文优化）
+最终选择：B
+原因：
+- PaddleOCR 中文识别率 75-85%，提升约 50%
+- 改动量极小（~30 行代码，替换 import 和 API 适配）
+- 模型离线运行，数据不出本机
+- 一次性下载成本（~500MB）换取长期识别质量提升
+影响：tools/pdf_ocr_extractor.py 引擎替换；模型存储路径 D:\90_software\PaddleOCR

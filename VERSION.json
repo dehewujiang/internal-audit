@@ -1,7 +1,7 @@
 {
-  "version": "2026-07-17-1",
-  "git_commit": "84f116c",
-  "updated_at": "2026-07-17T09:37:02+08:00",
+  "version": "2026-07-21-2",
+  "git_commit": "f9b76ff",
+  "updated_at": "2026-07-21T13:36:27+08:00",
   "changes": [
     {
       "type": "doc",
@@ -132,6 +132,11 @@
       "type": "fix",
       "file": "_shared/scripts/create_evidence_dirs.py",
       "summary": "证据目录名改用程序编号+风险名称，去掉项目名中间层"
+    },
+    {
+      "type": "feat",
+      "file": "export",
+      "summary": "v2.0 MD驱动列名，自适应路径，多表格导出，evidence表头感知，validate结构校验"
     }
   ]
 }

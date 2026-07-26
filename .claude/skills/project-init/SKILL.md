@@ -152,6 +152,9 @@ C) 取消
   "updated_at": "{今天日期}",
   "audit_state": {
     "known_facts": {"company": "", "systems": "", "risk_areas": []},
+    "audit_purpose": "",
+    "report_type": "",
+    "design_observations_consumed": false,
     "evidence_pool": [],
     "programs": {"initial_list": [], "current_priority": [], "completed": [], "pending": [], "deferred": [], "added": []},
     "findings": {"draft": [], "confirmed": [], "rejected": []},
@@ -185,6 +188,24 @@ C) 取消
 - 将 `~/.claude/skills/internal-audit/tools/*.md`（工具能力声明）复制到项目 `internal-audit-workspace/tools/`。
   ⚠️ 只复制以下 7 个能力声明文件，忽略全局 tools/ 中的其他文件：document-organizer.md、interview-designer.md、program-generator.md、execution-assistant.md、finding-debate.md、report-generator.md、validate-finding.md
 
+### 4.6 注册到项目索引
+
+项目创建完成后，自动执行注册命令将项目登记到 `audit-topics/projects-index.json`：
+
+```bash
+python _shared/scripts/queries.py register --path "{project_dir}" \
+  --topic "{topic_name}" --period "{audit_period}"
+```
+
+注册信息用于跨项目数据查询、未来一键批量升级和历史项目统计。
+
+⚠️ 注册失败不阻断创建流程。若失败，在 Step 5 输出末尾增加提示：
+```
+📌 跨项目索引注册失败（不影响当前项目使用）
+   可稍后手动注册：
+   python queries.py register --path <项目目录> --topic <主题> --period <期间>
+```
+
 ---
 
 ## Step 5：确认输出
@@ -213,6 +234,10 @@ C) 取消
 下一步：
 1. 将制度文档放入 internal-audit-workspace/documents/
 2. 输入"分析制度"开始
+
+> 若注册失败，此处额外输出：
+> 📌 跨项目索引注册失败（不影响当前项目使用）
+>    可稍后手动注册：python queries.py register --path <项目目录> --topic <主题> --period <期间>
 ```
 
 ---

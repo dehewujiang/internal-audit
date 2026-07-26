@@ -109,7 +109,7 @@ AI应以这个层次结构为基线输出，根据难度等级调整强度。初
 
 ```json
 {
-  "finding_id": "FIND-001",
+  "finding_id": "F-2026-001",
   "debate_session_id": "DB-2026-001-001",
   "difficulty_level": "中级",
   "roles_involved": ["仓库/物流主管"],

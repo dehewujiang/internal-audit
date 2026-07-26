@@ -1,53 +1,53 @@
 {
-  "schema_version": "1.0.0",
-  "description": "审计访谈问卷问题模板库 - 基于设计观察类型和严重度自动生成问题",
+  "schema_version": "1.1.0",
+  "description": "审计访谈问卷问题模板库 - 基于设计观察类型和严重度自动生成问题（v1.1: severity改为中文key对齐输入数据；probe_hints增加{placeholders}）",
   "templates": {
     "control_gap": {
-      "high": {
+      "高": {
         "question": "我们发现【{title}】存在制度缺失，《{source_doc}》规定应有【{expected}】，但实际未见。请描述：（1）目前是否有替代管控措施？（2）如何确保风险可控？（3）该缺口已存在多长时间？",
-        "probe_hints": "追问：替代措施的书面记录？谁负责监控？有无定期评估？"
+        "probe_hints": "追问：{title}的替代措施是否有书面记录？谁负责监控？【{expected}】目前实际如何执行？有无定期评估？"
       },
-      "medium": {
+      "中": {
         "question": "关于【{title}】，《{source_doc}》对此的规定不够明确。请描述实际执行中是如何操作的？",
-        "probe_hints": "追问：是否有口头约定或惯例做法？是否有历史案例？"
+        "probe_hints": "追问：【{title}】是否有口头约定或惯例做法？《{source_doc}》未覆盖的部分如何处理？是否有历史案例？"
       },
-      "low": {
+      "低": {
         "question": "【{title}】的制度规定是否可以进一步完善？目前的做法是否存在潜在风险？",
-        "probe_hints": "追问：您认为最应补充哪方面内容？"
+        "probe_hints": "追问：您认为【{title}】最应补充哪方面内容？实际操作中有无不便之处？"
       }
     },
     "design_ineffective": {
-      "high": {
+      "高": {
         "question": "我们注意到【{title}】的制度设计（《{source_doc}》）可能无效，原因：【{design_issue}】。请描述：（1）实际执行中是否存在偏差？（2）您是否观察到管理漏洞？（3）是否有未按制度执行的情况？",
-        "probe_hints": "追问：最近一次发现偏差是什么时候？如何处理？"
+        "probe_hints": "追问：【{title}】最近一次发现执行偏差是什么时候？如何处理？【{design_issue}】是否有历史事件佐证？"
       },
-      "medium": {
+      "中": {
         "question": "【{title}】的制度设计是否存在执行难度？实际效果如何？",
-        "probe_hints": "追问：执行人员是否反馈困难？"
+        "probe_hints": "追问：【{title}】的执行人员是否反馈过困难？实际落地与制度设计差距有多大？"
       },
-      "low": {
+      "低": {
         "question": "【{title}】的制度设计是否有改进空间？",
-        "probe_hints": "追问：与其他类似制度相比如何？"
+        "probe_hints": "追问：【{title}】与其他类似制度相比如何？是否有行业标杆做法可参考？"
       }
     },
     "risk_point": {
-      "high": {
+      "高": {
         "question": "经分析，【{description}】存在较高风险。请描述：（1）目前是否有监测机制？（2）是否有预防措施？（3）历史上是否发生过类似风险事件？",
-        "probe_hints": "追问：最近一次监测是什么时候？结果如何？"
+        "probe_hints": "追问：【{description}】最近一次监测是什么时候？结果如何？有无预防措施？是否发生过相关事件？"
       },
-      "medium": {
+      "中": {
         "question": "【{description}】存在一定风险。请描述目前的风险管控情况。",
-        "probe_hints": "追问：谁负责该领域的风险监控？"
+        "probe_hints": "追问：【{description}】具体由谁负责风险监控？管控措施执行频率如何？有无改进计划？"
       },
-      "low": {
+      "低": {
         "question": "【{description}】是否有潜在风险需关注",
-        "probe_hints": "追问：是否需要加强监控？"
+        "probe_hints": "追问：【{description}】是否需要加强监控？目前的管控是否足够？"
       }
     },
     "conflict": {
-      "high": {
+      "高": {
         "question": "发现《{doc_a_name}》与《{doc_b_name}》在【{title}】上存在冲突：A规定【{doc_a_rule}】，B规定【{doc_b_rule}】。请描述：（1）实际执行以哪个为准？（2）是否存在并行制度的风险案例？（3）是否需要统一修订？",
-        "probe_hints": "追问：冲突是否导致过工作混乱？如何处理？"
+        "probe_hints": "追问：【{title}】的冲突是否导致过工作混乱？实际以哪份制度为准？如何处理两个标准不一致的情况？"
       }
     }
   },
