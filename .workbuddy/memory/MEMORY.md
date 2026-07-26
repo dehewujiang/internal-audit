@@ -18,6 +18,10 @@
 - 匹配策略：Python 结构指纹（列名/行数/文件名）→ LLM 综合判断 → 用户确认
 - 向后兼容：已有项目旧 evidence 结构不动，新项目启用新结构
 
+## 项目命名规则（2026-07-26）
+- `current-audit.json` 中的 `project_name` 必须与项目文件夹名保持一致
+- 示例：文件夹 `AU_PL_260601_人力资源_武汉长源` → `project_name: "AU_PL_260601_人力资源_武汉长源"`
+
 ## 已部署项目
 - P-2026-001: 武汉长源 人力资源管理 phase_3_execution
 - P-2026-002: 广东长华 人力资源管理 phase_2_program_generation
