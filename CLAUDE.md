@@ -19,12 +19,15 @@
 | data-executor | LLM 生成的 pandas 代码沙箱执行（大文件分析） | level_0 | `skills/internal-audit/_shared/scripts/data_executor.py` |
 | audit-gate | LLM 推理前后的硬闸机（precheck/postcheck） | level_0 | `skills/internal-audit/_shared/scripts/audit_gate.py` |
 | mandatory-check | constitution #10 制度完整性检查 | level_0 | `skills/internal-audit/_shared/scripts/check_mandatory_coverage.py` |
+| evidence-catalog | 证据清单管理（生成槽位/扫描文件/匹配建议/状态汇总） | level_0 | `skills/internal-audit/_shared/scripts/evidence_catalog.py` |
 
 ## 关键文件
 
 - `~/.claude/skills/internal-audit/audit-topics/about-me.md` — 公司背景
 - `~/.claude/skills/internal-audit/audit-topics/my-config.md` — 系统配置
 - `constitution.md` — 中央大脑运行宪法（项目目录中的 constitution.md 指向此全局定义或为副本）
+- `internal-audit-workspace/evidence/_evidence_catalog.json` — 证据清单（v2.0 集中存储，记录证据-程序映射和收集状态）
+- `internal-audit-workspace/evidence/_files/` — 共享证据集中存放目录（v2.0）
 
 ## 全局工作规则
 
