@@ -134,7 +134,7 @@ C) 取消
   "schema_version": "1.1",
   "audit_topic": "{topic}",
   "project_id": "AU_{topic}_{date}",
-  "project_name": "{topic}审计_{year}年度",
+  "project_name": "{project_dir_name}",
   "audit_period": {
     "start_date": "{当前年份}-01-01",
     "end_date": "{当前年份}-12-31"
@@ -249,3 +249,4 @@ python _shared/scripts/queries.py register --path "{project_dir}" \
 - ❌ 禁止覆盖已有项目而不警告
 - ❌ 禁止自动生成 about-me.md 或 my-config.md（内容须用户手动填写）
 - ❌ 禁止在 CLAUDE.md 中硬编码项目特有路径
+- ❌ `project_name` 必须等于项目文件夹名称，禁止自由命名。例：文件夹 `AU_PL_260601_人力资源_武汉长源` → `project_name: "AU_PL_260601_人力资源_武汉长源"`
