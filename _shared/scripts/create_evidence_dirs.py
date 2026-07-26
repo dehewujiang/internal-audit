@@ -1,15 +1,19 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-create_evidence_dirs.py — 从审计程序 Markdown 自动创建证据存放目录
-
-解析审计程序的 Markdown 文档，提取所有程序的编号和名称，
-在 evidence/ 下预先创建 `{project_name}/{程序编号}_{程序关键词}/` 目录结构，
-免去审计员手动建 65 个文件夹的麻烦。
+create_evidence_dirs.py — 从审计程序 Markdown 自动创建证据目录和证据清单
 
 [INPUT]:  审计程序 Markdown 文件 + current-audit.json（读取 project_name）
-[OUTPUT]: evidence/{project_name}/{编号}_{关键词}/ 目录树，打印创建统计
+[OUTPUT]: evidence/{project_name}/ 目录树（含 _files/ 集中存储 + _evidence_catalog.json）
 [POS]:    _shared/scripts 的工具脚本，被 program-generator SKILL.md Step 4 调用
+[PROTOCOL]: 变更时更新此头部, 然后检查同级 CLAUDE.md
+
+解析审计程序的 Markdown 文档，提取所有程序的编号、名称和取证方式，
+在 evidence/ 下创建完整目录结构和证据清单（catalog）。
+
+v2.0 新增：
+  - 集中存储目录 _files/（证据只放一份，多个程序共享）
+  - 证据清单 _evidence_catalog.json（从"取证方式"列自动提取槽位）
 
 用法：
     python create_evidence_dirs.py --program-md audit-programs/xxx.md
@@ -21,6 +25,7 @@ import json
 import os
 import re
 import sys
+from datetime import datetime
 from pathlib import Path
 
 
@@ -202,6 +207,164 @@ def parse_programs_from_md(md_path: str) -> list:
     return []
 
 
+# ── 证据目录清单生成 ───────────────────────────────────
+
+def _normalize_evidence_name(raw: str) -> str:
+    """标准化证据名称，用于去重比对。
+    去掉括号注释、多余空格、统一顿号逗号。
+    """
+    cleaned = re.sub(r'[（(][^)）]*[)）]', '', raw)
+    cleaned = re.sub(r'\s+', '', cleaned)
+    cleaned = cleaned.replace('、', ',').replace('；', ',')
+    return cleaned.strip(',')
+
+
+def _parse_evidence_rows(section_text: str, track_id: str) -> list:
+    """从单个轨道的 Markdown 表格中提取程序编号和取证方式。
+    返回 [{code, track, items[]}, ...]
+    """
+    results = []
+    code_pattern = re.compile(r'^([A-H]\d+(?:\.\d+)?)$')
+
+    lines = section_text.strip().split('\n')
+    evidence_col = -1
+    code_col = -1
+    headers = []
+    seen = set()
+
+    for i, line in enumerate(lines):
+        stripped = line.strip()
+        if not stripped.startswith('|') or not stripped.endswith('|'):
+            continue
+
+        parts = [p.strip() for p in stripped[1:-1].split('|')]
+
+        # 分隔行：提取前一行作为表头
+        if all(re.match(r'^[-:]+$', p) or p == '' for p in parts):
+            if i > 0:
+                prev = lines[i - 1].strip()
+                if prev.startswith('|') and prev.endswith('|'):
+                    headers = [p.strip() for p in prev[1:-1].split('|')]
+                    for j, h in enumerate(headers):
+                        if h == '取证方式':
+                            evidence_col = j
+                        if h in ('程序编号', '编号'):
+                            code_col = j
+            continue
+
+        if evidence_col < 0:
+            continue
+
+        # 找程序编号
+        code = None
+        if code_col >= 0 and code_col < len(parts):
+            code = parts[code_col]
+        if not code or not code_pattern.match(code):
+            for j, p in enumerate(parts):
+                if code_pattern.match(p):
+                    code = p
+                    break
+        if not code or code in seen:
+            continue
+        seen.add(code)
+
+        # 提取证据项
+        if evidence_col < len(parts):
+            raw = parts[evidence_col]
+            items = [it.strip() for it in re.split(r'[、,;；\n]', raw) if it.strip()]
+            results.append({
+                'code': code,
+                'track': track_id,
+                'items': items,
+            })
+
+    return results
+
+
+def _merge_evidence_slots(raw_slots: list) -> list:
+    """合并同名证据：不同程序引用同一证据时合并到同一槽位。"""
+    merged = {}
+    for slot in raw_slots:
+        for item in slot['items']:
+            norm = _normalize_evidence_name(item)
+            if not norm:
+                continue
+            if norm not in merged:
+                merged[norm] = {
+                    'name': item,
+                    'tracks': set(),
+                    'programs': [],
+                }
+            merged[norm]['tracks'].add(slot['track'])
+            if slot['code'] not in merged[norm]['programs']:
+                merged[norm]['programs'].append(slot['code'])
+
+    result = []
+    for i, (_, data) in enumerate(sorted(merged.items()), 1):
+        result.append({
+            'id': f'EVD-{i:03d}',
+            'name': data['name'],
+            'source_track': ','.join(sorted(data['tracks'])),
+            'source_programs': sorted(data['programs']),
+            'file': None,
+            'collected_at': None,
+        })
+    return result
+
+
+def _extract_evidence_slots_from_content(content: str) -> list:
+    """从审计程序 Markdown 全文提取所有轨道的证据槽位。
+    返回 [{code, track, items[]}, ...]
+    """
+    sections = {}
+    for track_id in ('A', 'B', 'C', 'D', 'E', 'F'):
+        pattern = rf'<!--\s*track\s+{track_id}\s*-->(.*?)<!--\s*end\s*track\s+{track_id}\s*-->'
+        match = re.search(pattern, content, re.DOTALL | re.IGNORECASE)
+        if match:
+            sections[track_id] = match.group(1).strip()
+
+    if not sections:
+        sections = _fallback_by_headings(content)
+
+    all_slots = []
+    for track_id in sorted(sections.keys()):
+        all_slots.extend(_parse_evidence_rows(sections[track_id], track_id))
+    return all_slots
+
+
+def generate_evidence_catalog(md_path: str, evidence_root: Path,
+                               project_name: str) -> dict:
+    """从审计程序 Markdown 生成 evidence catalog JSON 文件。
+    覆盖写入 evidence_root/_evidence_catalog.json。
+    返回 catalog dict，无证据列时返回 None。
+    """
+    with open(md_path, 'r', encoding='utf-8') as f:
+        content = f.read()
+
+    raw_slots = _extract_evidence_slots_from_content(content)
+    if not raw_slots:
+        return None
+
+    merged = _merge_evidence_slots(raw_slots)
+    now = datetime.now().strftime('%Y-%m-%d')
+
+    catalog = {
+        'project': project_name,
+        'created_at': now,
+        'updated_at': now,
+        'total_slots': len(merged),
+        'filled_slots': 0,
+        'items': merged,
+    }
+
+    catalog_path = evidence_root / '_evidence_catalog.json'
+    evidence_root.mkdir(parents=True, exist_ok=True)
+    with open(catalog_path, 'w', encoding='utf-8') as f:
+        json.dump(catalog, f, ensure_ascii=False, indent=2)
+
+    return catalog
+
+
 # ── 目录创建 ──────────────────────────────────────────
 
 def load_project_name(workspace: Path) -> str:
@@ -219,7 +382,11 @@ def load_project_name(workspace: Path) -> str:
 
 
 def create_evidence_dirs(programs: list, evidence_root: Path) -> dict:
-    """创建证据目录。返回 {"created": N, "existed": M}"""
+    """创建证据目录（含 _files/ 集中存储目录）。返回 {"created": N, "existed": M}"""
+    # 集中存储目录
+    files_dir = evidence_root / '_files'
+    files_dir.mkdir(parents=True, exist_ok=True)
+
     created = 0
     existed = 0
     for code, title in programs:
@@ -274,7 +441,16 @@ def main():
     stats = create_evidence_dirs(programs, evidence_root)
     print(f"✅ 已创建 {stats['created']} 个证据目录（{stats['existed']} 个已存在）")
     print(f"   📁 {evidence_root}/")
+    print(f"   📁 {evidence_root}/_files/  （集中存储，证据只放一份）")
     print(f"   📋 共 {len(programs)} 个程序 → {len(programs)} 个目录")
+
+    # 生成证据清单
+    catalog = generate_evidence_catalog(str(md_path), evidence_root, project_name)
+    if catalog:
+        print(f"   📋 证据清单: {catalog.get('total_slots', 0)} 个槽位")
+        print(f"   📄 {evidence_root}/_evidence_catalog.json")
+    else:
+        print(f"   ⚠️  程序文件中未找到'取证方式'列，跳过证据清单生成")
 
 
 if __name__ == "__main__":
