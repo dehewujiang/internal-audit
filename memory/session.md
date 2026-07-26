@@ -1,34 +1,53 @@
 # 最近一次工作记录
 
 ## 完成了什么
-本次 session（2026-07-14）完成了审计技能注册修复。
+本次 session（2026-07-26）完成了证据集中存储与智能匹配架构 v2.0 的设计、实现和部署。
 
-### 问题诊断
-用户报告部署项目 `AU_PL_260601_人力资源_武汉长源` 中 Claude Code 无法识别审计技能（如 `/internal-audit-program-generator`）。
+### 方案设计（多轮讨论）
+- **问题**：证据按程序文件夹存放，一份文件被多个程序引用需复制多份
+- **方案**：集中存储 `_files/` + 证据清单 `_evidence_catalog.json`
+- **槽位生成**：Python 从程序 Markdown "取证方式"列自动提取（非 LLM）
+- **匹配策略**：Python 结构指纹（列名/行数）→ LLM 综合判断 → 用户确认
+- **OCR 定位**：PaddleOCR 验证通过（90%+ 准确率）但 20min/8页，不用于匹配阶段
+- **证据状态**：三区展示（已匹配 / 缺失 / 未匹配文件），用户可见完整进度
 
-**根因链**：
-1. 源仓库 `.claude/skills/` 只有 geb-bootstrap 和 geb-workflow 两个技能
-2. 10 个审计技能目录在仓库根目录，格式正确但未注册
-3. `setup-project.ps1` 首次部署从根目录逐个部署 → 正确（10 个技能全在）
-4. `update-project.ps1` stable 模式整目录复制 `.claude/skills/` → 覆盖成只有 2 个
-5. 项目经历了 3 次 update，每次都被覆盖掉
+### 代码实现
+1. `create_evidence_dirs.py` — 新增 catalog 生成（4 函数）+ `_files/` 目录
+2. `evidence_catalog.py` — **新建**：catalog CRUD + 文件扫描 + 关键词匹配
+3. `SKILL.md` — 更新证据路径 + 匹配流程
+4. `constitution.md` + `finding_schema.md` — 路径格式更新
 
-### 修复内容
-1. 源仓库 `.claude/skills/` 下创建 10 个目录 junction → 仓库本身能识别 12 个技能
-2. `setup-project.ps1` 改为扫描 `.claude/skills/` 自动发现技能，消除硬编码列表
-3. `setup-project.ps1` 新增 `.claude/settings.json` 和 `.claude/rules/` 部署
-4. `update-project.ps1` stable 模式改为逐技能合并，不再整目录覆盖
-5. 部署项目 `武汉长源` 已补齐 10 个技能 + settings.json + rules
+### 验证
+- catalog 生成：用真实程序生成 162 槽位，33 个多程序共享
+- 文件扫描/匹配：功能正常
+
+### 部署
+- 武汉长源/广东长华已回退，等用户手动 `update-project.ps1` 部署
+
+### 项目命名规则固化
+- `project_name` 必须等于项目文件夹名
+- 已写入 `project-init/SKILL.md` 模板和禁止事项
+- 两个已有项目已同步修正
 
 ### 提交
-- `271ac1d` — 91 files, VERSION → 2026-07-14-15
+- `20ad90b` feat: 证据集中存储与智能匹配架构
+- `4c54f39` chore: 清理临时目录
+- `0b8fdee` chore: bump version
+- `790216a` deploy + 命名规则
+- `c70bbb6` docs: 命名规则固化
 
 ## 为什么这样做
-技能注册的一致性必须是基础设施级别的保证——两个部署脚本的行为不同源（一个从根目录读，一个从 `.claude/skills/` 读），必然导致部署后行为不一致。统一到 `.claude/skills/` 作为唯一来源，消除了这个系统性缺陷。
+多对多的证据-程序关系不能用树状文件夹表达。集中存储 + 结构化清单是最小代价的实现。
+
+## 遇到问题
+1. **PowerShell 工具在当前会话中静默输出**：`echo "hello"` 也无输出，导致 `update-project.ps1` 无法执行。改用 Python + Bash 手动完成文件同步。
+2. **部署流程错误**：先跑了 `create_evidence_dirs.py` 创建目录和 catalog，但跳过了 `update-project.ps1`（应先用它同步 `_shared/`、`tools/` 和 VERSION.lock）。用户要求回退后自行手动部署。
+3. **忘记跑 bump-version.py**：代码变更 commit 前未跑，违反了 `feedback.md` 硬规则。
 
 ## 未完成事项
-- 无
+- `update-project.ps1` 部署由用户手动执行
+- P-2026-002 广东长华程序 v1.0 缺少"取证方式"列，需升级到 v3.0 才能自动生成 catalog
 
 ## 下一步建议
-1. 在 `武汉长源` 项目中验证 `/internal-audit-program-generator` 可用
-2. 如其他已部署项目也存在同样问题，重新运行 `setup-project.ps1 --stable` 补齐
+1. 用户手动 `bump-version.py` → `update-project.ps1` 部署两个项目
+2. 部署后在武汉长源项目中验证完整流程：扔文件 → 说"帮我匹配" → 确认 → 执行程序
