@@ -2,10 +2,10 @@
 
 | 文件 | 最后更新 | 摘要 |
 |:----|:--------|:----|
-| session.md | 2026-07-26 | 证据集中存储 v2.0 架构设计+实现+部署；项目命名规则固化 |
-| feedback.md | 2026-07-26 | 部署流程脱节、PowerShell 输出静默、bump-version 第三次忘记 |
-| project.md | 2026-07-14 | 新增：技能注册修复记录 |
-| decisions.md | 2026-07-14 | 13 条 ADR：新增 ADR-016（统一 .claude/skills/ 为技能唯一来源） |
-| context.md | 2026-07-14 | 技能注册架构修复 + .claude/ 目录结构更新 |
-| TODO.md | 2026-07-14 | 1 项待办：检查其他部署项目的技能注册 |
+| project.md | 2026-07-29 | 系统架构评估完成，9 项风险整改方案（`风险整改方案_2026-07-29.md`）已核验优化待执行 |
+| TODO.md | 2026-07-29 | 风险整改 9 项按三阶段排期；待办：广东长华升级 + 端到端测试 |
+| session.md | 2026-07-29 | 风险整改方案核验优化：R04 修正（ProgramIR 替代 risks_identified.json）、R07 重写、R08 补齐 |
+| decisions.md | 2026-07-29 | 新增 ADR-020：R04 整改方案选 ProgramIR 而非新建 risks_identified.json |
+| context.md | 2026-07-29 | 更新 ProgramIR 体系说明 + 9 项风险状态表 |
+| feedback.md | 2026-07-29 | 新增：decisions.md 被 Write 覆盖事故 + memory 文件缺文档路径引用 + R04 诊断偏差 |
 | user.md | 2026-07-06 | Flan：内审经理，中文，先建模再动手，不要黑话 |

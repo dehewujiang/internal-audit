@@ -246,3 +246,17 @@
 - 模型离线运行，数据不出本机
 - 一次性下载成本（~500MB）换取长期识别质量提升
 影响：tools/pdf_ocr_extractor.py 引擎替换；模型存储路径 D:\90_software\PaddleOCR
+
+## ADR-020
+日期：2026-07-29
+背景：整改方案 R04 提出新建 `risks_identified.json` 作为风险覆盖度校验的数据源，但系统已有 `program_ir_parser.py` 能从审计程序 Markdown 解析出 ProgramIR JSON（含 `risk_register` + `coverage` 字段），且 `validate-program.py --ir` 已有 `check_ir_coverage_rate()` 做结构化覆盖检查。
+备选方案：
+- A) 按原方案新建 risks_identified.json，在 validate-program.py 新增 check_risk_coverage() 读取它做逐项比对
+- B) 用现有 ProgramIR + `--ir` 模式，把缺失的"接入工作流"补上（在 SKILL.md 中增加 Step 4.5 调用脚本闸机）
+最终选择：B
+原因：
+- ProgramIR 的 risk_register 字段已包含 risk_id + title + desc + type，与 risks_identified.json 的信息完全重叠。另建等于维护两套数据，违反单一事实源原则
+- `program_ir_parser.py` 的解析逻辑（风险清单→覆盖度→未覆盖列表）已实现且经过验证，不应重复建设
+- 真正缺的不是"检查逻辑"，而是"工作流接入"——SKILL.md 没有在任何步骤调用这套脚本
+- 改动量更小：只改 SKILL.md 增加 Step 4.5，不新建文件、不改 Python 代码
+影响：整改方案 R04 从"建新文件+新函数"改为"接入现有体系"；R07 同步对齐 ProgramIR 方案
