@@ -1,0 +1,114 @@
+=== TASK-6 证据流程验证日志（v2.0 集中存储修复）===
+时间: 2026-08-04 12:10:41
+项目: AU_PL_260601_人力资源_武汉长源
+
+[1/8] 生成前 evidence/ 目录快照（基准）:
+目录总数: 73 (含 _files/，程序目录 72 个历史残留，如 B1.1/L1.1 等)
+_files
+A1.1_考勤数据手工传递篡改
+A10.1_社保公积金少缴漏缴
+A11.1_Excel薪酬单点故障
+A12.1_三系统数据裸传一致性
+A15.1_打卡系统后台数据可篡改
+A16.1_主机厂订单波动→突击招人裁人
+A18.1_四子公司HR政策不统一
+A2.1_虚报加班套取加班费
+A20.1_员工申诉通道全领域缺失
+A21.1_惩处积分累计周期不清
+A22.1_年休假清零规则法律合规风险
+A23.1_加班费计算基数未定义
+A24.1_60分以下人员处理措施残缺
+A25.1_工伤管理专项制度空白
+A27.1_降职处理完整流程缺失
+A28.1_奖惩审批分级权限矩阵缺失
+A29.1_应急启动量化阈值缺失
+A3.1_虚增特殊津贴补贴
+A4.1_Excel薪酬公式篡改
+A5.1_吃空饷虚列人员
+A6.1_绩效考核人情分
+A7.1_培训经费虚报
+A8.1_招聘环节利益输送
+A9.1_晋升选拔主观偏向
+B1.1 考勤数据手工传递篡改
+B1.1_考勤数据手工传递篡改
+B10.1_社保公积金少缴漏缴
+B2.1_虚报加班套取加班费
+B2.2_虚报加班套取加班费
+B3.1_虚增特殊津贴补贴
+B4.1_Excel薪酬公式篡改
+B4.2_Excel薪酬公式篡改
+B5.1_吃空饷虚列人员
+B6.1_绩效考核人情分
+B7.1_培训经费虚报
+B8.1_招聘环节利益输送
+B8.2_招聘环节利益输送
+B9.1_晋升选拔主观偏向
+C1.1_Excel薪酬单点故障
+C10.1_信息黑箱复合风险
+C11.1_薪酬手工计算数据死角
+C12.1_HR主数据分散存储
+C2.1_三系统数据裸传一致性
+C3.1_OA审批流与Excel薪酬计算脱节
+C4.1_薪酬→SAP手工凭证错误
+C5.1_打卡系统后台数据可篡改
+C6.1_主机厂订单波动→突击招人裁人
+C7.1_一线操作工高流失率
+C8.1_四子公司HR政策不统一
+C9.1_HR团队人效与2000人规模的匹配
+D1.1_信息黑箱——三系统割据+零申诉通道
+D2.1_一线操作工无声流失
+D3.1_Excel薪酬的单点脆弱性
+D4.1_幽灵员工——主数据分散的最坏后果
+D5.1_主机厂依赖→用工牛鞭效应
+E1.1_HR团队人效与规模的匹配
+E2.1_一线操作工高流失率
+E3.1_订单波动→突击招人裁人
+E4.1_HR手工操作效率损失
+E5.1_培训投入产出效率
+F1.1_年休假清零规则法律合规风险
+F10.1_劳务派遣用工合规
+F11.1_社会保险全员覆盖
+F2.1_加班费计算基数未定义
+F3.1_考勤记录保存合规
+F4.1_工伤管理合规
+F5.1_职业健康与安全管理制度空白
+F6.1_员工申诉通道缺失
+F7.1_返聘用工关系定性不明
+F8.1_惩处积分累计周期不清
+F9.1_竞业限制制度缺失
+L1.1 小时工效率
+----- 快照结束 -----
+
+[2/8] 运行 create_evidence_dirs.py 生成 catalog:
+命令: python _shared/scripts/create_evidence_dirs.py --program-md internal-audit-workspace/audit-programs/人力资源管理_审计程序_v3.0.md --workspace internal-audit-workspace
+输出: ✅ 证据集中目录就绪 .../_files/（程序目录已取消，全部证据集中存放）
+输出: （目录状态: 新建 0 个，已存在 1 个）
+输出: 📋 证据清单槽位: 162 个
+
+[3/8] 生成后目录快照对比:
+生成前目录总数: 73 | 生成后目录总数: 73
+新增目录: 0 | 消失目录: 0 -> 无新增 evidence/<编号>_* 目录，历史残留(B1.1/L1.1等)保持不变 => PASS
+
+[4/8] _evidence_catalog.json 验证:
+JSON_PARSE: OK | schema: total_slots=162 | filled_slots=0 | items=162
+items 全部 162 个含 source_programs 字段
+EVD-003 Excel工资表: source_programs=[A10.1, A5.1, B10.1, B5.1, C12.1] (多程序引用，与旧catalog一致)
+注: 槽位键名为 id 而非 slot_id，catalog 结构用 items[]
+
+[5/8] evidence_catalog.py status:
+=> total_slots=162 | filled_slots=0 | missing_slots=162 | files_in_dir=0
+[6/8] evidence_catalog.py scan (_files/ 为空):
+=> [] (空列表，符合预期)
+
+[7/8] 闭环验证（模拟文件）:
+模拟文件: 模拟_Excel工资表_测试.xlsx (0字节) -> evidence/_files/
+scan => [{name: 模拟_Excel工资表_测试.xlsx, path: evidence\_files\模拟_Excel工资表_测试.xlsx, ext: .xlsx, size_bytes: 0}]
+match => matched: EVD-001 [10人数据追踪记录] score=1 reason=[格式匹配(表格类)]; missing: 161槽位; unmatched_files: []
+update --slot EVD-001 --file evidence/_files/模拟_Excel工资表_测试.xlsx => {"success": true}
+status => total_slots=162 filled_slots=1 missing_slots=161 files_in_dir=1
+清理: update --slot EVD-001 --file "" => {"success": true}; 删除模拟文件
+[8/8] 最终确认:
+status => total_slots=162 filled_slots=0 missing_slots=162 files_in_dir=0
+scan => []
+evidence/ 目录总数: 73 (与生成前基准一致，无新增) => PASS
+结论: v2.0 集中存储修复生效 - 新脚本不创建程序目录，全部证据集中到 _files/

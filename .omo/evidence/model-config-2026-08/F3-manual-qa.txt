@@ -1,0 +1,102 @@
+F3 Real Manual QA — model-config-2026-08
+Date: 2026-08-04
+Reviewer: Sisyphus-Junior (F3 审查员)
+Method: 亲自运行命令，真实输出，未依赖子代理声称
+
+================================================================
+1. 语法解析 (JSON_OK)
+================================================================
+命令:
+  python -c "import json,re; s=open(r'C:\Users\Administrator\.omo\omo.jsonc',encoding='utf-8').read(); s=re.sub(r'^\s*//.*$','',s,flags=re.M); d=json.loads(s); print('JSON_OK')"
+
+实测输出:
+  JSON_OK
+
+结论: PASS — jsonc 去注释后 json.loads 成功
+
+================================================================
+2. 完整配置结构 (agents 11 + categories 8)
+================================================================
+=== AGENTS ===
+atlas:             model=opencode-go/deepseek-v4-flash  fallback=['opencode-go/minimax-m3', 'opencode-go/kimi-k2.7-code']
+explore:           model=opencode-go/deepseek-v4-flash  fallback=['opencode-go/minimax-m3', 'opencode-go/kimi-k2.7-code']
+hephaestus:        model=opencode-go/deepseek-v4-flash  fallback=['opencode-go/minimax-m3', 'opencode-go/kimi-k2.7-code']
+librarian:         model=opencode-go/deepseek-v4-flash  fallback=['opencode-go/minimax-m3', 'opencode-go/kimi-k2.7-code']
+metis:             model=opencode-go/glm-5.2            fallback=['opencode-go/minimax-m3', 'opencode-go/kimi-k2.7-code', 'opencode-go/deepseek-v4-flash']
+momus:             model=opencode-go/glm-5.2            fallback=['opencode-go/minimax-m3', 'opencode-go/kimi-k2.7-code', 'opencode-go/deepseek-v4-flash']
+multimodal-looker:  model=opencode-go/minimax-m3         fallback=['opencode-go/kimi-k2.7-code']
+oracle:            model=opencode-go/glm-5.2            fallback=['opencode-go/minimax-m3', 'opencode-go/kimi-k2.7-code', 'opencode-go/kimi-k3']
+prometheus:        model=opencode-go/glm-5.2            fallback=['opencode-go/minimax-m3', 'opencode-go/kimi-k2.7-code', 'opencode-go/deepseek-v4-flash']
+sisyphus:          model=opencode-go/deepseek-v4-flash  fallback=['opencode-go/minimax-m3', 'opencode-go/kimi-k2.7-code']
+sisyphus-junior:   model=opencode-go/deepseek-v4-flash  fallback=['opencode-go/minimax-m3', 'opencode-go/kimi-k2.7-code']
+
+=== CATEGORIES ===
+artistry:           model=opencode-go/glm-5.2            fallback=['opencode-go/minimax-m3', 'opencode-go/kimi-k2.7-code', 'opencode-go/deepseek-v4-flash']
+deep:               model=opencode-go/deepseek-v4-flash  fallback=['opencode-go/kimi-k2.7-code', 'opencode-go/minimax-m3']
+quick:              model=opencode-go/deepseek-v4-flash  fallback=['opencode-go/minimax-m3', 'opencode-go/kimi-k2.7-code']
+ultrabrain:         model=opencode-go/kimi-k3            fallback=['opencode-go/glm-5.2', 'opencode-go/minimax-m3', 'opencode-go/kimi-k2.7-code']
+unspecified-high:   model=opencode-go/deepseek-v4-flash  fallback=['opencode-go/kimi-k2.7-code', 'opencode-go/minimax-m3']
+unspecified-low:    model=opencode-go/deepseek-v4-flash  fallback=['opencode-go/minimax-m3', 'opencode-go/kimi-k2.7-code']
+visual-engineering: model=opencode-go/minimax-m3         fallback=['opencode-go/kimi-k2.7-code']
+writing:            model=opencode-go/deepseek-v4-flash  fallback=['opencode-go/minimax-m3', 'opencode-go/kimi-k2.7-code']
+
+agents 计数: 11 (含 defaults 元配置项，不计入角色)
+categories 计数: 8
+全部字段齐全 (model + fallback_models)。
+
+================================================================
+3. 规则断言
+================================================================
+--- RULE 1: 9 个高频角色 fallback 无 kimi-k3 / glm-5.2 ---
+高频角色定义 (per plan): 6 agents (atlas, explore, hephaestus, librarian, sisyphus, sisyphus-junior) + 3 categories (quick, unspecified-low, writing) = 9
+
+  agent atlas:           ['minimax-m3', 'kimi-k2.7-code'] -> PASS
+  agent explore:         ['minimax-m3', 'kimi-k2.7-code'] -> PASS
+  agent hephaestus:      ['minimax-m3', 'kimi-k2.7-code'] -> PASS
+  agent librarian:       ['minimax-m3', 'kimi-k2.7-code'] -> PASS
+  agent sisyphus:        ['minimax-m3', 'kimi-k2.7-code'] -> PASS
+  agent sisyphus-junior: ['minimax-m3', 'kimi-k2.7-code'] -> PASS
+  category quick:            ['minimax-m3', 'kimi-k2.7-code'] -> PASS
+  category unspecified-low:  ['minimax-m3', 'kimi-k2.7-code'] -> PASS
+  category writing:          ['minimax-m3', 'kimi-k2.7-code'] -> PASS
+
+RULE1: PASS (9/9)
+
+--- RULE 2: 全文无禁用模型 ---
+禁用清单: kimi-k2.6, minimax-m2.7, qwen3.7, qwen3.6, mimo-v2.5, grok-4.5, gpt-5.6-luna
+扫描范围: 原始 omo.jsonc 全文 (含 _migrations)
+命中: NONE
+RULE2: PASS
+
+================================================================
+4. 备份可用性
+================================================================
+备份路径: C:\Users\Administrator\.omo\omo.jsonc.backup-2026-08-04
+存在: YES
+备份行数: 173
+当前行数: 157
+fc /b 差异计数: 3490 (有差异 → 备份确为修改前旧版)
+
+结论: PASS — 备份存在且与当前新版有差异，备份有效
+
+================================================================
+5. 副本一致性 (生效配置 vs memory 副本)
+================================================================
+memory 副本: D:\Nut\00_my_digital\12_AGI\memory\opencode_config_copy\omo.jsonc
+命令: fc /b "C:\Users\Administrator\.omo\omo.jsonc" "<memory 副本>"
+实测输出: FC: 找不到差异 (0 differences)
+
+结论: PASS — 副本与生效配置字节级一致
+
+================================================================
+VERDICT: APPROVE
+================================================================
+所有 5 项亲自运行验证均 PASS:
+  [✓] 1. JSON 语法解析成功 (JSON_OK)
+  [✓] 2. agents 11 + categories 8 结构完整，model/fallback_models 齐全
+  [✓] 3. RULE1 9 高频角色 fallback 无 kimi-k3/glm-5.2 (9/9 PASS)
+       RULE2 全文无 7 个禁用模型
+  [✓] 4. 备份存在 (173 行旧版) 与当前 (157 行新版) 有差异，备份有效
+  [✓] 5. memory 副本与生效配置 fc /b 0 差异
+
+未修改任何文件 (只读 QA)。

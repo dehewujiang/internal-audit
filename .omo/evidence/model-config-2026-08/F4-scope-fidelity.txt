@@ -1,0 +1,65 @@
+# F4 - Scope Fidelity Review
+
+**Reviewer:** Sisyphus-Junior (final verification wave F4)
+**Date:** 2026-08-04
+**Plan:** .omo/plans/model-config-2026-08.md
+**Target files:**
+  - C:\Users\Administrator\.config\opencode\opencode.json
+  - C:\Users\Administrator\.omo\omo.jsonc
+  - C:\Users\Administrator\.omo\omo.jsonc.backup-2026-08-04 (baseline)
+
+## VERDICT: APPROVE
+
+All 7 scope constraints (Must NOT have) verified unviolated.
+
+## Per-constraint checklist
+
+| # | Constraint (Must NOT) | Verification method | Result | Evidence |
+|---|------------------------|---------------------|--------|----------|
+| 1 | 不改 opencode.json | Read opencode.json; compare blacklist against plan §Must NOT #2 | PASS | blacklist = [qwen3.7-max, qwen3.7-plus, qwen3.6-plus, mimo-v2.5, mimo-v2.5-pro] (5 entries, exact match); no new top-level fields; $schema/agent/disabled_providers/instructions/lsp/mcp/plugin/model/provider/shell all unchanged |
+| 2 | 不启用禁用模型 (qwen3.7*/qwen3.6-plus/mimo-v2.5*) | grep `qwen3\.7\|qwen3\.6-plus\|mimo-v2\.5` on omo.jsonc | PASS | "No matches found" |
+| 3 | 不配国内不可用 (grok-4.5/gpt-5.6-luna) | grep `grok-4\.5\|gpt-5\.6-luna` on omo.jsonc | PASS | "No matches found" |
+| 4 | 不新增/删除 agent 或 category 键 | Diff key set vs backup file | PASS | agents keys (12): atlas, defaults, explore, hephaestus, librarian, metis, momus, multimodal-looker, oracle, prometheus, sisyphus, sisyphus-junior — identical to backup; categories keys (8): artistry, deep, quick, ultrabrain, unspecified-high, unspecified-low, visual-engineering, writing — identical to backup |
+| 5 | 不改 defaults.maxTokens / disabled / _migrations 等其他字段 | Read current vs backup | PASS | defaults.maxTokens=16384 (both); multimodal-looker.disabled=false (both); multimodal-looker.maxTokens=16384 (both); visual-engineering.maxTokens=16384 (both); _migrations=["2026-07-opencode-config-unification","2026-08-reasoning-unification"] (both, byte-identical) |
+| 6 | 高频角色 fallback_models 不得含 kimi-k3 或 glm-5.2 | Read each of 9 high-freq roles' fallback_models | PASS | See per-role table below |
+| 7 | 不 push、不涉及 git | Inspect operation scope | PASS | All writes occurred in C:\Users\Administrator\.omo\ (non-git config dir) and D:\Nut\...\memory\opencode_config_copy\ (plan-internal sync, Must-have #4). No git add/commit/push/amend invoked. |
+
+## Constraint 6 — per-role detail (9 high-freq roles)
+
+| Role | Channel | fallback_models | Contains k3? | Contains glm-5.2? | Verdict |
+|------|---------|-----------------|:------------:|:-----------------:|:-------:|
+| atlas | agents | [minimax-m3, kimi-k2.7-code] | NO | NO | PASS |
+| explore | agents | [minimax-m3, kimi-k2.7-code] | NO | NO | PASS |
+| hephaestus | agents | [minimax-m3, kimi-k2.7-code] | NO | NO | PASS |
+| librarian | agents | [minimax-m3, kimi-k2.7-code] | NO | NO | PASS |
+| sisyphus | agents | [minimax-m3, kimi-k2.7-code] | NO | NO | PASS |
+| sisyphus-junior | agents | [minimax-m3, kimi-k2.7-code] | NO | NO | PASS |
+| quick | categories | [minimax-m3, kimi-k2.7-code] | NO | NO | PASS |
+| unspecified-low | categories | [minimax-m3, kimi-k2.7-code] | NO | NO | PASS |
+| writing | categories | [minimax-m3, kimi-k2.7-code] | NO | NO | PASS |
+
+## Ancillary check — where kimi-k3 / glm-5.2 DO appear (all legitimate)
+
+grep `kimi-k3|glm-5\.2` on omo.jsonc returned 8 matches, all in allowed positions:
+  - Line 38  metis.model = glm-5.2          (low-freq high-value, allowed)
+  - Line 46  momus.model = glm-5.2          (low-freq high-value, allowed)
+  - Line 62  oracle.model = glm-5.2         (low-freq high-value, allowed)
+  - Line 66  oracle.fallback = kimi-k3      (low-freq high-value, allowed)
+  - Line 70  prometheus.model = glm-5.2     (low-freq high-value, allowed)
+  - Line 94  artistry.model = glm-5.2       (low-freq high-value, allowed)
+  - Line 116 ultrabrain.model = kimi-k3     (low-freq high-value, allowed)
+  - Line 118 ultrabrain.fallback = glm-5.2  (low-freq high-value, allowed)
+
+None of these are in any of the 9 high-frequency roles' fallback_models. All matches are either main `model` fields or fallbacks of low-frequency high-value roles (oracle/ultrabrain) — consistent with plan §Decisions and §Must NOT #6.
+
+## Notes / non-violations
+
+- Memory copy overwrite (D:\Nut\...\memory\opencode_config_copy\omo.jsonc) is plan-internal Must-have #4, explicitly excluded from scope-violation consideration per F4 instructions.
+- Backup file omo.jsonc.backup-2026-08-04 was created as Must-have #1; its presence confirms pre-change baseline, not a violation.
+- No kimi-k2.6 / minimax-m2.7 residue in current omo.jsonc (plan success criterion #5); backup retains them as expected (that's the pre-change state).
+
+## Conclusion
+
+All 7 Must-NOT constraints hold. No scope drift, no forbidden models, no key-set mutation, no protected-field modification, no high-freq fallback contamination, no git side-effects.
+
+**VERDICT: APPROVE**

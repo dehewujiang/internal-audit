@@ -1,0 +1,136 @@
+=== F1 Plan Compliance Audit ===
+审查员: Sisyphus-Junior (F1 最终验证波)
+审查时间: 2026-08-04
+计划: .omo/plans/evidence-single-copy.md
+方法: 独立用工具复核每条验收命令，不依赖子代理声称
+
+====================================================
+VERDICT: APPROVE
+====================================================
+
+理由: 6 个实现任务的验收标准全部由本审查员独立复核通过。T3 标记 [~] 属"用户决策阻塞"（保护规则正确触发，0 删除），非实现缺陷，符合计划 MUST DO #5 的"任一非空 → 立即停止"硬约束。无越界改动。
+
+----------------------------------------------------
+逐项核对表
+----------------------------------------------------
+
+[T1] audit-execution-assistant/SKILL.md 路径矛盾修正 + catalog 检查默认化  ✓ PASS
+  验收命令独立复核:
+  - grep "{程序编号}_{程序关键词}" SKILL.md → 无匹配 ✓
+  - grep "evidence/{project_name}" SKILL.md → 无匹配 ✓
+  - grep "evidence/_files" SKILL.md → 4 处匹配 (≥3) ✓
+    命中行: 126, 157, 159, 225
+  - Step 1 "默认动作（catalog 检查）" 描述存在 (第 115 行) ✓
+    原文: "执行每个程序前，先读取 evidence/_evidence_catalog.json，按当前程序编号...在槽位的 source_programs 中定位本程序证据槽位，展示收集状态..."
+  - 界面示例第 156-159 行: "证据存放路径 evidence/_files/" ✓
+  证据文件: task-1.txt (4 行 grep 输出与独立复核一致)
+
+[T2] _shared/scripts/create_evidence_dirs.py 取消程序目录创建  ✓ PASS
+  验收命令独立复核:
+  - python -m py_compile _shared/scripts/create_evidence_dirs.py → 退出码 0 ✓
+  - mkdir 调用扫描: 仅第 366 行 (evidence_root.mkdir) 与第 400 行 (files_dir.mkdir) ✓
+    无任何按程序编号循环 mkdir 的代码，只建 _files/
+  - create_evidence_dirs() 函数定义在第 389 行，返回 dict 语义保持 {"created": N, "existed": M}
+  证据文件: task-2.txt
+    - 实测运行临时目录: 仅产生 _files/ + _evidence_catalog.json，无非 _files 子目录
+    - 幂等性复跑: created=0/existed=1 语义正确
+
+[T3] 武汉长源现场 _files.old 改名 + 删除空程序目录  [~] 部分完成（阻塞中，非缺陷）  ✓ PASS（改名部分）/ ⏸ 删除部分（用户决策中）
+  验收命令独立复核:
+  - evidence/_files 存在 = True ✓
+  - evidence/_files.old 不存在 = True ✓ (改名已完成)
+  - evidence/ 目录总数 = 73 (与 task-6 基准一致) ✓
+  - 程序目录匹配 ^[A-H]\d 仍 71 个 (删除未执行) — 符合保护规则触发后的预期
+  证据文件: task-3.txt
+    - _files.old 内容数 0 (空)，Rename-Item 成功
+    - 逐一验证 72 个候选目录: 70 空 + 2 非空 (B1.1 考勤数据手工传递篡改 20 文件、L1.1 小时工效率 40 文件)
+    - 触发 MUST DO #5 保护规则: 立即停止删除，0 目录被删除
+    - findings/、_evidence_catalog.json.old 未动 ✓
+  判定: 改名部分已完成；删除部分阻塞是流程正确处理（非实现缺陷）
+    - 计划假设"目录全空"被推翻（探索只抽查 2 个目录），但保护规则兜住，无数据损失
+    - B1.1 被 finding 引用、L1.1 含真实证据，处置方式待用户决策 A/B/C
+    - 不构成 REJECT 理由（计划 MUST DO #5 明确规定"任一非空 → 立即停止并报告"）
+
+[T4] VERSION.json 记录 + 合并 commit  ✓ PASS
+  验收命令独立复核:
+  - git log --oneline -1 → b4a0611 fix(evidence): 证据 v2.0 集中存储工作流修复 ✓
+  - git show --stat HEAD → 仅 3 文件:
+      VERSION.json (11 ++++++---)
+      _shared/scripts/create_evidence_dirs.py (41 ++--)
+      audit-execution-assistant/SKILL.md (25 ++--)
+    无越界文件 ✓
+  - VERSION.json version = "2026-08-04-1" ✓ (从 2026-07-26-3 递增)
+  - commit 消息含"证据"关键词 ✓
+  - 未 push、未 amend、未改写历史 ✓
+  证据文件: task-4.txt
+    - bump-version.py --add 输出: 2026-07-26-3 → 2026-08-04-1
+    - changes 数组新增 fix 条目，含 create_evidence_dirs.py,SKILL.md 与摘要
+    - bump-version.py --commit 只 add VERSION.json，故采用手动 add 三文件路径，满足"一个 commit 含三文件+证据关键词"
+    - 剩余未暂存改动均为预先存在的无关改动（.claude/rules 删除、.omo 文件等），未纳入 commit ✓
+
+[T5] 部署同步两个在审项目  ✓ PASS
+  验收命令独立复核:
+  - 武汉长源 VERSION.lock.json locked_version = "2026-08-04-1" ✓
+  - 广东长华 VERSION.lock.json locked_version = "2026-08-04-1" ✓
+  - 两项目 SKILL.md 与源仓库 fc.exe /b 逐字节一致 (task-5.txt: BYTE-IDENTICAL) ✓
+  - 两项目 create_evidence_dirs.py 与源仓库逐字节一致 (task-5.txt: BYTE-IDENTICAL) ✓
+  证据文件: task-5.txt
+    - 武汉长源: 2026-07-26-3 → 2026-08-04-1，6 upgraded / 0 failed
+    - 广东长华: 2026-07-26-3 → 2026-08-04-1，6 upgraded / 0 failed
+    - 两项目均备份至 .backup/20260804-120723 / 20260804-120726
+
+[T6] 端到端验证: 武汉长源完整证据流程  ✓ PASS
+  验收命令独立复核:
+  - _evidence_catalog.json: total_slots=162, filled_slots=0, items=162 ✓ (≥150)
+  - evidence/ 目录总数 73 → 73 (生成前后无新增程序目录) ✓
+  - status → update → status 闭环 (task-6.txt):
+      status: filled_slots=0
+      update --slot EVD-001 --file 模拟_Excel工资表_测试.xlsx → success: true
+      status: filled_slots=1
+      清理 update --file "" → success: true
+      status: filled_slots=0 (还原) ✓
+  - match 建议匹配输出正常: EVD-001 score=1 reason=[格式匹配(表格类)] ✓
+  - EVD-003 Excel工资表 source_programs=[A10.1, A5.1, B10.1, B5.1, C12.1] (5 程序引用，与旧 catalog 一致) ✓
+  证据文件: task-6.txt (8 步完整日志)
+
+----------------------------------------------------
+越界改动检查
+----------------------------------------------------
+1. 广东长华程序 v1.0→v3.0 升级 (C4 deferred): 未执行 ✓
+   - task-5 部署只升级 .claude/skills/ 与 _shared/（SKILL.md + create_evidence_dirs.py），未触碰 audit-programs/ 程序文档
+2. findings/ 既有数据: 未动 ✓
+   - task-3 明确 findings/、_evidence_catalog.json.old 保留不动
+   - task-6 闭环验证后模拟文件已清理，filled_slots 还原 0
+3. 老项目"人力资源（总）": 未触碰 ✓ (无任何证据显示)
+4. evidence_catalog.py 扫描/匹配逻辑: 未改动 ✓ (T2 只改 create_evidence_dirs.py)
+5. validate-catalog.py 新建: 未建 ✓ (R05 另行安排)
+6. 9 项风险整改 R01-R09: 未处理 ✓
+7. 硬链接/符号链接方案: 未实现 ✓
+8. 非空目录删除: 0 删除 ✓ (保护规则正确触发)
+
+----------------------------------------------------
+偏差说明
+----------------------------------------------------
+1. [非偏差，流程正确] T3 删除部分阻塞
+   - 计划假设"74 个目录全空"被推翻：实际 72 个目录中 2 个非空（B1.1/L1.1 含真实证据）
+   - 探索阶段只抽查了 2 个目录（A1.1 与 _files.old），样本不足
+   - 保护规则（MUST DO #5）正确触发，0 删除，无数据损失
+   - 处置方式待用户决策 A/B/C，标记 [~] 是流程正确的处理
+   - 不构成 REJECT 理由
+
+2. [非偏差，合规处理] T4 bump-version.py --commit 行为
+   - bump-version.py 的 --commit 只 add VERSION.json，不混入其他文件
+   - 为满足"一个 commit 含三文件 + 证据关键词"的验收标准，采用手动 add 三文件路径
+   - 仍遵守"commit 前先 bump"硬规则（先 bump 再 commit）
+   - 最终 commit b4a0611 含三文件 + 证据关键词，符合验收
+
+3. [非偏差] T6 catalog 槽位键名
+   - catalog 结构用 items[]，槽位键名为 id 而非 slot_id
+   - 这是 evidence_catalog.py 既有结构（不在本次改动范围），task-6 已记录此现象，未修改扫描/匹配逻辑
+
+----------------------------------------------------
+结论
+----------------------------------------------------
+6 个实现任务全部按验收标准完成（T3 改名部分完成、删除部分阻塞属流程正确处理）。
+无越界改动。无数据损失。VERSION 追溯链完整（源仓库 2026-08-04-1 = 两项目 lock 2026-08-04-1）。
+F1 Plan Compliance Audit: APPROVE

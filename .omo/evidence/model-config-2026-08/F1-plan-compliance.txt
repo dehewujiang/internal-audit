@@ -1,0 +1,99 @@
+============================================================
+F1 Plan Compliance Audit  model-config-2026-08
+审查员：Sisyphus-Junior（最终验证波 F1）
+时间：2026-08-04
+模式：只读独立验证（未修改任何文件）
+============================================================
+
+## 1. 验证方法
+
+- 计划唯一事实源：.omo/plans/model-config-2026-08.md（Todo 2 表格）
+- 不依赖子代理声称，全部由本审查员亲自执行命令复核
+- 工具：Read / Test-Path / fc.exe /b / Python json.load
+
+## 2. 逐项核对表
+
+### Task 1 — 备份 omo.jsonc
+  验收标准：Test-Path "...omo.jsonc.backup-2026-08-04" = True
+  独立复核：Test-Path → True
+  证据文件 task-1.txt：声称 EXISTS=True、FC_EXIT=0
+  结论：PASS
+
+### Task 2 — 修改 omo.jsonc 双段（11 agents + 8 categories）
+  验收标准：
+    (a) Python 去注释后 json.load 成功
+    (b) 每个 agent/category 的 model 与 fallback_models 与 Todo 2 表格完全一致
+    (c) 9 个高频角色 fallback 无 kimi-k3 / glm-5.2
+    (d) 全文无 kimi-k2.6 / minimax-m2.7 / qwen3.7 / qwen3.6 / mimo-v2.5 / grok-4.5 / gpt-5.6-luna
+  独立复核（Python 脚本 verify_f1.py）：
+    JSON_OK
+    AGENT_COUNT: 11  CATEGORY_COUNT: 8
+    逐条比对 19 个条目（11 agents + 8 categories）的 model + fallback_models：全部一致
+    高频 9 角色 fallback 检查 kimi-k3 / glm-5.2：NONE
+    禁用/不可用模型全文 grep：0 命中
+    _migrations = ['2026-07-opencode-config-unification','2026-08-reasoning-unification']：保留
+    defaults.maxTokens = 16384：保留
+    multimodal-looker.disabled = False、maxTokens = 16384：保留
+    visual-engineering.maxTokens = 16384：保留
+    顶层键 = {$schema, [opencode], _migrations}：无新增
+    [opencode] 键 = {agents, categories}：无新增
+    ERRORS: 0  VERDICT: PASS
+  证据文件 task-2.txt：声称 RESULT: PASS、结构 identical、_migrations equal
+  结论：PASS
+
+### Task 3 — 同步 memory 副本
+  验收标准：fc.exe /b 无差异
+  独立复核：fc.exe /b "C:\Users\Administrator\.omo\omo.jsonc" "D:\Nut\00_my_digital\12_AGI\memory\opencode_config_copy\omo.jsonc"
+    FC: 找不到差异  FC_EXIT=0
+  证据文件 task-3.txt：声称 FC_EXIT=0
+  结论：PASS
+
+### Task 4 — 验证语法与规则
+  验收标准：全部通过
+  独立复核：与 Task 2 同一脚本输出，全部断言通过
+    - JSON 语法有效
+    - agents 11 键 + categories 8 键齐全
+    - 9 高频角色 fallback 无 kimi-k3 / glm-5.2
+    - 无禁用/不可用模型残留
+    - _migrations / maxTokens / disabled 原样保留
+    - opencode.json 未动（LastWriteTime 2026/8/4 9:51:42，早于本次工作开始 14:17）
+  证据文件 task-4.txt：声称 8/8 通过
+  结论：PASS
+
+## 3. 越界改动特别检查
+
+| 检查项 | 期望 | 实测 | 结果 |
+|---|---|---|---|
+| opencode.json 未动 | 不修改 | LastWriteTime 9:51:42（早于 14:17） | OK |
+| 顶层键无新增 | $schema / [opencode] / _migrations | 完全一致 | OK |
+| [opencode] 键无新增 | agents / categories | 完全一致 | OK |
+| agents 键无新增/删除 | 11 agent + defaults | 完全一致 | OK |
+| categories 键无新增/删除 | 8 category | 完全一致 | OK |
+| defaults.maxTokens 未改 | 16384 | 16384 | OK |
+| _migrations 未改 | 2 条原样 | 2 条原样 | OK |
+| multimodal-looker.disabled | false | false | OK |
+| multimodal-looker.maxTokens | 16384 | 16384 | OK |
+| visual-engineering.maxTokens | 16384 | 16384 | OK |
+| 禁用模型未启用 | qwen3.7*/mimo* 0 命中 | 0 命中 | OK |
+| 不可用模型未配置 | grok-4.5/gpt-5.6-luna 0 命中 | 0 命中 | OK |
+| 旧模型无残留 | kimi-k2.6/minimax-m2.7 0 命中 | 0 命中 | OK |
+| 高频备用链规则 | 9 角色无 k3/glm-5.2 | 全部通过 | OK |
+
+## 4. 证据文件可信度
+
+| 证据 | 声称 | 本员独立复核 | 一致 |
+|---|---|---|---|
+| task-1.txt | EXISTS=True, FC=0 | Test-Path=True | YES |
+| task-2.txt | RESULT=PASS, ERRORS=0 | ERRORS=0 | YES |
+| task-3.txt | FC_EXIT=0 | FC_EXIT=0 | YES |
+| task-4.txt | 8/8 通过 | 全部通过 | YES |
+
+四份证据文件声称与独立复核结果完全一致，无虚报。
+
+## 5. 最终结论
+
+  VERDICT: APPROVE
+
+  4 个任务的验收标准全部按计划完成，无越界改动，无虚报证据。
+  本审查为只读操作，未修改任何配置或证据文件，未执行 git 操作。
+============================================================

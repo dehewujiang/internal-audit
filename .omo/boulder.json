@@ -1,36 +1,39 @@
 {
   "schema_version": 2,
-  "active_work_id": null,
+  "active_work_id": "model-config-2026-08-31c5068b",
   "works": {
-    "interview-designer-v3-1e2d76cb": {
-      "work_id": "interview-designer-v3-1e2d76cb",
-      "active_plan": "D:\\Nut\\00_my_digital\\12_AGI\\skills\\internal-audit\\.omo\\plans\\interview-designer-v3.md",
-      "plan_name": "interview-designer-v3",
+    "model-config-2026-08-31c5068b": {
+      "work_id": "model-config-2026-08-31c5068b",
+      "active_plan": "D:\\Nut\\00_my_digital\\12_AGI\\skills\\internal-audit\\.omo\\plans\\model-config-2026-08.md",
+      "plan_name": "model-config-2026-08",
       "status": "completed",
-      "started_at": "2026-07-09T08:41:11.535Z",
-      "updated_at": "2026-07-09T09:15:00.000Z",
+      "started_at": "2026-08-04T06:16:16.170Z",
+      "updated_at": "2026-08-04T06:28:25.568Z",
       "session_ids": [
-        "opencode:ses_0ba3c7646ffeqfngd3mmMXnob0"
+        "opencode:ses_076228744ffembtSq1rNRadkwN"
       ],
       "session_origins": {
-        "opencode:ses_0ba3c7646ffeqfngd3mmMXnob0": "direct"
+        "opencode:ses_076228744ffembtSq1rNRadkwN": "direct"
       },
       "agent": "atlas",
       "task_sessions": {},
-      "elapsed_ms": 1800000
+      "ended_at": "2026-08-04T06:28:25.568Z",
+      "elapsed_ms": 729398
     }
   },
-  "active_plan": null,
-  "started_at": "2026-07-09T08:41:11.535Z",
+  "active_plan": "D:\\Nut\\00_my_digital\\12_AGI\\skills\\internal-audit\\.omo\\plans\\model-config-2026-08.md",
+  "started_at": "2026-08-04T06:16:16.170Z",
   "status": "completed",
-  "updated_at": "2026-07-09T09:15:00.000Z",
+  "updated_at": "2026-08-04T06:28:25.568Z",
   "session_ids": [
-    "opencode:ses_0ba3c7646ffeqfngd3mmMXnob0"
+    "opencode:ses_076228744ffembtSq1rNRadkwN"
   ],
   "session_origins": {
-    "opencode:ses_0ba3c7646ffeqfngd3mmMXnob0": "direct"
+    "opencode:ses_076228744ffembtSq1rNRadkwN": "direct"
   },
-  "plan_name": "interview-designer-v3",
+  "plan_name": "model-config-2026-08",
   "task_sessions": {},
-  "agent": "atlas"
+  "agent": "atlas",
+  "ended_at": "2026-08-04T06:28:25.568Z",
+  "elapsed_ms": 729398
 }

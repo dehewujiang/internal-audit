@@ -1,0 +1,117 @@
+# F2 — Code Quality Review
+
+**Reviewer**: Sisyphus-Junior (final verification wave)
+**Date**: 2026-08-04
+**Scope**: 本次 commit `b4a0611` 改动的两个文件
+  - `_shared/scripts/create_evidence_dirs.py`
+  - `audit-execution-assistant/SKILL.md`
+**Commit**: b4a0611 fix(evidence): 证据 v2.0 集中存储工作流修复
+
+---
+
+## VERDICT: APPROVE
+
+两个文件的改动逻辑正确、与现有代码风格一致、无残留死代码/占位符/调试输出。
+本次改动未引入新缺陷。一处 LSP 提示为既有问题（改动前已存在），按审查规则不作为 REJECT 理由。
+
+---
+
+## 审查要点
+
+### 1. `_shared/scripts/create_evidence_dirs.py`
+
+#### 1.1 `create_evidence_dirs()`（389-401 行）— ✅ 正确
+
+- 只建 `_files/`，不再创建程序目录：`files_dir = evidence_root / '_files'`，存在返回 `{"created":0,"existed":1}`，不存在则 `mkdir` 后返回 `{"created":1,"existed":0}`。
+- 返回 dict 语义保持 `{"created": N, "existed": M}`，但计数对象由"程序目录数"改为"`_files/` 创建计数（0/1）"，与 docstring 一致。
+- `programs` 参数保留仅为兼容调用方签名，docstring 已明确说明（"programs 参数保留仅为兼容调用方签名"），避免调用方签名破坏——这是最小破坏的合理取舍。
+- 旧的 `for code, title in programs:` 循环、`safe_dirname(title)` 调用、`target.exists()` 判断已**全部删除**，无残留死代码。
+
+#### 1.2 `main()`（406-456 行）— ✅ 正确
+
+- CLI 输出已同步为新语义：`✅ 证据集中目录就绪: {evidence_root}/_files/（程序目录已取消，全部证据集中存放）` + `（目录状态: 新建 N 个，已存在 M 个）`。
+- "未找到取证方式列"分支保留（452 行 `else: print(f"   ⚠️  程序文件中未找到'取证方式'列，跳过证据清单生成")`）。
+- 旧的"共 N 个程序 → N 个目录"打印行已删除，无残留。
+
+#### 1.3 未改动函数的完整性 — ✅
+
+- `generate_evidence_catalog()`（340-370 行）：未改动，仍被 `main()` 第 447 行正常调用。
+- `parse_programs_from_md()`（180-212 行）：未改动，仍被 `main()` 第 437 行正常调用。
+- `_parse_table_rows()`、`_fallback_by_headings()`、`_extract_evidence_slots_from_content()`、`_merge_evidence_slots()` 等解析函数均未动，调用链完整。
+
+#### 1.4 头部 docstring / PROTOCOL 遵守 — ✅
+
+- 头部 docstring 已更新：`[OUTPUT]` 行去掉"树"字、新增 `v2.1 变更` 段落说明"取消按程序编号创建证据目录"。
+- 符合文件头部 `[PROTOCOL]: 变更时更新此头部` 约定。
+
+#### 1.5 语法验证 — ✅
+
+- `python -m py_compile _shared/scripts/create_evidence_dirs.py` 退出码 0。
+
+#### 1.6 调用方影响分析 — ✅ 无破坏
+
+- `phase_gate.py:46` 仅在 `phase_2_program_generation` 集合中引用文件名字符串，**不调用函数、不使用返回 dict**。
+- `SKILL.md:128` 仅描述性引用"证据槽位由 create_evidence_dirs.py 自动生成"。
+- `CLAUDE-project.md:88` 仅工具清单描述。
+- 无任何调用方依赖原"程序目录计数"语义，返回 dict 仍含 `created/existed` 键，键名兼容。
+
+#### 1.7 LSP 提示 `[351:16] None not assignable to dict` — 既有问题，非本次引入
+
+- 定位：`generate_evidence_catalog()` 第 351 行 `return None`，函数签名 `-> dict`。
+- **git show HEAD~1:_shared/scripts/create_evidence_dirs.py** 确认：改动前该函数已有 `-> dict` 签名与 `return None`，且 docstring 已声明"无证据列时返回 None"。
+- 本次 commit diff 未触及该函数任何行。
+- 按审查规则：既有问题且不在本次改动范围 → 记录但不作为 REJECT 理由。
+- 建议（非阻塞）：后续可将签名改为 `-> dict | None` 以消除类型不一致。
+
+### 2. `audit-execution-assistant/SKILL.md`
+
+#### 2.1 证据存放路径规则（117-128 行）— ✅ 统一
+
+- 目录树示例已改为 `evidence/` + `_files/` + `_evidence_catalog.json`，去掉 `{project_name}/` 中间层，删除 `{程序编号}_{程序关键词}/` 行。
+- "关键变化"措辞由"被多个程序引用的文件只放一份"改为"所有证据文件只放一份到 `evidence/_files/`，不再复制到每个程序目录，也不按程序建立子目录"——与代码实际行为一致。
+
+#### 2.2 界面示例（146-172 行）— ✅ 统一
+
+- "证据存放路径"由 `evidence/{project_name}/{程序编号}_{程序关键词}/` 改为 `evidence/_files/`。
+- 提示语由"放入上述目录"改为"放入 evidence/_files/ 目录"。
+
+#### 2.3 默认动作（catalog 检查）与 Step 0.1 逻辑自洽 — ✅
+
+- 第 115 行新增"**默认动作（catalog 检查）**"段：执行每个程序前先读 catalog、定位槽位、展示状态；证据到达后默认运行 `evidence_catalog.py match`。
+- Step 0.1（229 行起）标题由"（当用户说'帮我匹配证据'或'查看收集状态'时）"改为"（默认执行，无需用户显式触发）"，并新增"**默认流程**"段，与 115 行呼应。
+- 两处描述一致：都是"按程序编号在 source_programs 中定位 → 展示状态 → 证据到达后默认跑 match"。
+
+#### 2.4 全文残留检查 — ✅ 无残留
+
+- `grep "{程序编号}_{程序关键词}"` → 0 匹配。
+- `grep "evidence/{project_name}"` → 0 匹配。
+- `grep "evidence/\{project_name\}"` → 0 匹配。
+- `grep "evidence/_files"` → 4 处匹配（规则段、界面示例、Step 0 读取、Step 0.1 前提）。
+- 唯一 `evidence/` 单独出现是第 120 行目录树根节点，正确。
+
+#### 2.5 中文排版 / Markdown 结构 — ✅ 完好
+
+- 标题层级、代码块闭合、表格分隔、列表缩进均无破损。
+- diff 仅增删目标行，未误伤周边段落。
+
+---
+
+## 问题清单
+
+| # | 严重度 | 文件 | 描述 | 处置 |
+|---|--------|------|------|------|
+| 1 | 信息（非阻塞） | create_evidence_dirs.py:351 | `generate_evidence_catalog` 签名 `-> dict` 与 `return None` 不一致，LSP 提示 | 既有问题，非本次引入。建议后续改为 `-> dict \| None` |
+
+无阻塞问题。无死代码、无占位符、无调试输出、无残留旧路径。
+
+---
+
+## 结论
+
+本次改动质量合格：
+- 逻辑正确：`create_evidence_dirs()` 行为与 docstring/SKILL.md 描述一致，返回语义变更不破坏任何调用方。
+- 风格一致：保留原有注释风格、函数签名风格、CLI 输出风格。
+- 范围克制：未顺手重构无关函数（`generate_evidence_catalog`、`parse_programs_from_md` 等均未动）。
+- 文档同步：头部 docstring 已按 PROTOCOL 更新，SKILL.md 全文无残留旧路径。
+
+**VERDICT: APPROVE**

@@ -1,0 +1,70 @@
+TASK-4 验证结果：omo.jsonc 独立验证（只读，未修改任何配置）
+============================================================
+验证时间：2026-08-04
+验证对象：C:\Users\Administrator\.omo\omo.jsonc
+
+[1] JSON 语法（jsonc 去行首注释后解析）
+    结果: JSON_OK
+    agents 键数: 12（含 defaults 配置块，实际 agent = 11）
+    categories 键数: 8
+    => 通过
+
+[2] 键完整性
+    agents 键（11 个 agent）: atlas/explore/hephaestus/librarian/metis/momus/
+        multimodal-looker/oracle/prometheus/sisyphus/sisyphus-junior
+        （另有 defaults 配置块，非 agent，不计入 11）
+    categories 键（8 个）: artistry/deep/quick/ultrabrain/
+        unspecified-high/unspecified-low/visual-engineering/writing
+    => 通过
+
+[3] 高频角色 fallback 规则断言（9 角色不得含 kimi-k3 / glm-5.2）
+    atlas:        fallback=[minimax-m3, kimi-k2.7-code]              OK
+    explore:      fallback=[minimax-m3, kimi-k2.7-code]              OK
+    hephaestus:   fallback=[minimax-m3, kimi-k2.7-code]              OK
+    librarian:    fallback=[minimax-m3, kimi-k2.7-code]              OK
+    sisyphus:     fallback=[minimax-m3, kimi-k2.7-code]              OK
+    sisyphus-junior: fallback=[minimax-m3, kimi-k2.7-code]           OK
+    quick:        fallback=[minimax-m3, kimi-k2.7-code]              OK
+    unspecified-low: fallback=[minimax-m3, kimi-k2.7-code]           OK
+    writing:      fallback=[minimax-m3, kimi-k2.7-code]              OK
+    => ALL_FALLBACK_OK 通过
+
+[4] 无残留旧模型（全文 grep：kimi-k2.6 / minimax-m2.7）
+    grep 结果: 0 匹配
+    => 通过
+
+[5] 无禁用/不可用模型（grep：qwen3.7 / qwen3.6 / mimo-v2.5 / grok-4.5 / gpt-5.6-luna）
+    grep 结果: 0 匹配
+    => 通过
+
+[6] 关键字段保留
+    defaults.maxTokens                 = 16384        OK
+    multimodal-looker.disabled         = False        OK
+    visual-engineering.maxTokens       = 16384        OK
+    _migrations = ['2026-07-opencode-config-unification',
+                   '2026-08-reasoning-unification']   OK
+    => 通过
+
+[7] model 分配对照（Inherited Wisdom 期望）
+    flash 主: atlas/explore/hephaestus/librarian/sisyphus/sisyphus-junior (agents)
+              + deep/quick/unspecified-high/unspecified-low/writing (categories)
+              实测全部 = deepseek-v4-flash                                 OK
+    glm-5.2 主: metis/momus/oracle/prometheus (agents) + artistry (categories)
+              实测全部 = glm-5.2                                            OK
+    m3 主: multimodal-looker (agents) + visual-engineering (categories)
+              实测全部 = minimax-m3                                         OK
+    k3 主: ultrabrain (categories) 实测 = kimi-k3                           OK
+    k3 仅在 oracle fallback 出现（ultrabrain 为 k3 主模型）                  OK
+    glm-5.2 仅出现在 metis/momus/oracle/prometheus/artistry/ultrabrain
+        的 fallback 中（另为 5 者主模型），其余角色 fallback 无 glm-5.2      OK
+    => 通过
+
+[8] opencode.json 未动
+    对象: C:\Users\Administrator\.config\opencode\opencode.json
+    blacklist 实测: ["qwen3.7-max","qwen3.7-plus","qwen3.6-plus",
+                     "mimo-v2.5","mimo-v2.5-pro"]（与期望完全一致，未变）
+    => 通过
+
+============================================================
+总结论: 全部验证项通过（8/8）
+本文件为只读验证，未修改 omo.jsonc 或 opencode.json，未执行 git 操作。
