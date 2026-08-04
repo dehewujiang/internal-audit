@@ -4,12 +4,17 @@
 create_evidence_dirs.py — 从审计程序 Markdown 自动创建证据目录和证据清单
 
 [INPUT]:  审计程序 Markdown 文件 + current-audit.json（读取 project_name）
-[OUTPUT]: evidence/{project_name}/ 目录树（含 _files/ 集中存储 + _evidence_catalog.json）
+[OUTPUT]: evidence/{project_name}/ 目录（含 _files/ 集中存储 + _evidence_catalog.json）
 [POS]:    _shared/scripts 的工具脚本，被 program-generator SKILL.md Step 4 调用
 [PROTOCOL]: 变更时更新此头部, 然后检查同级 CLAUDE.md
 
 解析审计程序的 Markdown 文档，提取所有程序的编号、名称和取证方式，
-在 evidence/ 下创建完整目录结构和证据清单（catalog）。
+在 evidence/ 下创建集中存储目录和证据清单（catalog）。
+
+v2.1 变更：
+  - 取消按程序编号创建证据目录（evidence/{编号}_{风险名称}/）
+  - 全部证据只存放在 _files/ 集中存储目录
+  - 程序与证据的引用关系由 _evidence_catalog.json 的 source_programs 记录
 
 v2.0 新增：
   - 集中存储目录 _files/（证据只放一份，多个程序共享）
@@ -382,22 +387,18 @@ def load_project_name(workspace: Path) -> str:
 
 
 def create_evidence_dirs(programs: list, evidence_root: Path) -> dict:
-    """创建证据目录（含 _files/ 集中存储目录）。返回 {"created": N, "existed": M}"""
-    # 集中存储目录
-    files_dir = evidence_root / '_files'
-    files_dir.mkdir(parents=True, exist_ok=True)
+    """创建证据集中存储目录 _files/。返回 {"created": N, "existed": M}
 
-    created = 0
-    existed = 0
-    for code, title in programs:
-        dirname = f"{code}_{safe_dirname(title)}"
-        target = evidence_root / dirname
-        if target.exists():
-            existed += 1
-        else:
-            target.mkdir(parents=True)
-            created += 1
-    return {"created": created, "existed": existed}
+    程序目录已取消：不再为每个审计程序创建 evidence/{编号}_{风险名称}/ 目录，
+    全部证据只存放在 _files/，程序与证据的引用关系由 _evidence_catalog.json 的
+    source_programs 记录。programs 参数保留仅为兼容调用方签名。
+    """
+    files_dir = evidence_root / '_files'
+
+    if files_dir.exists():
+        return {"created": 0, "existed": 1}
+    files_dir.mkdir(parents=True, exist_ok=True)
+    return {"created": 1, "existed": 0}
 
 
 # ── CLI ──────────────────────────────────────────────────
@@ -439,15 +440,13 @@ def main():
         sys.exit(0)
 
     stats = create_evidence_dirs(programs, evidence_root)
-    print(f"✅ 已创建 {stats['created']} 个证据目录（{stats['existed']} 个已存在）")
-    print(f"   📁 {evidence_root}/")
-    print(f"   📁 {evidence_root}/_files/  （集中存储，证据只放一份）")
-    print(f"   📋 共 {len(programs)} 个程序 → {len(programs)} 个目录")
+    print(f"✅ 证据集中目录就绪: {evidence_root}/_files/（程序目录已取消，全部证据集中存放）")
+    print(f"   （目录状态: 新建 {stats['created']} 个，已存在 {stats['existed']} 个）")
 
     # 生成证据清单
     catalog = generate_evidence_catalog(str(md_path), evidence_root, project_name)
     if catalog:
-        print(f"   📋 证据清单: {catalog.get('total_slots', 0)} 个槽位")
+        print(f"   📋 证据清单槽位: {catalog.get('total_slots', 0)} 个（来自取证方式列）")
         print(f"   📄 {evidence_root}/_evidence_catalog.json")
     else:
         print(f"   ⚠️  程序文件中未找到'取证方式'列，跳过证据清单生成")

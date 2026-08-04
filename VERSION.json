@@ -1,7 +1,7 @@
 {
-  "version": "2026-07-26-3",
-  "git_commit": "ceed24c",
-  "updated_at": "2026-07-26T11:33:16+08:00",
+  "version": "2026-08-04-1",
+  "git_commit": "e7f56e0",
+  "updated_at": "2026-08-04T12:05:05+08:00",
   "changes": [
     {
       "type": "doc",
@@ -137,6 +137,11 @@
       "type": "feat",
       "file": "export",
       "summary": "v2.0 MD驱动列名，自适应路径，多表格导出，evidence表头感知，validate结构校验"
+    },
+    {
+      "type": "fix",
+      "file": "create_evidence_dirs.py,SKILL.md",
+      "summary": "证据 v2.0 集中存储工作流修复（取消程序目录、SKILL.md 路径矛盾修正、catalog 检查默认化）"
     }
   ]
 }
