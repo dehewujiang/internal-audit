@@ -260,3 +260,22 @@
 - 真正缺的不是"检查逻辑"，而是"工作流接入"——SKILL.md 没有在任何步骤调用这套脚本
 - 改动量更小：只改 SKILL.md 增加 Step 4.5，不新建文件、不改 Python 代码
 影响：整改方案 R04 从"建新文件+新函数"改为"接入现有体系"；R07 同步对齐 ProgramIR 方案
+
+## ADR-021
+日期：2026-08-04
+背景：证据 v2.0 架构（2026-07-26 部署）虽把存储集中到 `evidence/_files/`，但 `audit-execution-assistant/SKILL.md` 规则层仍教 LLM 按程序建子目录（`evidence/{project_name}/{程序编号}_{程序关键词}/`），界面示例层却用 `evidence/_files/`——规则与示例打架。`create_evidence_dirs.py` 也在一次建 74 个空程序目录。同一份证据被复制到多个程序文件夹，集中存储名存实亡。
+备选方案：
+- A) 保留程序目录结构，把 `_files/` 作为备份/归档层叠加
+- B) 取消程序目录，全部集中 `_files/`；修 SKILL.md 矛盾；catalog 检查从"用户说帮我匹配才触发"改为 Step 1 默认动作
+最终选择：B
+原因：
+- 程序目录结构是 v1.0 遗留，v2.0 的核心价值就是"一份证据只存一份"——保留程序目录等于否定 v2.0 本身
+- SKILL.md 规则层和示例层打架是 LLM 行为不一致的根因，必须统一
+- catalog 检查默认化让"证据-程序映射"成为执行时的默认动作，而非依赖用户记得喊"帮我匹配"
+- `create_evidence_dirs.py` 建 74 个空目录是 v1.0 残留行为，与 v2.0 集中存储矛盾
+影响：
+- `audit-execution-assistant/SKILL.md` 证据路径统一为 `evidence/_files/`，catalog 检查改为 Step 1 默认动作
+- `create_evidence_dirs.py` 取消按程序建目录，只建 `evidence/_files/` + `_evidence_catalog.json`
+- VERSION.json `2026-07-26-3 → 2026-08-04-1`，commit `b4a0611`
+- 部署到武汉长源 + 广东长华，端到端验证通过（162 槽位 catalog，scan→match→status→update 闭环）
+- 武汉长源现场清理 70 个空程序目录；B1.1/L1.1 含 60 个真实证据文件按保护规则保留（finding 引用未迁移，待用户决策）

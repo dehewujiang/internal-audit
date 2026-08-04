@@ -112,17 +112,18 @@ interview 来源的验证需额外处理（详见 document-organizer/references/
 
 对每个审计程序，引导用户提供所需证据。
 
+**默认动作（catalog 检查）**：执行每个程序前，先读取 `evidence/_evidence_catalog.json`，按当前程序编号（如 A1.1）在槽位的 `source_programs` 中定位本程序证据槽位，展示收集状态（✅已收集 / ❌缺失）。证据到达后默认运行 `python _shared/scripts/evidence_catalog.py match <workspace>` 并展示匹配状态表（详见 Step 2.0.1）。
+
 **证据存放路径规则（v2.0 集中存储）**：
 
 ```
-evidence/{project_name}/
-├── _files/                      ← 所有共享证据集中存放（只放一份）
-├── _evidence_catalog.json       ← 证据清单（Phase 2 Python自动生成）
-└── {程序编号}_{程序关键词}/      ← 仅存放程序专有的零散截图/笔记
+evidence/
+├── _files/                      ← 所有证据集中存放（只放一份，不按程序分目录）
+└── _evidence_catalog.json       ← 证据清单（Phase 2 Python自动生成）
 ```
 
 **关键变化（v2.0）**：
-- 被多个程序引用的文件只放一份到 `_files/`，不再复制到每个程序目录
+- 所有证据文件只放一份到 `evidence/_files/`，不再复制到每个程序目录，也不按程序建立子目录
 - 引用关系记录在 `_evidence_catalog.json` 的 `source_programs` 字段
 - 证据槽位由 `create_evidence_dirs.py` 从程序 Markdown 的"取证方式"列自动生成
 
@@ -153,9 +154,9 @@ evidence/{project_name}/
   2. [证据2]
 📁 取数来源：[系统/文件]
 📂 证据存放路径：
-  evidence/{project_name}/{程序编号}_{程序关键词}/
+  evidence/_files/
   
-  请将导出的原始证据文件放入上述目录，完成后告诉我。
+  请将导出的原始证据文件放入 evidence/_files/ 目录，完成后告诉我。
 
 ⚠️ 注意事项：[如有]
 
@@ -217,18 +218,20 @@ evidence/{project_name}/
 
 0. **读取证据清单**：
 
-   在读取任何证据文件之前，先读取 `evidence/{project_name}/_evidence_catalog.json`。
+   在读取任何证据文件之前，先读取 `evidence/_evidence_catalog.json`。
 
    - 查找当前程序编号（如 A1.1）出现在哪些槽位的 `source_programs` 中
    - 检查这些槽位的 `file` 字段：
-     - `file` 已填充 → 从 `_files/` 读取该文件
+     - `file` 已填充 → 从 `evidence/_files/` 读取该文件
      - `file` 为 `null` → 提示用户"以下证据缺失"，询问是否跳过或补充
    - 读取后立即在 finding JSON 的 evidence 条目中写入 `storage_path`
 
-0.1 **证据匹配与收集**（当用户说"帮我匹配证据"或"查看收集状态"时）：
+0.1 **证据匹配与收集**（默认执行，无需用户显式触发）：
 
-   前提：Phase 2 已生成 `_evidence_catalog.json`（所有槽位的 `file` 为 `null`），
+   前提：Phase 2 已生成 `_evidence_catalog.json`（所有槽位的 `file` 初始为 `null`），
    用户已将收集到的文件放入 `_files/` 目录。
+
+   **默认流程**：每个程序执行前先按当前程序编号（如 A1.1）在 catalog 槽位的 `source_programs` 中定位本程序证据槽位，展示收集状态（✅已收集 / ❌缺失）。证据到达 `_files/` 后默认运行以下匹配流程：
 
    ```
    Step 0.1a — Python 扫描文件结构指纹：
