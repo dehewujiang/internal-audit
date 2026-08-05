@@ -443,7 +443,7 @@ Step 3b-2: 根因质证（切换推理视角，读-only审查）
     ↓
 Step 3b-3: 确定性验证（脚本检查 - 根因部分）
     → 将 finding 初稿（CCEER 初版 + 根因部分）写入临时 JSON 文件
-    → 运行: `python ~/.claude/skills/internal-audit/_shared/scripts/validate-finding.py <temp_file>`
+    → 运行: `python _shared/scripts/validate-finding.py <temp_file>`
     → 读取输出：
         action=block → 根据 blockers 逐项修正，重新运行直到通过
         action=warn  → 逐项确认 warnings，可接受则继续，不接受则修正
@@ -473,7 +473,7 @@ Step 3f: 证据等级强制核验
     → 核验通过后进入 Step 3f-2
     ↓
 Step 3f-2: 最终硬校验（脚本检查 - 完整finding）
-    → 运行: `python ~/.claude/skills/internal-audit/_shared/scripts/validate-finding.py <完整finding JSON文件路径>`
+    → 运行: `python _shared/scripts/validate-finding.py <完整finding JSON文件路径>`
     → 读取输出：
         action=block → 阻断，根据 blockers 逐项修正后重跑
         action=warn  → 标记 warnings 列表并在生成摘要中告知用户
@@ -537,8 +537,8 @@ Step 3h: 业务现实性检验（可选）
 详见 [references/quality_check.md](./references/quality_check.md)。
 
 **执行前加载**：
-1. `~/.claude/skills/internal-audit/internal-audit-evaluator/SKILL.md`，定位 **finding** 的检查清单
-2. 确保 `validate-finding.py` 存在于 `~/.claude/skills/internal-audit/_shared/scripts/validate-finding.py`
+1. `internal-audit-evaluator/SKILL.md`，定位 **finding** 的检查清单
+2. 确保 `validate-finding.py` 存在于 `_shared/scripts/validate-finding.py`
 
 **顺序**：5.0 validate-finding → 5.1 格式检查 → 5.2 推理检查（质量回溯） → 5.3 质量判定 → 5.4 结果存储+质量门
 

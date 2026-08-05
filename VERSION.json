@@ -1,7 +1,7 @@
 {
-  "version": "2026-08-04-1",
-  "git_commit": "e7f56e0",
-  "updated_at": "2026-08-04T12:05:05+08:00",
+  "version": "2026-08-05-1",
+  "git_commit": "e29faa5",
+  "updated_at": "2026-08-05T16:36:50+08:00",
   "changes": [
     {
       "type": "doc",
@@ -142,6 +142,11 @@
       "type": "fix",
       "file": "create_evidence_dirs.py,SKILL.md",
       "summary": "证据 v2.0 集中存储工作流修复（取消程序目录、SKILL.md 路径矛盾修正、catalog 检查默认化）"
+    },
+    {
+      "type": "fix",
+      "file": "audit-execution-assistant/SKILL.md",
+      "summary": "修复 4 处 ~/.claude 坏路径为项目本地相对路径"
     }
   ]
 }
