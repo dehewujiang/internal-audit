@@ -1,8 +1,28 @@
 {
-  "version": "2026-08-06-1",
-  "git_commit": "a8dd3d2",
+  "version": "2026-08-06-2",
+  "git_commit": "pending",
   "updated_at": "2026-08-06T00:00:00+08:00",
   "changes": [
+    {
+      "type": "fix",
+      "file": "constitution.md",
+      "summary": "恢复 11-14 条硬约束（20ad90b 误删回归，对齐 CLAUDE-project.md 权威文本）+ 恢复阶段流转规则（地铁闸机模型）与启动协议（修订版，对齐 phase_gate.py 现状）"
+    },
+    {
+      "type": "fix",
+      "file": "证据标准一致性",
+      "summary": "cceer_standards.md 高风险证据门槛 A+B→A+E（消除与 SKILL.md/root_cause_framework/finding_schema 矛盾）；validate-finding.py required_top 补 consequence；quality_check.md 必填清单同步"
+    },
+    {
+      "type": "fix",
+      "file": "internal-audit-program-generator/SKILL.md",
+      "summary": "R02 对抗验证定量阈值补回（EXPOSED>30% 需加强 / COVERED<50% 重新设计）"
+    },
+    {
+      "type": "fix",
+      "file": "知识库混源过滤",
+      "summary": "internal_audit_risk_framework 2.2/2.3/3.1/3.2 移附录A；cheatsheet 3.2 移附录B；场景6 收入清单加行业适用性注记；U8 残留清零（场景4 正文+映射表）"
+    },
     {
       "type": "fix",
       "file": "9个SKILL.md/CLAUDE.md",

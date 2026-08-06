@@ -25,7 +25,7 @@ python _shared/scripts/validate-finding.py --findings-dir findings/ --json
 
 | 检查项 | 执行方式 | 自动修正？ |
 |--------|---------|:---------:|
-| JSON schema 合规 | 检查每个 finding 输出的必填字段：(finding_id, origin, title, criteria, condition, cause, recommendation, evidence) | ⚠️ 缺字段通知用户 |
+| JSON schema 合规 | 检查每个 finding 输出的必填字段：(finding_id, origin, title, criteria, condition, cause, consequence, recommendation, evidence) | ⚠️ 缺字段通知用户 |
 | 证据等级完整性 | 检查所有 evidence 条目是否有 reliability_grade 字段 | ⚠️ 通知用户补标 |
 
 ## 5.2 推理检查：发现质量回溯

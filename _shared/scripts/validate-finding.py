@@ -117,7 +117,7 @@ def load_finding(path):
 
 def check_schema_compliance(data):
     """[S] 必要字段完整性（schema 1.2.0）"""
-    required_top = ["finding_id", "title", "risk_level", "origin", "criteria", "condition", "cause", "recommendation", "evidence"]
+    required_top = ["finding_id", "title", "risk_level", "origin", "criteria", "condition", "cause", "consequence", "recommendation", "evidence"]
     missing = [k for k in required_top if k not in data]
     if missing:
         return False, f"缺少必要字段: {', '.join(missing)}"
