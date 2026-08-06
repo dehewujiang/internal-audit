@@ -225,7 +225,7 @@
 ```
 phase_gate.py check
   └─ action=prompt_program_update
-       └─ SKILL.md Step 6
+       └─ SKILL.md Step 0.5 模式判定
             └─ 本文件 Step 0 → Step 1 → Step 2 → 状态回写
                  └─ 输出：十、访谈补充 + 十一、举报补充
 ```

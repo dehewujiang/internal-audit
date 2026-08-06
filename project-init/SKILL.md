@@ -10,7 +10,7 @@ description: 一键创建新审计项目目录和配置文件。自动创建 int
 **零代码复制。一句话创建审计项目。**
 
 用户只需指定审计主题名称，系统自动：
-1. 查找全局主题配置（`~/.claude/skills/internal-audit/audit-topics/{topic}/`）
+1. 查找全局主题配置（`audit-topics/{topic}/`）
 2. 创建项目目录结构
 3. 生成 `current-audit.json`
 4. 生成精简 `CLAUDE.md`
@@ -47,7 +47,7 @@ description: 一键创建新审计项目目录和配置文件。自动创建 int
 
 ```bash
 检查路径：
-  ~/.claude/skills/internal-audit/audit-topics/
+  audit-topics/
   ├── about-me.md        （公司级，所有主题共用，必须存在）
   ├── my-config.md       （公司级，所有主题共用，必须存在）
   └── {topic}/
@@ -102,7 +102,7 @@ C) 取消
 
 ### 4.1 读取主题配置
 
-从 `~/.claude/skills/internal-audit/audit-topics/{topic}/topic.json` 读取：
+从 `audit-topics/{topic}/topic.json` 读取：
 - `topic_name`
 - `topic_description`
 - `audit_defaults`（focus, warehouses, processes, departments, risk_areas）
@@ -184,8 +184,8 @@ C) 取消
 
 ### 4.5 创建 constitution.md 和 tools/
 
-- 将 `~/.claude/skills/internal-audit/constitution.md`（全局共享宪法）复制到项目 `internal-audit-workspace/constitution.md`。如全局宪法尚不存在，先生成初始版本再复制。
-- 将 `~/.claude/skills/internal-audit/tools/*.md`（工具能力声明）复制到项目 `internal-audit-workspace/tools/`。
+- 将项目根目录的 `constitution.md`（由 setup-project 部署的共享宪法）复制到项目 `internal-audit-workspace/constitution.md`。如尚不存在，先生成初始版本再复制。
+- 将项目根目录的 `tools/*.md`（工具能力声明，由 setup-project 部署）复制到项目 `internal-audit-workspace/tools/`。
   ⚠️ 只复制以下 7 个能力声明文件，忽略全局 tools/ 中的其他文件：document-organizer.md、interview-designer.md、program-generator.md、execution-assistant.md、finding-debate.md、report-generator.md、validate-finding.md
 
 ### 4.6 注册到项目索引

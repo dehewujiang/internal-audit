@@ -36,10 +36,10 @@ description: |
 
 **输入源**：
 1. `internal-audit-workspace/policy-analyses/*.json`（制度分析结果）
-2. `~/.claude/skills/internal-audit/audit-topics/about-me.md`（公司背景）
-3. `~/.claude/skills/internal-audit/internal-audit-program-generator/references/internal_audit_risk_framework.md`（**核心输入：过往审计经验与风险库**）
+2. `audit-topics/about-me.md`（公司背景）
+3. `.claude/skills/internal-audit-program-generator/references/internal_audit_risk_framework.md`（**核心输入：过往审计经验与风险库**）
 4. `internal-audit-workspace/findings/index.json`（历史发现，如存在）
-5. `~/.claude/skills/internal-audit/audit-interview-designer/references/interview_templates.md`（各领域问题模板库）
+5. `references/interview_templates.md`（各领域问题模板库）
 6. 用户指定的审计主题/范围
 
 **分析逻辑**：
@@ -316,7 +316,7 @@ wb.save(output_path)
 
 ## Step 5：质量评估（引用评估框架）
 
-**执行前加载**：`~/.claude/skills/internal-audit/internal-audit-evaluator/SKILL.md`，定位 **interview** 的检查清单。
+**执行前加载**：`.claude/skills/internal-audit-evaluator/SKILL.md`，定位 **interview** 的检查清单。
 
 **时机**：访谈问卷生成后，输出 Excel 前自动执行。
 
@@ -351,8 +351,8 @@ wb.save(output_path)
 
 ```bash
 echo '{json格式检查结果}' > /tmp/eval_result.json
-python ~/.claude/skills/internal-audit/internal-audit-evaluator/record_evaluation.py --input /tmp/eval_result.json
-python ~/.claude/skills/internal-audit/internal-audit-evaluator/quality_gate.py --input /tmp/eval_result.json
+python .claude/skills/internal-audit-evaluator/record_evaluation.py --input /tmp/eval_result.json
+python .claude/skills/internal-audit-evaluator/quality_gate.py --input /tmp/eval_result.json
 ```
 
 ## 版本历史

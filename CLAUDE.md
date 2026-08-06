@@ -23,8 +23,8 @@
 
 ## 关键文件
 
-- `~/.claude/skills/internal-audit/audit-topics/about-me.md` — 公司背景
-- `~/.claude/skills/internal-audit/audit-topics/my-config.md` — 系统配置
+- `audit-topics/about-me.md` — 公司背景
+- `audit-topics/my-config.md` — 系统配置
 - `constitution.md` — 中央大脑运行宪法（项目目录中的 constitution.md 指向此全局定义或为副本）
 - `internal-audit-workspace/evidence/_evidence_catalog.json` — 证据清单（v2.0 集中存储，记录证据-程序映射和收集状态）
 - `internal-audit-workspace/evidence/_files/` — 共享证据集中存放目录（v2.0）

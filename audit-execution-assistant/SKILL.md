@@ -537,7 +537,7 @@ Step 3h: 业务现实性检验（可选）
 详见 [references/quality_check.md](./references/quality_check.md)。
 
 **执行前加载**：
-1. `internal-audit-evaluator/SKILL.md`，定位 **finding** 的检查清单
+1. `.claude/skills/internal-audit-evaluator/SKILL.md`，定位 **finding** 的检查清单
 2. 确保 `validate-finding.py` 存在于 `_shared/scripts/validate-finding.py`
 
 **顺序**：5.0 validate-finding → 5.1 格式检查 → 5.2 推理检查（质量回溯） → 5.3 质量判定 → 5.4 结果存储+质量门

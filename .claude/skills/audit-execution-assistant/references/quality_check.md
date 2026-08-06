@@ -8,7 +8,7 @@
 在 LLM 执行格式/推理检查之前，先运行确定性脚本扫描全部 finding：
 
 ```bash
-python ~/.claude/skills/internal-audit/_shared/scripts/validate-finding.py --findings-dir findings/ --json
+python _shared/scripts/validate-finding.py --findings-dir findings/ --json
 ```
 
 **读取输出后**：
@@ -76,18 +76,18 @@ python ~/.claude/skills/internal-audit/_shared/scripts/validate-finding.py --fin
 
 ```bash
 # 1. validate-finding 结果（确定性校验）
-python ~/.claude/skills/internal-audit/_shared/scripts/validate-finding.py \
+python _shared/scripts/validate-finding.py \
     --findings-dir findings/ --json > /tmp/validate_result.json
 
 # 2. LLM 质量回溯结果（推理校验）  
 echo '{json格式检查结果}' > /tmp/eval_result.json
 
 # 3. 合并写入评估历史
-python ~/.claude/skills/internal-audit/internal-audit-evaluator/record_evaluation.py \
+python .claude/skills/internal-audit-evaluator/record_evaluation.py \
     --input /tmp/eval_result.json
 
 # 4. 质量门判定
-python ~/.claude/skills/internal-audit/internal-audit-evaluator/quality_gate.py \
+python .claude/skills/internal-audit-evaluator/quality_gate.py \
     --input /tmp/eval_result.json
 ```
 

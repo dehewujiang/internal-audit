@@ -279,7 +279,7 @@ OCR 会自动检测并标记以下需要人工核对的内容：
 
 ## Step 5：质量评估（引用评估框架）
 
-**执行前加载**：`~/.claude/skills/internal-audit/internal-audit-evaluator/SKILL.md`，定位 **policy_analysis** 的检查清单。
+**执行前加载**：`.claude/skills/internal-audit-evaluator/SKILL.md`，定位 **policy_analysis** 的检查清单。
 
 **时机**：批量分析完成，输出全部 JSON 后自动执行。
 
@@ -312,8 +312,8 @@ OCR 会自动检测并标记以下需要人工核对的内容：
 
 ```bash
 echo '{json格式检查结果}' > /tmp/eval_result.json
-python ~/.claude/skills/internal-audit/internal-audit-evaluator/record_evaluation.py --input /tmp/eval_result.json
-python ~/.claude/skills/internal-audit/internal-audit-evaluator/quality_gate.py --input /tmp/eval_result.json
+python .claude/skills/internal-audit-evaluator/record_evaluation.py --input /tmp/eval_result.json
+python .claude/skills/internal-audit-evaluator/quality_gate.py --input /tmp/eval_result.json
 ```
 
 ---

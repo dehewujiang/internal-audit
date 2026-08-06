@@ -25,8 +25,8 @@ description: 为汽车零部件（紧固件/冲焊件）企业生成内部审计
 
 | 文件 | 用途 | 读取时机 |
 |------|------|---------|
-| `~/.claude/skills/internal-audit/audit-topics/about-me.md` | 公司背景（每次必须重新读取，禁用缓存） | Step 0 |
-| `~/.claude/skills/internal-audit/audit-topics/my-config.md` | 系统名称、阈值、已积累配置 | Step 0 |
+| `audit-topics/about-me.md` | 公司背景（每次必须重新读取，禁用缓存） | Step 0 |
+| `audit-topics/my-config.md` | 系统名称、阈值、已积累配置 | Step 0 |
 | [references/instruction_details.md](./references/instruction_details.md) | 完整步骤说明 | 各Step执行时 |
 | [references/step2_risk_identification.md](./references/step2_risk_identification.md) | Step 2 风险识别详细规范 | Step 2 |
 | [references/step3_program_generation.md](./references/step3_program_generation.md) | Step 3 程序生成详细规范 | Step 3 |
@@ -38,6 +38,8 @@ description: 为汽车零部件（紧固件/冲焊件）企业生成内部审计
 | `references/fraud_investigation_methods.md` | 舞弊调查方法 | Step 3 轨道B |
 | `references/efficiency_audit_playbook.md` | 效率审计程序库（兜底校验） | Step 3 轨道E |
 | `references/compliance_audit_playbook.md` | 合规审计程序库（兜底校验） | Step 3 轨道F |
+| `references/dynamic_questions.md` | 动态业务问题矩阵（配置空白时追问，回写 my-config） | Step 0.4 |
+| `references/incremental_update.md` | 增量更新/勘误模式（phase_gate 信号触发，S 序列） | Step 0.5 |
 
 ---
 
@@ -82,17 +84,17 @@ Step 5: 质量评估（自动）
 
 ### 0.0 定位当前项目
 
-从 CWD 向上搜索 `internal-audit-workspace/current-audit.json` → 读取 `audit_topic` → 确定主题配置路径：`~/.claude/skills/internal-audit/audit-topics/{audit_topic}/`
+从 CWD 向上搜索 `internal-audit-workspace/current-audit.json` → 读取 `audit_topic` → 确定主题配置路径：`audit-topics/{audit_topic}/`
 
 ### 0.1 读取公司背景
 
-完整读取 `~/.claude/skills/internal-audit/audit-topics/about-me.md`，提取：公司规模、产品线、客户、原材料、ERP/MES系统、已知风险、审计部门信息。
+完整读取 `audit-topics/about-me.md`，提取：公司规模、产品线、客户、原材料、ERP/MES系统、已知风险、审计部门信息。
 
 **降级策略**：若文件不存在，向用户询问5项核心信息。
 
 ### 0.2 读取操作配置
 
-读取 `~/.claude/skills/internal-audit/audit-topics/my-config.md`，获取：系统名称、实际阈值、已配置主题。
+读取 `audit-topics/my-config.md`，获取：系统名称、实际阈值、已配置主题。
 
 ### 0.3 读取制度分析报告（可选）
 
@@ -103,6 +105,56 @@ Step 5: 质量评估（自动）
 - `conflicts` → Step 2 输入
 
 **详细操作**：见 [references/instruction_details.md#step-03](./references/instruction_details.md#step-03)
+
+### 0.4 配置空白检测与动态追问（强制）
+
+读取 my-config.md 后，检查与本次审计主题相关的关键配置项是否仍为空白（`【】` 占位符）：
+
+| 审计主题 | 需检测的关键配置项 |
+|---------|------------------|
+| 采购/供应链 | 大额采购审批起点、外协加工流程、模具管理流程 |
+| 生产/存货 | 废料处置流程、存货盘点流程 |
+| 销售/收款 | VMI确认时点、主机厂对账方式、索赔/年降处理方式 |
+| 费用/报销 | 差旅报销流程（审批层级、报销系统） |
+| 人力资源 | 考勤系统、薪资计算方式 |
+
+**处理规则**：
+1. 相关配置项仍为 `【】` → 从 `references/dynamic_questions.md` 的问题矩阵选取 **1-2 个**对应问题向用户追问（每次只问 1-2 题，提供跳过选项）
+2. 用户回答后 → 将答案回写 `audit-topics/my-config.md` 对应字段（只填空，不覆盖已有内容）
+3. 用户选择"跳过" → 使用默认预设继续，不阻塞流程
+4. 已填写的配置项不再追问
+
+**追问格式**：
+```text
+为了更深地切中要害，请再补充一个业务细节：
+
+👉 [来自 dynamic_questions.md 问题矩阵的问题]
+
+(可直接回复，或回复"跳过"使用默认预设)
+```
+
+**回写示例**：
+- 问题："废料处置归属？" → 答案写入 my-config.md「废料处置流程 → 处置权限归属」
+- 问题："VMI 确认时点？" → 答案写入 my-config.md「销售与收款流程 → VMI确认时点」
+
+**目的**：配置空白 = 风险识别盲区（事实锚定规则会使 AI 避开未配置的领域）。补齐后，Step 2 风险识别、轨道B 舞弊测试、访谈问卷锚定性全部受益。
+
+---
+
+### 0.5 模式判定：全新生成 vs 增量更新（强制）
+
+运行 `python _shared/scripts/phase_gate.py check` 并检查是否存在已有审计程序：
+
+| 条件 | 模式 | 处理 |
+|------|------|------|
+| 无已有程序（v1.0 不存在） | **全新生成** | 继续 Step 1 - Step 5 |
+| 已有 v1.0 程序，且 phase_gate 返回 `action=prompt_program_update`（存在待处理线索） | **增量更新** | 执行 [references/incremental_update.md](./references/incremental_update.md) 完整流程：读取现有程序 + 待处理线索（design-assessments / whistleblower_pending）→ 线索过滤 → 生成 S 序列补充程序（十、十一章）→ 状态回写。**完成后不再走 Step 1-5** |
+| 已有 v1.0 程序，phase_gate 无更新信号 | 全新生成（覆盖） | 提示用户确认覆盖，确认后走 Step 1-5 |
+
+**增量更新核心规则**（详见 incremental_update.md）：
+- 编号 S01/S02...，不使用 R01（避免与 v1.0 冲突）
+- 只追加不覆盖：v1.0 已有步骤和证据链永久保留
+- 程序存在根本性错误时走「勘误模式」：勘误注记 + 追加 `-C` 修正步骤，禁止直接修改已有步骤
 
 ---
 
@@ -345,7 +397,7 @@ EXPOSED（风险敞口）：
 
 ## Step 5: 质量评估（引用评估框架）
 
-**执行前加载**：`~/.claude/skills/internal-audit/internal-audit-evaluator/SKILL.md`，定位 **audit_program** 的检查清单。以下检查项与框架定义一致。
+**执行前加载**：`.claude/skills/internal-audit-evaluator/SKILL.md`，定位 **audit_program** 的检查清单。以下检查项与框架定义一致。
 
 ### 5.1 格式检查
 
@@ -434,10 +486,10 @@ echo '{
 }' > /tmp/eval_result.json
 
 # 写入历史库
-python ~/.claude/skills/internal-audit/internal-audit-evaluator/record_evaluation.py --input /tmp/eval_result.json
+python .claude/skills/internal-audit-evaluator/record_evaluation.py --input /tmp/eval_result.json
 
 # 执行质量门（低于阈值自动标记 regenerate）
-python ~/.claude/skills/internal-audit/internal-audit-evaluator/quality_gate.py --input /tmp/eval_result.json
+python .claude/skills/internal-audit-evaluator/quality_gate.py --input /tmp/eval_result.json
 
 # 如果 quality_gate.py 输出 action="regenerate" → 回到 Step 1 重新生成
 # 如果 quality_gate.py 输出 action="pass" → 继续输出

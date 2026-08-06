@@ -1,8 +1,23 @@
 {
-  "version": "2026-08-05-1",
-  "git_commit": "e29faa5",
-  "updated_at": "2026-08-05T16:36:50+08:00",
+  "version": "2026-08-06-1",
+  "git_commit": "pending",
+  "updated_at": "2026-08-06T00:00:00+08:00",
   "changes": [
+    {
+      "type": "fix",
+      "file": "9个SKILL.md/CLAUDE.md",
+      "summary": "全量清除 ~/.claude/skills/internal-audit 坏路径残留36处：audit-topics/_shared/scripts/.claude/skills 三标准替换，对齐 CLAUDE-project.md 项目根相对写法；修正 execution-assistant L540 evaluator 引用"
+    },
+    {
+      "type": "feat",
+      "file": "internal-audit-program-generator/SKILL.md",
+      "summary": "新增 Step 0.4 配置空白检测+动态追问（dynamic_questions.md 接入，答案回写 my-config.md）+ Step 0.5 模式判定（incremental_update.md 接入 phase_gate 信号）；索引表登记两个孤儿文件"
+    },
+    {
+      "type": "doc",
+      "file": "output_template.md",
+      "summary": "补第十章（访谈补充）/第十一章（举报补充）模板，修复 incremental_update.md 断链引用；incremental_update.md 引用修正为 Step 0.5"
+    },
     {
       "type": "doc",
       "file": "CLAUDE.md",

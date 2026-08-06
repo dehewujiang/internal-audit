@@ -404,7 +404,7 @@ F-2024-015 = 2024年第15号发现
 
 ### Step 3：质量评估（引用评估框架）
 
-**执行前加载**：`~/.claude/skills/internal-audit/internal-audit-evaluator/SKILL.md`，定位 **audit_report** 的检查清单。
+**执行前加载**：`.claude/skills/internal-audit-evaluator/SKILL.md`，定位 **audit_report** 的检查清单。
 
 **时机**：报告模板填充完成后，输出前自动执行。
 
@@ -460,8 +460,8 @@ F-2024-015 = 2024年第15号发现
 
 ```bash
 echo '{json格式检查结果}' > /tmp/eval_result.json
-python ~/.claude/skills/internal-audit/internal-audit-evaluator/record_evaluation.py --input /tmp/eval_result.json
-python ~/.claude/skills/internal-audit/internal-audit-evaluator/quality_gate.py --input /tmp/eval_result.json
+python .claude/skills/internal-audit-evaluator/record_evaluation.py --input /tmp/eval_result.json
+python .claude/skills/internal-audit-evaluator/quality_gate.py --input /tmp/eval_result.json
 ```
 
 ### Step 4：跟踪整改进度（可选）
