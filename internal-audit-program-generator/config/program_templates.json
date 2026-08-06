@@ -6,7 +6,7 @@
       "name": "轨道A-控制有效性测试",
       "description": "验证关键控制点是否有效执行",
       "sheet_name": "轨道A-控制测试",
-      "column_widths": [8, 12, 25, 15, 45, 20, 15, 15, 12, 12, 20],
+      "column_widths": [8, 12, 25, 15, 45, 20, 15, 15, 12, 12, 20, 30, 30],
       "default_row_height": 60,
       "instructions": [
         "获取指定期间的控制执行记录",
@@ -19,7 +19,7 @@
       "name": "轨道B-舞弊实质性测试",
       "description": "针对舞弊风险点的深入测试",
       "sheet_name": "轨道B-舞弊测试",
-      "column_widths": [8, 12, 30, 15, 45, 20, 15, 15, 12, 12, 20],
+      "column_widths": [8, 12, 30, 15, 45, 20, 15, 15, 12, 12, 20, 30, 30],
       "default_row_height": 60,
       "instructions": [
         "识别异常交易模式",
@@ -33,14 +33,14 @@
       "name": "轨道C-系统类实质性测试",
       "description": "基于系统数据的实质性抽样测试",
       "sheet_name": "轨道C-系统测试",
-      "column_widths": [8, 20, 40, 35, 15, 15, 15, 15, 12, 20],
+      "column_widths": [8, 20, 40, 35, 15, 15, 15, 15, 12, 20, 30, 30],
       "default_row_height": 50
     },
     "D": {
       "name": "轨道D-边界探测",
       "description": "测试系统边界和控制边界",
       "sheet_name": "轨道D-边界测试",
-      "column_widths": [8, 15, 30, 40, 25, 25, 12, 20],
+      "column_widths": [8, 15, 30, 40, 25, 25, 12, 20, 30, 30],
       "default_row_height": 50,
       "boundary_types": ["审批阈值", "金额上限", "周期限制", "数量限制"]
     },
@@ -48,14 +48,14 @@
       "name": "轨道E-运营效率专项",
       "description": "针对运营效率的专项测试",
       "sheet_name": "轨道E-效率测试",
-      "column_widths": [8, 20, 40, 15, 15, 30, 30],
+      "column_widths": [8, 20, 40, 15, 15, 30, 30, 30, 30],
       "default_row_height": 45
     },
     "F": {
       "name": "轨道F-合规专项",
       "description": "针对内外部合规要求的测试",
       "sheet_name": "轨道F-合规测试",
-      "column_widths": [8, 25, 20, 40, 12, 35, 30, 12],
+      "column_widths": [8, 25, 20, 40, 12, 35, 30, 12, 30, 30],
       "default_row_height": 50,
       "compliance_sources": ["内部制度", "会计准则", "上市规则", "行业规范"]
     }

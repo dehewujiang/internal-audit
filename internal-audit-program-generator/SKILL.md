@@ -423,7 +423,7 @@ EXPOSED（风险敞口）：
    ```
 2. 结构化校验（覆盖率 / 判定标准量化 / 数据来源比例）：
    ```bash
-   python _shared/scripts/validate-program.py <程序MD文件> --ir internal-audit-workspace/program_ir.json --strict
+   python _shared/scripts/validate-program.py <程序MD文件> --ir --strict
    ```
 3. **激活轨道校验（N15）**：比对 `program_ir.json` 的 `activated_tracks` 与 Step 1.4 目的级联路由的预期轨道：
 

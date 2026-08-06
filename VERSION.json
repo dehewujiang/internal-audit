@@ -1,8 +1,13 @@
 {
-  "version": "2026-08-06-3",
-  "git_commit": "fa143a4",
+  "version": "2026-08-06-4",
+  "git_commit": "pending",
   "updated_at": "2026-08-06T00:00:00+08:00",
   "changes": [
+    {
+      "type": "feat",
+      "file": "output_template.md+SKILL.md+program_templates.json",
+      "summary": "审计程序新增「设计理由」「测试目的」两列（6轨道+增量章节），防套话约束，列宽配置；模板表头对齐真实产出结构（补程序编号/判定标准/取证方式列，修复 Step 4.5 闸机兼容）"
+    },
     {
       "type": "feat",
       "file": "internal-audit-program-generator/SKILL.md",
