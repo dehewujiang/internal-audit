@@ -62,6 +62,13 @@ internal-audit/
 - 知识库混源过滤：非制造业场景在 internal_audit_risk_framework 附录A / cheatsheet 附录B
 - 制度版本强制：document_info.version/effective_date 必填（warn 级校验，存量兼容）
 
+## 第四轮（2026-08-06 下午，VERSION 2026-08-06-4，已部署双项目）
+
+- 审计程序模板新增「设计理由」「测试目的」两列（output_template.md 8 张表：6 轨道 + S1/S2 增量章节）；SKILL.md Step 4 两列必填要求 + 防套话约束 + 自检清单 2 项；program_templates.json 列宽补 30,30
+- **模板表头对齐真实产出结构**（ADR-025）：8 表全部含「程序编号/判定标准/取证方式」列（解析器 `_is_program_table` 与闸机硬查要求）——修复模板与 Step 4.5 闸机的兼容矛盾（测试四连暴露）
+- **Step 4.5 命令修正**：`validate-program.py --ir <path>` → `--ir --strict`（--ir 为布尔开关，实测）
+- commits: 0746f5c / e133e2b / 26d4cc2 / 181000f / cd72e98
+
 ## 10 个 Skill 流水线
 
 ```

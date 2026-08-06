@@ -28,6 +28,7 @@
 - ✅ 阶段二：Step 4.5 程序闸机+激活轨道校验（R04+R07+N15）+ validate-catalog.py（R05）+ validate-index.py（R06）+ 制度版本强制（N6）（VERSION 2026-08-06-3，fa143a4/7fd2c46，已部署）
 - ✅ 阶段三：5 份快照重写（R03）+ compare-snapshots pre-commit hook（R08）+ 人工抽查清单（R09 交付物）（26c511d，不部署）
 - ✅ CLAUDE.md/CLAUDE-project.md 工具清单登记 validate-catalog/validate-index + memory 收工更新
+- ✅ 第四轮 add-design-columns（2026-08-06 下午）：审计程序新增「设计理由」「测试目的」两列（8 张表）+ 防套话约束 + 列宽；修复模板与 Step 4.5 闸机兼容矛盾（表头对齐真实结构，ADR-025）+ Step 4.5 命令 --ir 修正；VERSION 2026-08-06-4 已部署双项目，Final Wave PASS（0746f5c→cd72e98）
 
 ## 已完成（2026-08-05）
 - ✅ SKILL.md 坏路径修复 + 重新部署（commit `0c8c97a`）

@@ -324,3 +324,19 @@
 - 新建 `validate-catalog.py`、`validate-index.py`（block 级，exit 1/2）
 - `validate-policy-analysis.py` 新增 `document_version` warn 级检查
 - execution-assistant Step 1、report-generator Step 1 挂接调用；commit `fa143a4`
+
+## ADR-025
+日期：2026-08-06
+背景：add-design-columns 执行中，测试四连发现 output_template.md 模板表头**从来**不含「程序编号/判定标准/取证方式」列，而 Step 4.5 闸机的解析器（`_is_program_table` 要求表头含"程序编号/补充编号"）和校验器（硬查判定标准/取证方式）要求这些列——严格按模板生成的程序必然被闸机拦截。模板与真实产出结构长期脱节（真实产出如 fixture v1.1 一直带这些列），闸机接入（当日 R04）才暴露。
+备选方案：
+- A) 修改解析器放宽程序表识别（去掉"程序编号"表头要求）
+- B) 模板表头对齐真实产出结构（fixture v1.1 为基准），零脚本改动
+最终选择：B
+原因：
+- 真实产出本来就带这些列（LLM 一直这么生成），模板是简化失真——修模板让"文档-机器要求"一致，而非放宽机器要求迁就失真文档
+- 零脚本改动符合本任务"Must NOT 改 .py"的边界；解析器按表头关键词找列，加"程序编号/判定标准/取证方式"列不影响其字段映射
+- 模板对齐后 Step 4.5 闸机成为"LLM 按模板生成即通过"的良性闭环
+影响：
+- output_template.md 8 张表表头对齐真实结构 + 两新列（commit 26d4cc2）
+- 顺带修正 SKILL.md Step 4.5 命令 `--ir <path>` → `--ir --strict`（实测 --ir 是布尔开关，commit 181000f）
+- 重测全链路 PASS；VERSION 2026-08-06-4 部署双项目
