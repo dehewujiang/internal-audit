@@ -279,3 +279,48 @@
 - VERSION.json `2026-07-26-3 → 2026-08-04-1`，commit `b4a0611`
 - 部署到武汉长源 + 广东长华，端到端验证通过（162 槽位 catalog，scan→match→status→update 闭环）
 - 武汉长源现场清理 70 个空程序目录；B1.1/L1.1 含 60 个真实证据文件按保护规则保留（finding 引用未迁移，待用户决策）
+
+## ADR-022
+日期：2026-08-06
+背景：git 历史发现 commit `20ad90b`（2026-07-26 证据集中存储改造，本意只改 evidence 目录说明）**静默删除了 constitution 第 11-14 条硬约束 + "阶段流转规则（地铁闸机模型）" + "启动协议"两大章节**。VERSION.json 有 12/13/14 条的添加记录（5eaaa6f/37ff9f9），无删除记录。运行版 CLAUDE-project.md 完整保留 14 条（权威文本）。
+备选方案：
+- A) 不恢复（认为 11 条已由 incremental_update 承接，12-14 条可用其他方式约束）
+- B) 恢复 11-14 条（以 CLAUDE-project.md 为权威文本）+ 恢复阶段流转规则与启动协议（修订版对齐 phase_gate.py 现状）
+最终选择：B
+原因：
+- 12/13/14 条是"防 LLM 拆质量闸机"的宪法级条款（脚本不可用时禁自行替代/可用时必须走/输出必须声明来源），丢失等于制度上允许 AI 绕过校验
+- 11 条【证据链不可断裂】在运行版仍存在——不恢复会导致 constitution（13 条）与 CLAUDE-project.md（14 条）不一致，两文件对齐正是治理目标
+- incremental_update.md 勘误模式是 11 条的"操作细则"，不是替代——宪法定原则、细则给流程，互补
+- 阶段流转规则/启动协议：CLAUDE-project.md 只有部分替代（phase gate 命令说明、memory 启动协议），"回退必须用户确认""AI 不得跳闸机""审计状态启动协议"无替代
+影响：
+- constitution.md 恢复 14 条硬约束 + 阶段流转规则 + 启动协议（阶段名与 phase_gate.py PHASES 核对一致）
+- 恢复内容经 git show 5eaaa6f 取证，commit `fa412dd`
+
+## ADR-023
+日期：2026-08-06
+背景：全量排查发现 36 处 `~/.claude/skills/internal-audit/...` 坏路径残留（12 个文件）。8-05 修复只覆盖 execution-assistant 4 处，却记录"grep 验证无残留"（假阳性）。`~/.claude` 目录已删除，全部失效；部署项目（stable copy）不带路径改写，坏路径原样进项目，LLM 每次按失效路径找配置 → 触发降级（反复问用户公司信息）。
+备选方案：
+- A) 全部替换为源仓库根相对路径（internal-audit-evaluator/...）——部署项目无效
+- B) 三标准：公司数据→`audit-topics/`、共享脚本→`_shared/scripts/`、跨技能引用→`.claude/skills/{skill}/...`（唯一双环境通吃写法）
+最终选择：B
+原因：
+- CLAUDE-project.md（运行版）本身就是项目根相对标准（audit-topics/、_shared/scripts/），对齐它
+- `.claude/skills/` 在源仓库是 junction（指向技能目录）、在部署项目是 stable copy/junction——两种环境都能解析
+- execution-assistant 8-05 已修 `_shared/scripts/` 方向正确，但 evaluator 引用（internal-audit-evaluator/SKILL.md）在部署项目仍失效，本次一并修正
+影响：12 个文件 36 处替换 + 部署双项目（VERSION 2026-08-06-1）；git 提交 `a8dd3d2`
+
+## ADR-024
+日期：2026-08-06
+背景：R05/R06/N6 需要决定新校验的强度（block 阻断 vs warn 提示）。
+备选方案：
+- A) 全部 block（严格）
+- B) 按数据损坏后果分级：catalog/index 校验用 block；制度版本字段用 warn
+最终选择：B
+原因：
+- `_evidence_catalog.json` 损坏会误导"证据缺失/已收集"判定，`index.json` 漂移会让报告汇总统计出错——损坏后果是"错误的审计结论"，必须 block
+- 存量 policy-analyses JSON 普遍无 document_info 版本字段，block 会卡死存量项目；新输出由 SKILL.md 强制必填，脚本 warn 提示补齐
+- 与既有 validate 脚本的分级逻辑一致（schema/ocr block 级，其余 warn 级）
+影响：
+- 新建 `validate-catalog.py`、`validate-index.py`（block 级，exit 1/2）
+- `validate-policy-analysis.py` 新增 `document_version` warn 级检查
+- execution-assistant Step 1、report-generator Step 1 挂接调用；commit `fa143a4`

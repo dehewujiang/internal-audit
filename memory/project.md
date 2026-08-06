@@ -3,11 +3,15 @@
 ## 项目是什么
 AI 驱动的内部审计辅助流水线，帮 Flan（汽车零部件企业审计经理）覆盖从制度分析到报告生成的全过程。
 
-## 当前状态（2026-08-04）
-🟡 证据 v2.0 集中存储工作流修复完成（SKILL.md 矛盾消除 + 脚本取消建空目录 + 部署 + 端到端验证通过）。9 项风险整改方案（`风险整改方案_2026-07-29.md`）已核验优化，待执行。四重闸机体系运行正常。证据 v2.0 已部署到 2 个在审项目（武汉长源 + 广东长华，VERSION.lock = 2026-08-04-1）。
+## 当前状态（2026-08-06）
+🟢 8-06 完成三轮整改闭环（version 2026-08-06-1/2/3，均已部署双项目）：
+① 全量坏路径修复（36 处残留 → 三标准路径）+ 两个孤儿文档接入（dynamic_questions → Step 0.4 配置补齐、incremental_update → Step 0.5 模式分流）；
+② constitution 恢复 11-14 条硬约束 + 阶段流转规则 + 启动协议（20ad90b 误删回归）+ 证据标准统一 A+E + 对抗验证阈值 + 知识库混源过滤 + U8 清零；
+③ 阶段二（Step 4.5 程序结构化闸机 + 激活轨道校验 + validate-catalog/validate-index 双校验器 + 制度版本强制）+ 阶段三（5 份快照重写 + pre-commit 快照漂移 hook + 人工抽查清单）。
+9 项风险整改（R01-R09）除 R09 实际抽查（用户手工执行）外全部闭环。四重闸机 + 快照 hook 运行正常。
 
 ## 已完成功能
-- 12 个 skill + 2 evaluators + 5 个校验脚本 + 3 个新脚本（data_executor/audit_gate/check_mandatory_coverage）
+- 12 个 skill + 2 evaluators + 8 个校验脚本（validate-finding/program/report/policy-analysis/interview/json + **validate-catalog/validate-index**）+ 4 个新脚本（data_executor/audit_gate/check_mandatory_coverage + compare-snapshots 开发工具）
 - 四重闸机体系（流程/质量/授权/调度）
 - ProgramIR 解析器（program_ir_parser.py）——审计程序 MD → 结构化 IR
 - 证据 v2.0 集中存储（_evidence_catalog.json + _files/）

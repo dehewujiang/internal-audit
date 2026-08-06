@@ -84,6 +84,8 @@ Phase flow: `phase_0_init → phase_1_document_analysis → phase_1_5_interview 
 | `validate-report.py` | Validate audit report files |
 | `validate-policy-analysis.py` | Validate policy analysis output |
 | `validate-interview.py` | Validate interview materials |
+| `validate-catalog.py` | Validate _evidence_catalog.json structure (slots/count consistency, R05) |
+| `validate-index.py` | Validate findings/index.json cross-consistency (missing/ghost/closure, R06) |
 | `validate-json.py` | Generic JSON schema validation |
 | `create_evidence_dirs.py` | Auto-create evidence dirs + generate `_evidence_catalog.json` from program markdown (v2.0) |
 | `evidence_catalog.py` | Evidence catalog CRUD: scan files, suggest matches, update slots, status summary |

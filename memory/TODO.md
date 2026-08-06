@@ -3,36 +3,39 @@
 ## 进行中
 - 无
 
-## 待办（风险整改 — 2026-07-29）
-
-> 来源文档：`风险整改方案_2026-07-29.md`（项目根目录）
-
-### 阶段一（立即）
-- [ ] R01：统一高风险 finding 证据等级为 A+E（修改 cceer_standards.md 第 108 行）
-- [ ] R02：对抗验证定量阈值补回（SKILL.md Step 3.7 加 EXPOSED>30%/COVERED<50%）
-- [ ] R03：5 份 Prompt 快照重写（依赖 R01/R02 先完成）
-
-### 阶段二（尽快）
-- [ ] R04：ProgramIR 闸机接入 program-generator 工作流（新增 Step 4.5）
-- [ ] R05：编写 validate-catalog.py（_evidence_catalog.json 结构校验）
-- [ ] R06：编写 validate-index.py（index.json 交叉校验）
-- [ ] R07：覆盖修复闭环（LLM 自检 + 脚本拦截 + 修复流程，随 R04 联动）
-
-### 阶段三（排期）
-- [ ] R08：git pre-commit hook 挂载快照对比脚本（依赖 R03 先完成）
-- [ ] R09：端到端回归测试（短期人工抽查 + 中期标准用例积累 + 长期自动化框架）
+## 待办（风险整改 — 已全部闭环 2026-08-06，详见下方已完成章节）
 
 ## 待办（其他）
 - P-2026-002 广东长华程序从 v1.0 升级到 v3.0（缺少"取证方式"列，无法自动生成 catalog）— 用户搁置
 - [可选] B1.1/L1.1 目录 60 个证据文件是否迁入 `_files/` 及同步更新 finding 引用路径（`findings/B1.1_考勤数据手工传递篡改_待核实异常.json` 的 evidence.files 硬编码引用）— 待用户决策
+- R09 实际抽查：用户手工执行，commit 标注 `已人工回归: [项目] [GREEN/YELLOW/RED]`（清单见 tests/prompt_snapshots/test_prompt_regression.md）
 - 部署后做一次完整证据匹配流程端到端测试 — 武汉长源已完成（2026-08-04，162 槽位闭环跑通）；广东长华待程序升级后做
+- `data/evaluations/2026-07-17.jsonl`：删除旧快照前差异扫描发现的独有文件，拟并入源仓库但当前 `data/evaluations/` 目录为空，需确认是否已并入并提交
+- 重启 opencode 使新配置生效（部署项目 SKILL.md 下次使用时生效）
 
 ## 搁置
 - 🟢 模型分级（便宜模型 vs 强模型按需使用）— 单人使用 token 成本可控
 - 🔵 每个 skill 返回结构化摘要 — ROI 极低
+- 🔴 N8 调查方法合规分级（fraud_investigation_methods 小黑屋/威胁施压内容）— 用户搁置，涉及个人合规风险，建议尽早处理
+- 🔵 统计抽样方法 reference — 用户搁置
 
 ## 阻塞
 - 无
+
+## 已完成（2026-08-06）
+- ✅ 全量坏路径修复（36 处/12 文件 → 三标准路径，ADR-023）+ 孤儿文档接入（dynamic_questions→Step 0.4、incremental_update→Step 0.5）+ output_template 补十/十一章（VERSION 2026-08-06-1，a8dd3d2/c4128d8，已部署）
+- ✅ constitution 恢复 11-14 条 + 阶段流转规则 + 启动协议（20ad90b 误删回归，ADR-022）+ 证据标准统一 A+E（R01）+ consequence 必填（N5）+ 对抗阈值（R02）+ 混源过滤（N7）+ U8 清零（N14）（VERSION 2026-08-06-2，fa412dd/9ab8c13，已部署）
+- ✅ 阶段二：Step 4.5 程序闸机+激活轨道校验（R04+R07+N15）+ validate-catalog.py（R05）+ validate-index.py（R06）+ 制度版本强制（N6）（VERSION 2026-08-06-3，fa143a4/7fd2c46，已部署）
+- ✅ 阶段三：5 份快照重写（R03）+ compare-snapshots pre-commit hook（R08）+ 人工抽查清单（R09 交付物）（26c511d，不部署）
+- ✅ CLAUDE.md/CLAUDE-project.md 工具清单登记 validate-catalog/validate-index + memory 收工更新
+
+## 已完成（2026-08-05）
+- ✅ SKILL.md 坏路径修复 + 重新部署（commit `0c8c97a`）
+  - `audit-execution-assistant/SKILL.md` 4 处 `~/.claude/skills/internal-audit/...` 绝对路径改为项目本地相对路径（`_shared/scripts/validate-finding.py`、`internal-audit-evaluator/SKILL.md`）
+  - bump VERSION.json `2026-08-04-1 → 2026-08-05-1`，commit `0c8c97a` `fix(skill): SKILL.md 路径修正`（2 文件）
+  - 重新部署武汉长源 + 广东长华（VERSION.lock = 2026-08-05-1，SKILL.md 逐字节一致）
+- ✅ `~/.claude/skills/internal-audit` 旧快照清理：2026-07-06 旧副本（非 junction）导致 13 个 tools/*.md 能力声明被 oh-my-openagent 误扫为 skill；已删除并保持删除状态
+- ✅ feedback.md 追加 2026-08-05 教训（SKILL.md 禁止绝对路径硬规则）
 
 ## 已完成（2026-08-04）
 - ✅ 证据 v2.0 集中存储工作流修复（计划：`.omo/plans/evidence-single-copy.md`）

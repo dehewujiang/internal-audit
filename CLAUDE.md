@@ -20,6 +20,8 @@
 | audit-gate | LLM 推理前后的硬闸机（precheck/postcheck） | level_0 | `skills/internal-audit/_shared/scripts/audit_gate.py` |
 | mandatory-check | constitution #10 制度完整性检查 | level_0 | `skills/internal-audit/_shared/scripts/check_mandatory_coverage.py` |
 | evidence-catalog | 证据清单管理（生成槽位/扫描文件/匹配建议/状态汇总） | level_0 | `skills/internal-audit/_shared/scripts/evidence_catalog.py` |
+| validate-catalog | 证据清单结构校验（槽位必填/唯一性/计数一致性，R05） | level_0 | `skills/internal-audit/_shared/scripts/validate-catalog.py` |
+| validate-index | finding 索引交叉校验（目录vs索引遗漏/幽灵/闭合，R06） | level_0 | `skills/internal-audit/_shared/scripts/validate-index.py` |
 
 ## 关键文件
 
