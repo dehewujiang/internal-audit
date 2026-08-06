@@ -1,0 +1,12 @@
+#!/bin/sh
+# pre-commit hook — Prompt 快照漂移检测（R08）【入库副本】
+# 安装：复制本文件到 .git/hooks/pre-commit（或在仓库根执行：
+#   cp tests/prompt_snapshots/pre-commit.hook .git/hooks/pre-commit）
+# 行为：源文件变更但对应快照未同步时拦截提交。
+# 跳过：SKIP_SNAP_CHECK=1 git commit ...
+if [ -n "$SKIP_SNAP_CHECK" ]; then
+    exit 0
+fi
+REPO_ROOT=$(git rev-parse --show-toplevel)
+python "$REPO_ROOT/tests/prompt_snapshots/compare-snapshots.py" || exit 1
+exit 0

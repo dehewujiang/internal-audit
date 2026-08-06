@@ -1,19 +1,30 @@
 # 证据等级标准快照
-# 提取自 audit-execution-assistant/references/evidence_standards.md
-# 日期: 2026-07-22
+# 提取自 audit-execution-assistant/references/evidence_standards.md + cceer_standards.md
+# 日期: 2026-08-06 | 变更: R01 统一高风险证据门槛为 A+E（cceer_standards.md L108 由 A+B 修正）；标注规则双来源
 
 ## A-E 五级证据体系
 
-| 等级 | 名称 | 定义 | 是否支撑高风险 |
-|:---:|------|------|:---:|
-| A | 系统导出 | 直接从 ERP/MES 等系统导出的原始数据 | ✅ |
-| B | 截图 | 系统界面的屏幕截图 | ❌ |
-| C | 手工记录 | 人工记录的台账、笔记 | ❌ |
-| D | 口头 | 访谈口述、电话确认 | ❌ |
-| E | 第三方 | 银行回单、税务证明、供应商确认函 | ✅ |
+| 等级 | 类型 | 可靠性 | 示例 |
+|------|------|--------|------|
+| A | 系统直接导出 | 高 | SAP导出的采购订单清单（含系统时间戳） |
+| B | 系统截图 | 中高 | 系统审批流程截图 |
+| C | 手工记录 | 中 | 手工填写的盘点表 |
+| D | 口头描述 | 低 | 员工口述流程 |
+| E | 第三方证据 | 高 | 供应商对账单、银行流水 |
+
+## 高风险证据门槛（cceer_standards.md §可靠性等级）
+
+- 高风险 finding：至少需要 A 级或 E 级证据（B 级截图可被篡改，不作为独立支撑）
+- 中风险 finding：B 级或 C 级证据可接受
+- 低风险 finding：C 级或 D 级证据可接受
+- 舞弊相关 finding：必须有 A 级证据 + 第三方证据（E级）交叉验证
 
 ## 强制规则
 
-- 高风险 finding 必须有 A 级或 E 级证据
-- 每个 evidence 条目必须标注 reliability_grade
+- 每个 evidence 条目必须标注 reliability_grade，无精确匹配时取较低等级
+- 高风险 finding 无 A/E 证据 → 标记"证据等级不足"
 - OCR 低置信度文本（<0.8）不能独立支撑 finding
+
+## 证据链完整性（evidence_standards.md §证据链完整性）
+
+完整证据链包含：来源、获取时间、获取方式、获取人、存储位置、完整性校验（哈希）

@@ -6,17 +6,24 @@
 - `audit-execution-assistant/SKILL.md`
 - `audit-execution-assistant/references/intuition_engine.md`
 - `audit-execution-assistant/references/evidence_standards.md`
+- `audit-execution-assistant/references/root_cause_framework.md`
 - `internal-audit-program-generator/SKILL.md`
+- `internal-audit-program-generator/references/*`（知识库）
 
 ## 测试步骤
 
-### 1. 对比快照
+### 1. 对比快照（自动闸机）
+
+pre-commit hook 已自动检测"源文件变更但快照未同步"（R08）：
 ```bash
-# 对比当前 prompt 与快照的差异
-diff -u tests/prompt_snapshots/<name>.snap <(提取当前版本的对应prompt段落)
+python tests/prompt_snapshots/compare-snapshots.py --files <变更文件列表>
 ```
+- 源+快照同改 → 有意变更，通过
+- 源改快照未改 → 拦截，提示同步快照或回滚源文件
+- 跳过检查：`SKIP_SNAP_CHECK=1 git commit ...`
 
 ### 2. 判定变更意图
+
 - 差异为有意修改 → 更新快照文件，在提交信息中说明原因
 - 差异为意外漂移 → 回滚到快照版本
 - 不确定 → 在隔离的测试项目中用旧版和新版分别生成同一个 finding，对比结果
@@ -25,9 +32,43 @@ diff -u tests/prompt_snapshots/<name>.snap <(提取当前版本的对应prompt�
 
 | 检查项 | 期望行为 |
 |--------|---------|
-| CCEER 五要素 | Finding 必须包含全部五个要素，缺一不可 |
-| 证据等级 | 高风险 finding 必须有 A 或 E 级证据 |
-| 停表词 | 不得出现"操作人员疏忽"等 27 个停表词 |
-| 根因深度 | 至少追溯到 COSO 第 2 层 |
+| CCEER 五要素 | Finding 必须包含全部五个要素，缺一不可（含 consequence） |
+| 证据等级 | 高风险 finding 必须有 A 或 E 级证据（B 级截图不可独立支撑） |
+| 根因深度 | 至少追溯到层次1（控制环境）或层次2（控制设计）；EXEC-01 需终止条件标注 |
 | 法律定性 | 不得出现"构成舞弊"等法律结论 |
-| 对抗验证 | 轨道B 必须执行红蓝队对抗 |
+| 对抗验证 | 轨道B 必须执行红蓝队对抗，且输出 30%/50% 定量判定 |
+
+---
+
+## R09 人工抽查清单（短期纪律，LLM 输出本质非确定性，自动化断言不适用）
+
+### 触发抽查的改动规模（满足任一即抽）
+
+- [ ] schema 升级（finding / catalog / index / program_ir 任一）
+- [ ] SKILL.md 重写（结构或关键步骤变更）
+- [ ] references 目录大改（知识库/框架文件）
+- [ ] 引入新脚本或重写既有校验脚本
+- [ ] 快照批量重写（R03 类）
+
+### 抽查动作
+
+1. 取一份已完成项目的真实输入（policy-analyses + DRL + about-me/my-config）
+2. 重新跑一次完整流程（program-generator → execution-assistant）
+3. 对比新旧输出的：
+   - finding 数量与风险等级分布
+   - 程序覆盖率（validate-program.py --ir 输出）
+   - 证据等级标注完整率
+4. 差异评级：
+   - GREEN：无实质差异
+   - YELLOW：结构一致但措辞不同（可接受）
+   - RED：关键字段缺失或结论反转（必须修复）
+
+### 提交标注规范
+
+抽查完成后，在 commit message 中标注：`已人工回归: [抽查项目名] [评级]`
+
+示例：`fix: XX 调整` → `fix: XX 调整 已人工回归: 武汉长源-人力资源 GREEN`
+
+### 标准用例积累（中期，排期）
+
+从已完成的真实审计项目提取 5-10 份有定论的输入输出对，存入 `tests/fixtures/regression/`，每份含 `input/` + `expected_output/` + `README.md`。

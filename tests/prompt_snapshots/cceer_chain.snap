@@ -1,19 +1,23 @@
 # CCEER 推理链快照
-# 提取自 audit-execution-assistant/SKILL.md Step 3
-# 日期: 2026-07-22
+# 提取自 audit-execution-assistant/SKILL.md Step 3 + references/root_cause_framework.md
+# 日期: 2026-08-06 | 变更: 修正"27个停表词"无源表述为 root_cause_framework 准确规则；补充根因终止条件
 
 ## CCEER 五要素结构
 
-Criteria（标准）: 被违反的制度、法规或行业基准
-Condition（状况）: 实际发生的事实（证据支撑）
-Cause（原因）: 5-Why 根因分析结果
-Effect（影响）: 对业务/财务/合规的影响量化
-Recommendation（建议）: 可执行的整改措施
+- Criteria（标准）: 被违反的制度、法规或行业基准（引用具体制度条款，不得模糊表述）
+- Condition（状况）: 实际发生的事实（必须包含：时间范围+样本总量+异常数量+异常比例+代表性案例）
+- Cause（原因）: 5-Why 根因分析结果（须触达控制设计层或控制环境层）
+- Effect（影响）: 潜在影响（量化实际损失或估算潜在损失，含非财务影响）——schema 字段名 `consequence`
+- Recommendation（建议）: 针对根因的整改措施+验收标准+建议时限
 
 ## 关键规则
 
-- 五要素缺一不可
-- Condition 必须有 A 级或 E 级证据支撑（高风险 finding）
-- Cause 必须经过根因质证（独立专家身份审读）
-- 不得使用停表词（如"操作人员疏忽"等 27 个词）
+- 五要素缺一不可（校验脚本必填字段含 consequence）
+- 高风险 finding 的 Condition 必须有 A 级或 E 级证据支撑
+- Cause 必须经过根因质证（Step 3b-2 独立专家身份审读：替代解释/证据支撑/停表检查/终止条件）
+- 禁止停在"操作人员未遵守制度"（root_cause_framework 核心原则）；EXEC-01 需符合终止条件并标注原因
 - 不得做法律定性
+
+## Finding 生成流程（Step 3 主线）
+
+预刹车（事实信源自检）→ 5-Why 根因 → 根因质证 → 确定性校验（validate-finding.py）→ 直觉推理引擎（按风险等级分级）→ 职业怀疑 5 问自检 → 描述优化 → 证据等级核验 → 最终硬校验
