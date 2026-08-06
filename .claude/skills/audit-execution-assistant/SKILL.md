@@ -112,7 +112,12 @@ interview 来源的验证需额外处理（详见 document-organizer/references/
 
 对每个审计程序，引导用户提供所需证据。
 
-**默认动作（catalog 检查）**：执行每个程序前，先读取 `evidence/_evidence_catalog.json`，按当前程序编号（如 A1.1）在槽位的 `source_programs` 中定位本程序证据槽位，展示收集状态（✅已收集 / ❌缺失）。证据到达后默认运行 `python _shared/scripts/evidence_catalog.py match <workspace>` 并展示匹配状态表（详见 Step 2.0.1）。
+**默认动作（catalog 检查）**：读取 catalog 前，先运行结构校验（R05 闸机）：
+```bash
+python _shared/scripts/validate-catalog.py evidence/_evidence_catalog.json --strict
+```
+- action=block → 提示用户 catalog 损坏（结构/计数不一致），修复后再继续，禁止在损坏状态下误判证据缺失或放行不完整证据
+- action=pass/warn → 继续。然后读取 `evidence/_evidence_catalog.json`，按当前程序编号（如 A1.1）在槽位的 `source_programs` 中定位本程序证据槽位，展示收集状态（✅已收集 / ❌缺失）。证据到达后默认运行 `python _shared/scripts/evidence_catalog.py match <workspace>` 并展示匹配状态表（详见 Step 2.0.1）。
 
 **证据存放路径规则（v2.0 集中存储）**：
 

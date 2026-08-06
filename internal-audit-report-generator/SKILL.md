@@ -383,9 +383,15 @@ F-2024-015 = 2024年第15号发现
 > ⚠️ 注意：逐项记录 finding 请使用 `audit-execution-assistant`（触发词："执行审计过程中记录异常"）。本技能仅负责审计完成后的发现管理和报告生成。
 
 **流程**：
-1. 读取 `internal-audit-workspace/findings/index.json`
-2. 列出可用 findings（按风险等级/状态/origin分类）
-3. 支持查询、筛选、统计
+1. **读取 index 前先过 R06 闸机**：
+   ```bash
+   python _shared/scripts/validate-index.py internal-audit-workspace/findings --strict
+   ```
+   - action=block → index 与目录不一致（遗漏/幽灵条目/计数漂移/闭合不符），先修复 index 再生成报告，**禁止带漂移数据汇总**
+   - action=pass → 继续
+2. 读取 `internal-audit-workspace/findings/index.json`
+3. 列出可用 findings（按风险等级/状态/origin分类）
+4. 支持查询、筛选、统计
 
 ### Step 2：生成审计报告
 

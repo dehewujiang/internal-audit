@@ -59,6 +59,21 @@ def check_schema_version(data):
     return True, f"schema_version: {sv}"
 
 
+def check_document_version(data):
+    """[V] 制度版本与效力日期——warn 级（存量 JSON 可能缺失，不阻断；新输出必须包含）"""
+    di = data.get("document_info")
+    if not isinstance(di, dict):
+        return False, "缺少 document_info（制度版本信息缺失，新输出必须包含）"
+    missing = []
+    if not di.get("version"):
+        missing.append("version（版本号）")
+    if not di.get("effective_date"):
+        missing.append("effective_date（生效日期）")
+    if missing:
+        return False, f"document_info 缺少: {', '.join(missing)}——制度版本缺失会导致废止制度污染风险识别"
+    return True, f"document_info.version={di['version']}, effective_date={di['effective_date']}"
+
+
 def check_control_points_traceability(data):
     """[T] 控制点可追溯——每个控制点指向原文条款"""
     points = data.get("control_points", [])
@@ -181,6 +196,9 @@ def validate_policy_analysis(data, filename=""):
     passed, msg = check_schema_version(data)
     checks["schema_version"] = {"passed": passed, "message": msg}
 
+    passed, msg = check_document_version(data)
+    checks["document_version"] = {"passed": passed, "message": msg}
+
     passed, msg = check_control_points_traceability(data)
     checks["traceability"] = {"passed": passed, "message": msg}
 
@@ -217,8 +235,9 @@ def validate_policy_analysis(data, filename=""):
 
 def main():
     # Windows GBK → UTF-8（emoji 兼容）
-    if sys.stdout.encoding != 'utf-8':
-        sys.stdout.reconfigure(encoding='utf-8')
+    reconfigure = getattr(sys.stdout, "reconfigure", None)
+    if reconfigure and sys.stdout.encoding != 'utf-8':
+        reconfigure(encoding='utf-8')
 
     parser = argparse.ArgumentParser(description="制度分析 JSON 硬校验工具")
     parser.add_argument("path", help="JSON 文件路径（或目录）")

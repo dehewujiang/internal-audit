@@ -265,6 +265,7 @@ OCR 会自动检测并标记以下需要人工核对的内容：
 
 6. **JSON输出必须包含**：
    - `schema_version` 字段
+   - `document_info` 对象（**`version` 版本号 + `effective_date` 生效日期 必填**——防废止制度污染风险识别；`previous_versions`/`version_diff_available` 如有则填）
    - `control_points` 数组
    - `control_gaps` 数组
    - `risk_points` 数组
@@ -289,6 +290,7 @@ OCR 会自动检测并标记以下需要人工核对的内容：
 |--------|---------|:---------:|
 | JSON schema 合规 | 检查 control_points、control_gaps、risk_points、summary 数组是否存在且非空 | ✅ 自动补空数组 |
 | schema_version 字段 | 所有 JSON 文件是否包含 schema_version | ✅ 自动补 "1.0" |
+| 制度版本字段 | document_info.version / effective_date 是否已填写 | ⚠️ 缺失通知用户补齐 |
 
 ### 5.2 推理检查：控制点可追溯性
 

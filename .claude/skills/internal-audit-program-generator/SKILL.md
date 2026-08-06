@@ -250,6 +250,13 @@ AI 自由推演风险点，按三类标注。**优先质量而非数量，禁止
 
 **时机**：Step 2 + Step 2.5 完成后执行。
 
+**开始生成程序前（自检屏障一）**：
+1. 将 Step 2 识别出的所有 risk_id 列在输出中（格式：`[自检] 待覆盖风险: R01, R02, ...`）
+2. 每生成完一个轨道的程序后，在输出中再次列出该轨道已覆盖的 risk_id
+3. 全部轨道完成后，输出 `[自检] 覆盖完整性确认: N/N 风险均已分配程序`
+
+> 作用：让 LLM 在生成过程中"看见"完整清单，减少上下文信息衰减导致的遗忘。这是防漏的第一重屏障；第二重是 Step 4.5 的脚本拦截，第三重是拦截后的修复闭环。
+
 ### 3.1 轨道A: 控制有效性测试（所有目的）
 
 - **测试性质**：控制是否被执行？能否被绕过？
@@ -398,9 +405,41 @@ EXPOSED（风险敞口）：
 
 ---
 
+## Step 4.5: 程序结构化校验（脚本闸机，屏障二）
+
+**目的**：用确定性脚本硬拦截"格式完美但内容缺漏"的程序，与 Step 5 的 LLM 推理检查互补（脚本管"有没有"，LLM 管"好不好"）。
+
+1. 解析为结构化 IR：
+   ```bash
+   python _shared/scripts/program_ir_parser.py <程序MD文件> --out internal-audit-workspace/program_ir.json
+   ```
+2. 结构化校验（覆盖率 / 判定标准量化 / 数据来源比例）：
+   ```bash
+   python _shared/scripts/validate-program.py <程序MD文件> --ir internal-audit-workspace/program_ir.json --strict
+   ```
+3. **激活轨道校验（N15）**：比对 `program_ir.json` 的 `activated_tracks` 与 Step 1.4 目的级联路由的预期轨道：
+
+   | 审计目的 | 预期轨道 |
+   |---------|---------|
+   | 舞弊调查 | A + B + C + D |
+   | 内控效果评估 | A + C + D |
+   | 合规性审计 | A + F + D |
+   | 运营效率审计 | A + E + D |
+
+   预期轨道缺失 → **block**（原因可能是该轨道未生成，或 `<!-- track X -->` 标记缺失/错误——两者一律拦截，不得静默放行）。
+4. 有 blocker → 执行修复闭环（屏障三）：
+   - 查看 `program_ir.json` 的 `coverage.uncovered_risks` 和 `activated_tracks`，定位遗漏的风险 ID 和缺失轨道
+   - 回到 Step 3，**只针对遗漏的风险/轨道重新生成对应程序段**（不是全部重来）
+   - 重新运行本步骤（Step 4.5）→ 通过后进入 Step 5
+5. 仅有 warning → 记录在 Step 5 的质量评估中一并考虑
+
+---
+
 ## Step 5: 质量评估（引用评估框架）
 
 **执行前加载**：`.claude/skills/internal-audit-evaluator/SKILL.md`，定位 **audit_program** 的检查清单。以下检查项与框架定义一致。
+
+> 前置声明：本程序已通过 Step 4.5 脚本闸机（风险覆盖度 ≥80% / 判定标准量化 / 数据来源比例 / 激活轨道完整性）。以下为 LLM 推理层检查。
 
 ### 5.1 格式检查
 

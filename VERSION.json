@@ -1,8 +1,28 @@
 {
-  "version": "2026-08-06-2",
-  "git_commit": "fa412dd",
+  "version": "2026-08-06-3",
+  "git_commit": "pending",
   "updated_at": "2026-08-06T00:00:00+08:00",
   "changes": [
+    {
+      "type": "feat",
+      "file": "internal-audit-program-generator/SKILL.md",
+      "summary": "R04+R07+N15：新增 Step 4.5 程序结构化校验脚本闸机（program_ir_parser → validate-program --ir → 激活轨道 vs 目的级联路由比对，缺失即 block）；Step 3 新增自检屏障（风险覆盖自报）；修复闭环（uncovered_risks 定向回修）；Step 5 前置声明"
+    },
+    {
+      "type": "feat",
+      "file": "_shared/scripts/validate-catalog.py",
+      "summary": "R05 新建：证据清单结构校验器（槽位必填/唯一性/计数一致性/孤儿槽位警告），execution-assistant Step 1 挂接（block 禁止误判证据状态）"
+    },
+    {
+      "type": "feat",
+      "file": "_shared/scripts/validate-index.py",
+      "summary": "R06 新建：finding 索引交叉校验器（目录vs索引遗漏/幽灵条目/finding_id 闭合/total 计数），report-generator Step 1 挂接（block 禁止带漂移汇总）"
+    },
+    {
+      "type": "feat",
+      "file": "制度版本强制",
+      "summary": "N6：document-organizer 输出要求 document_info.version/effective_date 必填 + Step 5.1 检查项；validate-policy-analysis 新增 document_version warn 级检查（存量兼容）；顺手修复 stdout.reconfigure LSP 报错"
+    },
     {
       "type": "fix",
       "file": "constitution.md",
