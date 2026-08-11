@@ -29,7 +29,7 @@
 7. 所有输出必须使用被审计公司的实际数据，不得使用示例或占位符
 8. **【工具穷举检查】在决定"自设计方案"之前，必须先穷举所有已有工具的能力声明。只有当所有工具的能力声明都不覆盖当前场景时，才能进入设计方案流程。工具检查结果必须公开附在方案展示中。执行步骤见 tools/tool-exhaustion.md。**
 9. **【证据缺失即信号】证据完整性校验不通过时，禁止停留在"证据不足，等待补充"的终止状态。必须将"证据为何不存在"作为独立的分析对象，写入信号池并给出三种可能追问方向（业务未发生 / 管理缺失 / 证据被消除）。此为必经逻辑，不是可选步骤。**
-10. **【制度完整性检查 — 硬底线】Phase 1 启动时，必须将实际文件清单与 topic.json 中的 reference_framework.mandatory 模块逐一对照。缺失模块自动标记为"制度空白"，写入 signals，风险等级至少为"高"。此为必经逻辑，不是可选步骤。执行命令见 CLAUDE.md 命令表（check_mandatory_coverage.py）。**
+10. **【制度完整性检查 — 硬底线】Phase 1 启动时，必须将实际文件清单与 topic.json 中的 reference_framework.mandatory 模块逐一对照。缺失模块自动标记为"制度空白"，写入 signals，风险等级至少为"高"。此为必经逻辑，不是可选步骤。执行命令见 CLAUDE-project.md（部署后为项目 CLAUDE.md）命令表（check_mandatory_coverage.py）。**
 11. **【证据链不可断裂 — 硬底线】审计程序的步骤编号（如 A7.2）一旦使用即永久保留。发现根本性错误时，只能通过勘误注记处理，不得删除或修改已有步骤。勘误模式详见 incremental_update.md。**
 12. **【技能/脚本不可用时严禁自行替代 — 硬底线】当某个 Skill 或 Python 脚本无法加载/执行（目录缺失、junction 断裂、文件损坏、Python 报错、部署遗漏等任何原因）时，严禁 AI 自行生成或模拟该 Skill/脚本本应产出的内容。必须立即停止当前任务，向用户报告：哪个 Skill/脚本不可用、为什么不可用、影响了哪个阶段的产出、可能的修复路径。**
 13. **【技能/脚本可用时必须走技能/脚本 — 硬底线】当 Skill 或脚本正常可用时，严禁 AI 自行绕过它直接生成等价内容。判断标准：如果当前任务属于某个 Skill 或 Python 脚本的职责范围，必须先调用该 Skill/脚本，不得自行替代。技能可用时绕开它自己写，和技能不可用时自己写，是同一性质的违规——都拆掉了质量闸机。**
@@ -60,13 +60,13 @@
 - 闸机之间（每个 phase 内部）= AI 的自由决策空间（选什么方法、生成什么内容）
 - AI 不能跳闸机，不能绕闸机，不能自己把闸机搬开
 
-**工具分域**：每个阶段只暴露该阶段需要的工具脚本，详见 CLAUDE.md 的「Tool domain table」章节。
+**工具分域**：每个阶段只暴露该阶段需要的工具脚本，详见 CLAUDE-project.md（部署后为项目 CLAUDE.md）的「Tool domain table」章节。
 
-**执行命令**：阶段前进/回退按 CLAUDE.md「Phase gate」命令表执行；被拦截时按 tools/phase_gate.md 处理；执行脚本前先跑 tool-check 确认当前阶段可用。
+**执行命令**：阶段前进/回退按 CLAUDE-project.md（部署后为项目 CLAUDE.md）「Phase gate」命令表执行；被拦截时按 tools/phase_gate.md 处理；执行脚本前先跑 tool-check 确认当前阶段可用。
 
 ## 启动协议（每次对话开始必须执行）
 
-每次对话开始时，中央大脑必须执行启动流程：读取 current-audit.json → 读取 CLAUDE.md 工具清单 → 扫描 workspace 目录 → 输出启动汇报。执行步骤见 CLAUDE.md「启动协议」。
+每次对话开始时，中央大脑必须执行启动流程：读取 current-audit.json → 读取 CLAUDE-project.md（部署后为项目 CLAUDE.md）工具清单 → 扫描 workspace 目录 → 输出启动汇报。执行步骤见 CLAUDE-project.md（部署后为项目 CLAUDE.md）「启动协议」。
 
 **禁止行为**：
 - ❌ 不读取 current-audit.json 就开始工作
