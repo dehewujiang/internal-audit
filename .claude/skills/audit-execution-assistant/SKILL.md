@@ -59,7 +59,7 @@ description: |
 1. 读取 `internal-audit-workspace/audit-programs/` 中最新的审计程序文档
 2. 提取所有审计程序清单（风险编号、程序名称、取数来源、测试步骤）
 3. 初始化执行进度追踪
-4. **读取 design-assessments/ 中的设计观察**（如存在）
+4. **读取 design-assessments/ 中 `status="pending"` 的设计观察**（不限来源，如存在）
    - 记录待验证的设计观察清单
    - 在执行过程中逐项验证
 

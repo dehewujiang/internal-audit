@@ -1,6 +1,6 @@
 # 对抗验证快照
 # 提取自 internal-audit-program-generator/SKILL.md Step 3.7（轨道B对抗验证）
-# 日期: 2026-08-06 | 变更: R02 补回定量判定阈值（EXPOSED>30% / COVERED<50%）；补充红队三步与强制规则；复核 2026-08-06 SKILL.md Step 4 输出模板新增「设计理由」「测试目的」两列，Step 3.7 无实质变化
+# 日期: 2026-08-11 | 变更: C7 输入裁剪（SKILL.md Step 0.5 增量模式 design-assessments 读取加 status=pending 静态过滤）——本快照覆盖的 Step 3.7 对抗验证无实质变化
 
 ## 触发条件
 

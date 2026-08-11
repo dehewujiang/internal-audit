@@ -35,7 +35,7 @@ description: |
 ### Step 1：上下文分析与知识缺口识别
 
 **输入源**：
-1. `internal-audit-workspace/policy-analyses/*.json`（制度分析结果）
+1. `internal-audit-workspace/policy-analyses/*.json`（只读取 `verification_status="待确认"` 或 `design_effectiveness="无效"` 的项）
 2. `audit-topics/about-me.md`（公司背景）
 3. `.claude/skills/internal-audit-program-generator/references/internal_audit_risk_framework.md`（**核心输入：过往审计经验与风险库**）
 4. `internal-audit-workspace/findings/index.json`（历史发现，如存在）

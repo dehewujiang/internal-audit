@@ -149,16 +149,16 @@ Step 4: 填充模板 → 生成带"已执行程序清单"的报告
 用户：生成存货管理审计报告
 
 Step 0: 读取 about-me.md（获取公司背景）
-Step 1: 读取 design-assessments/*.json（制度设计评估，如 JSON 不可用则回退读取同目录 *.md 摘要）
+Step 1: 读取 design-assessments/*.json 中 `status="pending"` 的设计观察（字段限 `{id, title, type, severity, description, source}`；如 JSON 不可用则回退读取同目录 *.md 摘要）
         → 提取设计观察（design observations）
         → 注意：这些是未经实地验证的假设，不是审计发现
-Step 2: 读取 findings/*.json（审计发现）
+Step 2: 先读取 findings/index.json 列清单（{finding_id, origin, risk_level, title}），再逐份读取选中 finding 全文（审计发现）
          → 按 origin 分类：design（经证实的设计缺陷）vs execution（执行类问题）
          → 按 risk_level 分类
          → 计算 {{FINDINGS_ORIGIN_DESIGN}} 和 {{FINDINGS_ORIGIN_EXECUTION}}
          → design类发现 → 填充第4.1章"设计类发现"
          → execution类发现 → 填充第4.2章"执行类发现"
-Step 3: 读取 audit-programs/*.md（已执行程序）
+Step 3: 读取 audit-programs/ 中最新一份审计程序文档（已执行程序，提取程序清单作背景）
         → 提取程序清单作为背景
 Step 4: 选择报告模板
 Step 5: 生成报告，结构如下：

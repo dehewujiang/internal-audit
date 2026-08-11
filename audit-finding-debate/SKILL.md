@@ -31,7 +31,7 @@ description: |
 
 ### Step 0：读取Finding并初始化
 
-1. **获取目标Finding**：用户提供finding ID / 粘贴JSON / 读取 `internal-audit-workspace/findings/` 最新文件
+1. **获取目标Finding**：用户提供finding ID（经 `internal-audit-workspace/findings/index.json` 按 ID 定位）/ 粘贴JSON / 读取 `internal-audit-workspace/findings/` 最新文件
 2. **读取 `references/debate_framework/INDEX.md`** 了解模式选择和加载内容（按需加载）
 3. **展示模式选择菜单**：
 

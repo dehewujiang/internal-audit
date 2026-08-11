@@ -148,7 +148,7 @@ Step 5: 质量评估（自动）
 | 条件 | 模式 | 处理 |
 |------|------|------|
 | 无已有程序（v1.0 不存在） | **全新生成** | 继续 Step 1 - Step 5 |
-| 已有 v1.0 程序，且 phase_gate 返回 `action=prompt_program_update`（存在待处理线索） | **增量更新** | 执行 [references/incremental_update.md](./references/incremental_update.md) 完整流程：读取现有程序 + 待处理线索（design-assessments / whistleblower_pending）→ 线索过滤 → 生成 S 序列补充程序（十、十一章）→ 状态回写。**完成后不再走 Step 1-5** |
+| 已有 v1.0 程序，且 phase_gate 返回 `action=prompt_program_update`（存在待处理线索） | **增量更新** | 执行 [references/incremental_update.md](./references/incremental_update.md) 完整流程：读取现有程序 + 待处理线索（design-assessments 中 `status="pending"` 的项 / whistleblower_pending）→ 线索过滤 → 生成 S 序列补充程序（十、十一章）→ 状态回写。**完成后不再走 Step 1-5** |
 | 已有 v1.0 程序，phase_gate 无更新信号 | 全新生成（覆盖） | 提示用户确认覆盖，确认后走 Step 1-5 |
 
 **增量更新核心规则**（详见 incremental_update.md）：
