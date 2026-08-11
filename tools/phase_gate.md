@@ -38,7 +38,33 @@ python phase_gate.py status       # 显示当前状态
 python phase_gate.py check        # 检查能否前进
 python phase_gate.py advance      # 执行前进
 python phase_gate.py rollback --to phase_1_document_analysis --reason "补充制度分析"
+python phase_gate.py tool-check <script_name>                 # exit 0 = 放行，exit 1 = 拦截
+python phase_gate.py tool-check <script_name> --force         # 跨阶段回退时用户确认后临时开放（记录 audit_trail）
 ```
+
+## 阶段流转语义（与宪法「阶段流转规则」一致）
+
+**前进规则**：每次准备进入下一阶段前，先运行 `check`，按 action 处理：
+
+| action | exit code | 含义 | 处理 |
+|--------|:---------:|------|------|
+| `pass` | 0 | 前进 OK | 运行 `advance` |
+| `block` | 1 | 退出条件未满足 | 列出缺失项，等用户决定 |
+| `prompt_program_update` | 2 | 程序未覆盖所有风险线索 | 先执行 program-generator 增量更新模式（SKILL.md Step 0.5）补齐，补齐后重新运行 `check` |
+
+- `--force` 可将 `prompt_program_update` 降级为 warning（放行但提示）；**不可降级 block**
+- 被拦截（exit 1）时 AI 不得自行跳过，必须修复缺失项或等待用户决定
+
+**回退规则**：
+- 回退必须用户确认（用户说"回退到 Phase 1 补分析"），AI 不得自行回退
+- 运行 `rollback --to <phase> --reason "<原因>"`，原因必填，写入 audit_trail
+
+**闸机与自由区**：
+- 闸机（`check`）= 确定性的代码检查，AI 不能改
+- 闸机之间（每个 phase 内部）= AI 的自由决策空间（选什么方法、生成什么内容）
+- AI 不能跳闸机、不能绕闸机、不能自己把闸机搬开
+
+**工具分域**：每个阶段只暴露该阶段需要的工具脚本，详见 CLAUDE.md 的「Tool domain table」章节。执行任何 Python 脚本前，必须先跑 `tool-check <脚本名>` 确认当前阶段可用。跨阶段回退时，用户确认后使用 `--force` 临时开放。
 
 ## 授权
 level_0（全阶段可用）

@@ -35,6 +35,9 @@ python _shared/scripts/validate-report.py <file> --strict
 python _shared/scripts/validate-policy-analysis.py <file>
 python _shared/scripts/validate-interview.py <file> --strict
 
+# Mandatory coverage check (Phase 1 — compare actual documents vs topic.json mandatory modules):
+python _shared/scripts/check_mandatory_coverage.py --topic <主题>  # exit 1 = 制度空白
+
 # Finding queries:
 python _shared/scripts/queries.py list --status all
 python _shared/scripts/queries.py findings --risk high
@@ -52,6 +55,22 @@ The gate has **3 action types**, not 2:
 | `block` | 1 | missing prerequisites → fix before advancing |
 
 `prompt_program_update` is **non-zero exit** — the LLM cannot silently skip it. Use `--force` to override.
+
+## 启动协议（每次对话开始必须执行）
+
+每次对话开始时，中央大脑必须执行以下步骤：
+
+```
+Step 1: 读取 current-audit.json — 提取 status（当前阶段）、audit_topic、audit_state
+Step 2: 读取 CLAUDE.md 的工具清单 — 根据当前 status 过滤出可用 skill 列表
+Step 3: 扫描 workspace 各目录 — 统计已产出的文件（policy-analyses/*.json, findings/*.json 等）
+Step 4: 输出启动汇报
+```
+
+**禁止行为**：
+- ❌ 不读取 current-audit.json 就开始工作
+- ❌ 在启动汇报中使用过时信息（必须每次重新读取）
+- ❌ 跳过启动汇报直接执行任务
 
 ## Skill → Phase mapping
 
@@ -129,7 +148,7 @@ Every Python script call must pass `phase_gate.py tool-check` first. Exit 1 = bl
 | Phase | Allowed scripts (beyond globals) | Validate |
 |-------|----------------------------------|----------|
 | Phase 0 (init) | `project_init.py` | — |
-| Phase 1 (document) | `validate-policy-analysis.py`, `pdf_ocr_extractor.py` | policy-analysis |
+| Phase 1 (document) | `validate-policy-analysis.py`, `pdf_ocr_extractor.py`, `check_mandatory_coverage.py` | policy-analysis |
 | Phase 1.5 (interview) | `validate-interview.py` | interview |
 | Phase 2-3 (program) | `validate-program.py` | program |
 | Phase 3 (execution) | `validate-finding.py`, `evidence_catalog.py`, `data_executor.py` | finding |
@@ -194,7 +213,7 @@ Pure engineering tasks (syntax fix, script repair, data structure optimization, 
 | `audit-topics/about-me.md` | company background (read every time, no cache) |
 | `audit-topics/my-config.md` | system names, thresholds, config |
 | `audit-topics/topic.json` | audit topic definition + mandatory modules |
-| `constitution.md` | the 10 hard constraints |
+| `constitution.md` | the 14 hard constraints |
 | `internal-audit-workspace/evidence/_evidence_catalog.json` | evidence catalog v2.0 (slot→program mapping + collection status) |
 | `internal-audit-workspace/evidence/_files/` | centralized evidence storage (v2.0, one copy only) |
 | `CLAUDE.md` | this file — tool registry + phase routing |
@@ -202,7 +221,7 @@ Pure engineering tasks (syntax fix, script repair, data structure optimization, 
 | `memory/project.md` | project state (the source of truth) |
 | `memory/context.md` | technical context for agents after compact |
 
-## 10 hard constraints (from constitution.md)
+## 14 hard constraints (from constitution.md)
 
 1. No finding without sufficient evidence
 2. Fraud suspicion → always mark as high risk
