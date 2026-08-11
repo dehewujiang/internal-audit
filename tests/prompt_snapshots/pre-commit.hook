@@ -3,7 +3,8 @@
 # 安装：复制本文件到 .git/hooks/pre-commit（或在仓库根执行：
 #   cp tests/prompt_snapshots/pre-commit.hook .git/hooks/pre-commit）
 # 行为：
-#   ① SKILL.md / references/ 变更 → 输出「变更影响卡片」（阶段映射 + R09 提醒，不拦截）
+#   ① SKILL.md / references/ 变更 → 输出「变更影响卡片」（阶段映射 + R09 提醒 + 回滚/同步引导；仅提示）
+#      （快照未同步时由 ③ 闸机拦截，防未授权改动悄悄入库）
 #   ② _shared/scripts/*.py / tests/fixtures/ / tests/prompt_snapshots/ 变更 → 自动跑回归
 #      （对比 tests/fixtures/regression/ 基线），RED 拦截 commit
 #   ③ 源文件变更但快照未同步时拦截提交（compare-snapshots，原逻辑）
@@ -11,7 +12,7 @@
 REPO_ROOT=$(git rev-parse --show-toplevel)
 FILES=$(git diff --cached --name-only)
 
-# ---------- ① SKILL 变更影响卡片（只提示，不拦截） ----------
+# ---------- ① SKILL 变更影响卡片（只提示；快照未同步时③闸机拦截） ----------
 SKILL_FILES=$(echo "$FILES" | grep -E '(^|/)(SKILL\.md|references/)')
 if [ -n "$SKILL_FILES" ]; then
     echo ""
@@ -38,6 +39,8 @@ if [ -n "$SKILL_FILES" ]; then
     echo ""
     echo "⚠️  此变更未经 LLM 回归验证，建议按 test_prompt_regression.md R09 清单人工抽查后，"
     echo "    commit 标注: 已人工回归: [项目] [评级]"
+    echo "⚠️  若此变更为无意改动（你没要求改 SKILL），请回滚：git checkout -- <文件>"
+    echo "⚠️  若为有意变更：快照闸机要求同步快照（源文件+快照同改）方可提交；同步方法见 test_prompt_regression.md"
     echo "=========================================================="
     echo ""
 fi
