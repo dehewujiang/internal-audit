@@ -1,12 +1,71 @@
 #!/bin/sh
-# pre-commit hook — Prompt 快照漂移检测（R08）【入库副本】
+# pre-commit hook — 两层变更检测（R08 快照 + R09 回归/影响卡片）【入库副本】
 # 安装：复制本文件到 .git/hooks/pre-commit（或在仓库根执行：
 #   cp tests/prompt_snapshots/pre-commit.hook .git/hooks/pre-commit）
-# 行为：源文件变更但对应快照未同步时拦截提交。
-# 跳过：SKIP_SNAP_CHECK=1 git commit ...
+# 行为：
+#   ① SKILL.md / references/ 变更 → 输出「变更影响卡片」（阶段映射 + R09 提醒，不拦截）
+#   ② _shared/scripts/*.py / tests/fixtures/ / tests/prompt_snapshots/ 变更 → 自动跑回归
+#      （对比 tests/fixtures/regression/ 基线），RED 拦截 commit
+#   ③ 源文件变更但快照未同步时拦截提交（compare-snapshots，原逻辑）
+# 跳过：SKIP_REGRESSION_CHECK=1 跳过回归；SKIP_SNAP_CHECK=1 跳过快照检查
+REPO_ROOT=$(git rev-parse --show-toplevel)
+FILES=$(git diff --cached --name-only)
+
+# ---------- ① SKILL 变更影响卡片（只提示，不拦截） ----------
+SKILL_FILES=$(echo "$FILES" | grep -E '(^|/)(SKILL\.md|references/)')
+if [ -n "$SKILL_FILES" ]; then
+    echo ""
+    echo "=========================================================="
+    echo "  SKILL 变更影响卡片（自动检测，仅供人工参考）"
+    echo "=========================================================="
+    echo "变更文件:"
+    echo "$SKILL_FILES" | sed 's/^/  - /'
+    echo ""
+    echo "阶段映射:"
+    echo "$SKILL_FILES" | while IFS= read -r f; do
+        phase=$(echo "$f" | grep -oE '(document-organizer|audit-interview-designer|internal-audit-program-generator|audit-execution-assistant|audit-finding-debate|internal-audit-report-generator|internal-audit-evaluator)' | head -n 1)
+        case "$phase" in
+            document-organizer) echo "  $f → Phase1 制度分析" ;;
+            audit-interview-designer) echo "  $f → Phase1.5 访谈" ;;
+            internal-audit-program-generator) echo "  $f → Phase2 程序生成" ;;
+            audit-execution-assistant) echo "  $f → Phase3 执行取证" ;;
+            audit-finding-debate) echo "  $f → Phase3.5 发现辩论" ;;
+            internal-audit-report-generator) echo "  $f → Phase4 报告" ;;
+            internal-audit-evaluator) echo "  $f → 全阶段质量评估" ;;
+            *) echo "  $f → 未映射阶段（请人工确认影响范围）" ;;
+        esac
+    done
+    echo ""
+    echo "⚠️  此变更未经 LLM 回归验证，建议按 test_prompt_regression.md R09 清单人工抽查后，"
+    echo "    commit 标注: 已人工回归: [项目] [评级]"
+    echo "=========================================================="
+    echo ""
+fi
+
+# ---------- ② 脚本/schema/测试基础设施变更 → 确定性回归（RED 拦截） ----------
+SCRIPT_FILES=$(echo "$FILES" | grep -E '_shared/scripts/.*\.py|tests/fixtures/|tests/prompt_snapshots/')
+if [ -z "$SKIP_REGRESSION_CHECK" ] && [ -n "$SCRIPT_FILES" ]; then
+    echo "[regression] 检测到脚本/schema/测试基础设施变更，运行确定性回归..."
+    (cd "$REPO_ROOT" && python tests/prompt_snapshots/regression-check.py)
+    rc=$?
+    if [ $rc -ne 0 ]; then
+        echo ""
+        echo "=========================================================="
+        echo "  ❌ 回归基线破坏：SKILL/脚本变更使既有回归用例退出码变化，commit 已拦截"
+        echo "=========================================================="
+        echo "建议:"
+        echo "  1. 若脚本改动是兼容性修复 → 修正脚本，重跑回归至全 GREEN"
+        echo "  2. 若退出码变化是有意变更 → 更新 tests/fixtures/regression/*/expected_output/ 基线，"
+        echo "     并在 commit message 中注明（如: 已更新回归基线: 原因）"
+        echo "  3. 临时绕过（不推荐）: SKIP_REGRESSION_CHECK=1 git commit ..."
+        echo "=========================================================="
+        exit 1
+    fi
+fi
+
+# ---------- ③ 快照一致性检查（原逻辑） ----------
 if [ -n "$SKIP_SNAP_CHECK" ]; then
     exit 0
 fi
-REPO_ROOT=$(git rev-parse --show-toplevel)
 python "$REPO_ROOT/tests/prompt_snapshots/compare-snapshots.py" || exit 1
 exit 0

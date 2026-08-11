@@ -74,3 +74,58 @@ python tests/prompt_snapshots/compare-snapshots.py --files <变更文件列表>
 从已完成的真实审计项目提取 5-10 份有定论的输入输出对，存入 `tests/fixtures/regression/`，每份含 `input/` + `expected_output/` + `README.md`。
 
 **已积累（首批 1 份 P1→P2 回归对，后续待补至 5-10 份）**：`tests/fixtures/regression/p2026-001-hr/`——提取自 P-2026-001（武汉长源，已脱敏为"公司A"），含 policy-analyses（考勤管理规定 A5）+ audit-programs（审计程序 v3.0）真实输入各 1 份，expected_output 记录 `validate-policy-analysis.py`（exit 2）与 `validate-program.py --ir --strict`（exit 1）的基准结果；findings 回归对待项目完成 P3 后补充。后续积累方向：其他真实项目（P-2026-002 等）完成后的 P1→P2 对，以及本项目 P3 findings 产出的 P3→P4 对。
+
+---
+
+## 自动回归与影响卡片（R09 自动化，pre-commit 两层检查）
+
+pre-commit hook 在提交时对暂存区做两层自动检测（需先安装新版 hook 才生效，见下方「部署注意」）：
+
+### ① SKILL.md / references/ 变更 → 影响卡片（不拦截）
+
+暂存区命中 `SKILL.md` 或 `references/` 文件时，hook 输出「变更影响卡片」：
+
+- **列出变更文件**
+- **阶段映射**（硬编码表）：
+  - document-organizer → Phase1 制度分析
+  - audit-interview-designer → Phase1.5 访谈
+  - internal-audit-program-generator → Phase2 程序生成
+  - audit-execution-assistant → Phase3 执行取证
+  - audit-finding-debate → Phase3.5 发现辩论
+  - internal-audit-report-generator → Phase4 报告
+  - internal-audit-evaluator → 全阶段质量评估
+  - references/ → 所属 skill 对应阶段
+- **提醒行**：`⚠️ 此变更未经 LLM 回归验证，建议按 R09 清单人工抽查后 commit 标注: 已人工回归: [项目] [评级]`
+
+只提示**不拦截**——SKILL 语义变更无法用确定性断言覆盖，交给人工（R09 清单）。
+
+### ② 脚本/schema/测试基础设施变更 → 确定性回归（RED 拦截）
+
+暂存区命中 `_shared/scripts/*.py`、`tests/fixtures/`、`tests/prompt_snapshots/` 时，hook 自动运行：
+
+```bash
+python tests/prompt_snapshots/regression-check.py
+```
+
+- 扫描 `tests/fixtures/regression/*/expected_output/*.txt`，按文件名前缀映射校验脚本（`validate-policy-analysis` → `validate-policy-analysis.py`；`validate-program` → `validate-program.py --ir --strict`），从 `## exit code` 段解析基线退出码
+- 重跑校验脚本对比 exit code：一致 → GREEN；不一致 → RED（脚本行为变化 = 兼容性风险）
+- 全 GREEN → 放行；有 RED → **拦截 commit**，提示「回归基线破坏」
+
+拦截时建议：修正脚本兼容性；或确认为有意变更后更新 `expected_output/` 基线并在 commit message 注明；或临时 `SKIP_REGRESSION_CHECK=1 git commit ...`（不推荐）。
+
+### 跳过开关
+
+| 开关 | 作用 |
+|:-----|:-----|
+| `SKIP_SNAP_CHECK=1` | 跳过快照一致性检查（R08，compare-snapshots） |
+| `SKIP_REGRESSION_CHECK=1` | 跳过自动回归（②），独立于 SKIP_SNAP_CHECK |
+
+### 部署注意
+
+已部署项目（`.git/hooks/pre-commit` 为旧版，仅含快照检查）需重新安装新版 hook 才生效：
+
+```bash
+cp tests/prompt_snapshots/pre-commit.hook .git/hooks/pre-commit
+```
+
+手动运行回归：`python tests/prompt_snapshots/regression-check.py [--fixtures-dir <路径>] [--json]`
