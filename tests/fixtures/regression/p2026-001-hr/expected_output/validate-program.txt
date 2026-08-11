@@ -1,0 +1,30 @@
+# expected_output: validate-program.py --ir --strict
+
+## 命令
+python _shared/scripts/validate-program.py "tests/fixtures/regression/p2026-001-hr/input/audit-program_人力资源管理_审计程序_v3.0.md" --ir --strict
+
+## exit code
+1（BLOCK）
+
+## 关键输出摘要（原文节选）
+- ✅ [no_placeholder] 通过
+- ✅ [no_switch_criteria] 通过
+- ✅ [track_activation] 激活轨道: A, B, C, D, E, F
+- ✅ [company_facts] 引用了 7 条公司事实: 21\s*亿, 2000\s*人, 紧固件, 冲焊, SAP
+- ✅ [risk_coverage] 风险点 40 个，测试程序 76 个
+- ✅ [column_consistency] 通过
+- ✅ [ir_coverage_rate] 覆盖率 100%（10 个风险）
+- ✅ [ir_data_source] 0/70 步骤无数据来源
+- ✅ [ir_sampling] 通过
+- 🔴 [ir_criterion] 6 个程序判定标准不达标：A9.1:含模糊词('晋升通过者100%满足基本条件...'); A23.1:含模糊词('确认加班费计算基数的实际执行口径...'); B1.1:含模糊词('出勤天数差异>1天的员工人均调整次数控制在合理范...'); B8.1:含模糊词('特定来源地入职人员集中度显著偏高...'); C9.1:含模糊词('HR服务...1:150为健康...')
+- ⚠️ [ir_decision_rationale] D-004缺理由; D-005缺理由（非阻断，建议补充）
+- ⚠️ [decision_log] D-005（程序轨道激活）：有轨道选择但未说明为什么选这些轨道（非阻断）
+
+## 备注（回归基准说明）
+- 该 exit=1 为**源数据真实状态**（v3.0 程序含 6 处模糊判定标准），非脱敏引入。
+- 回归用途：P2（program-generator → validate-program --ir --strict）的基准线。若未来 SKILL.md 改动导致输出程序判定标准更精确（模糊词清零、exit 0），即为可感知的改进信号；反之若模糊词增加，需警惕回归。
+- 关键回归指标：风险覆盖率 100%、76 个测试程序、0/70 步骤无数据来源。
+
+## 运行环境
+- 日期：2026-08-11
+- 脚本版本：validate-program.py（金源 _shared/scripts/，未标注版本号，以 git 历史为准）

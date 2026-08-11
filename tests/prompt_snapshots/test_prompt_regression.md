@@ -72,3 +72,5 @@ python tests/prompt_snapshots/compare-snapshots.py --files <变更文件列表>
 ### 标准用例积累（中期，排期）
 
 从已完成的真实审计项目提取 5-10 份有定论的输入输出对，存入 `tests/fixtures/regression/`，每份含 `input/` + `expected_output/` + `README.md`。
+
+**已积累（首批 1 份 P1→P2 回归对，后续待补至 5-10 份）**：`tests/fixtures/regression/p2026-001-hr/`——提取自 P-2026-001（武汉长源，已脱敏为"公司A"），含 policy-analyses（考勤管理规定 A5）+ audit-programs（审计程序 v3.0）真实输入各 1 份，expected_output 记录 `validate-policy-analysis.py`（exit 2）与 `validate-program.py --ir --strict`（exit 1）的基准结果；findings 回归对待项目完成 P3 后补充。后续积累方向：其他真实项目（P-2026-002 等）完成后的 P1→P2 对，以及本项目 P3 findings 产出的 P3→P4 对。

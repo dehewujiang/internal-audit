@@ -1,0 +1,25 @@
+# expected_output: validate-policy-analysis.py
+
+## 命令
+python _shared/scripts/validate-policy-analysis.py "tests/fixtures/regression/p2026-001-hr/input/policy-analysis_考勤管理规定_A5.json"
+
+## exit code
+2（BLOCK）
+
+## 关键输出摘要（原文节选）
+- ✅ [schema] 通过
+- ✅ [ocr_completeness] 通过
+- 🔴 [schema_version] 缺少 schema_version 字段
+- ⚠️ [document_version] 缺少 document_info（制度版本信息缺失，新输出必须包含）
+- ⚠️ [traceability] 15/15 个控制点缺少原文出处: #1, #2, #3
+- ⚠️ [risk_points_structure] 7 个问题（仅显示前3）: 风险点 #1: 缺少描述; ...
+- ✅ [gaps_resolution] 无控制缺口，跳过
+- ✅ [decision_log] decision_log 未提供（可选字段，不阻断）
+
+## 备注（回归基准说明）
+- 该 exit=2 为**源数据真实状态**（P-2026-001 早期产物，缺 schema_version 字段），非脱敏引入。
+- 回归用途：P1（document-organizer → validate-policy-analysis）的基准线，反映旧版产物在现脚本下的校验结果。若未来脚本升级导致该文件通过（exit 0），说明 schema 兼容性变化，需复核。
+
+## 运行环境
+- 日期：2026-08-11
+- 脚本版本：validate-policy-analysis.py（金源 _shared/scripts/，未标注版本号，以 git 历史为准）
