@@ -485,6 +485,7 @@ Step 3f-2: 最终硬校验（脚本检查 - 完整finding）
         action=pass  → 放行
     ↓
 Step 3g: 输出finding JSON
+    → 高风险 finding 必须填写 `decision_rationale.risk_level_reason`（风险定级理由，一句话）
     ↓
 Step 3h: 业务现实性检验（可选）
     → 提示用户："Finding已生成。输入'讨论此finding'或'对FIND-XXX进行业务审视'

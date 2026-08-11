@@ -1,0 +1,118 @@
+{
+  "schema_version": "1.2.0",
+  "finding_id": "F-2026-001",
+  "origin": "execution",
+  "audit_program": "采购付款对账审计",
+  "audit_date": "2026-04-03",
+  "category": "内控缺陷",
+  "risk_level": "高",
+  "title": "供应商预付款超期未核销且无对账记录，涉及金额128万元",
+  "description": "2026年第一季度采购付款执行中，发现6笔供应商预付款账龄超过90天未核销，且财务未按制度要求与供应商定期对账，预付款余额真实性无法确认。",
+  "criteria": "《采购管理制度》PUR-003（供应商准入与对账管理）要求：预付款核销周期不超过60天，财务部每季度与供应商对账一次。",
+  "condition": "2026年1月至3月，抽取样本50笔采购付款记录，其中6笔预付款（占比12%）账龄超90天未核销；财务部2025年全年仅执行1次供应商对账（制度要求4次）。代表性案例：供应商A预付款45万元，账龄142天仍未核销。",
+  "cause": "根本原因是制度设计与职责设计缺陷：采购付款流程未设置预付款账龄预警机制，系统功能缺失（ERP未配置账龄自动提醒）；职责未分离——预付款核销与对账均由应付会计一人负责，无独立复核岗位；控制环境层面，管理层对往来款项对账未设定考核指标，导致对账流于形式。",
+  "cause_category": "DES-03",
+  "consequence": "预付款余额真实性无法确认，潜在坏账损失估算约45万元（账龄最长一笔），同时存在资金占用与供应商串通虚报的舞弊风险敞口。",
+  "recommendation": "1.在ERP中配置预付款账龄预警（超60天自动提醒，验收标准：预警功能上线测试通过）；2.将预付款核销与对账职责分离至不同岗位（验收标准：岗位职责说明更新并执行）；3.财务部按季度执行供应商对账并留存对账记录（验收标准：2026年Q2起对账记录齐全）。建议时限：3个月内。",
+  "responsible": "财务总监",
+  "deadline": "2026-07-31",
+  "status": "待整改",
+  "evidence": [
+    {
+      "name": "2026Q1采购付款明细导出.xlsx",
+      "source": "ERP系统",
+      "source_type": "system_export",
+      "reliability_grade": "A",
+      "obtained_date": "2026-04-02",
+      "obtained_by": "审计组-张审计",
+      "storage_path": "evidence/采购付款对账审计/_files/2026Q1采购付款明细导出.xlsx",
+      "integrity_hash": "sha256:3f2a9c1e8b7d4f6a0e5c3b8a2d1f4e7c9b6a3f5d8e0c2b7a4f6d9e1c3b5a7f8e0d",
+      "completeness": "complete"
+    },
+    {
+      "name": "供应商A预付款合同.pdf",
+      "source": "供应商档案系统",
+      "source_type": "system_export",
+      "reliability_grade": "B",
+      "obtained_date": "2026-04-02",
+      "obtained_by": "审计组-张审计",
+      "storage_path": "evidence/采购付款对账审计/_files/供应商A预付款合同.pdf",
+      "completeness": "complete"
+    }
+  ],
+  "related_procedures": ["A7.2"],
+  "related_control": "CP-012",
+  "evidence_completeness": {
+    "coverage": "complete",
+    "time_range_match": true,
+    "sample_size_adequate": true,
+    "source_reliability": "high",
+    "cross_source_consistent": true,
+    "overall_rating": "充分"
+  },
+  "data_analysis": {
+    "total_records": 50,
+    "flagged_records": 6,
+    "flag_rate": "12%",
+    "financial_impact": 1280000
+  },
+  "intuition_analysis": {
+    "constellation_detected": {
+      "name": "长账龄预付款星座",
+      "confidence": "高",
+      "elements_matched": ["长账龄预付款", "无对账记录", "单一岗位负责"],
+      "elements_missed": [],
+      "exclusion_checked": true,
+      "exclusion_result": "无合理排除理由"
+    },
+    "counter_intuitive_flags": ["对账频次远低于制度要求却无人报告"],
+    "temporal_patterns": ["预付款账龄集中在季末未清理"],
+    "second_order_thinking": {
+      "covering_up": "若存在资金挪用，掩盖方式为长期不核销且无人对账",
+      "beneficiary": "受益者为资金实际使用方",
+      "cascade_failure": "对账缺失将连锁影响应付余额真实性与报表披露",
+      "timing": "账龄超90天仍无对账，已超制度上限50%"
+    },
+    "recommendation": "建议扩大样本至全年并核查资金流向"
+  },
+  "professional_skepticism": {
+    "simplest_explanation": "最简解释为岗位缺员导致对账积压，但无法解释6笔全部超90天",
+    "independent_verification": "付款明细与合同金额交叉比对一致",
+    "fraud_cover_test": "未发现明显掩盖痕迹，但职责未分离削弱防弊设计",
+    "alternative_explanation": "可能存在供应商账期谈判导致的合理延期，已排除（合同均约定60天内核销）",
+    "evidence_sufficiency": "证据充分性中等偏高，需补充银行流水做最终确认",
+    "doubtful_count": 1,
+    "overall_pass": true
+  },
+  "risk_classification": {
+    "risk_level": "高",
+    "basis": "金额重大且控制缺失"
+  },
+  "impact_and_risk": {
+    "financial": "潜在坏账损失约45万元",
+    "compliance": "违反《采购管理制度》PUR-003对账要求",
+    "operational": "应付余额真实性无法确认，影响报表质量"
+  },
+  "recommendations": [
+    {
+      "description": "ERP配置预付款账龄预警功能（超60天自动提醒）",
+      "priority": "高"
+    },
+    {
+      "description": "预付款核销与对账职责分离，设置独立复核岗",
+      "priority": "高"
+    },
+    {
+      "description": "财务部按季度执行供应商对账并留存对账记录",
+      "priority": "中"
+    }
+  ],
+  "cross_references": {
+    "documents": ["《采购管理制度》PUR-003"],
+    "programs": ["A7.2"]
+  },
+  "decision_rationale": {
+    "risk_level": "高",
+    "key_judgment": "预付款长账龄且无对账，资金安全风险高"
+  }
+}

@@ -1,6 +1,6 @@
 # 根因质证快照
 # 提取自 audit-execution-assistant/references/root_cause_framework.md + SKILL.md Step 3b
-# 日期: 2026-08-11 | 变更: C7 输入裁剪（SKILL.md Step 0 读取指令加 status=pending 静态过滤）——本快照覆盖的 Step 3b 根因质证无实质变化
+# 日期: 2026-08-11 | 变更: C6b 推理日志试点（SKILL.md Step 3g 加 decision_rationale.risk_level_reason 指令）——本快照覆盖的 Step 3b 根因质证无实质变化
 
 ## 根因分析三层框架（映射 COSO）
 

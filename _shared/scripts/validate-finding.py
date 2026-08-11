@@ -14,6 +14,7 @@ validate-finding.py — Finding 质量硬校验脚本
   [E] evidence_grade       证据等级校验 (reliability_grade)
   [I] intuition_engine     直觉引擎完整性（高风险必须）
   [G] cause_evidence_gap   根因与证据等级匹配校验
+  [DR] decision_rationale_reason  高风险定级理由（decision_rationale.risk_level_reason）
 
 用法:
     # 校验单个 finding
@@ -404,6 +405,19 @@ def check_cause_evidence_gap(data):
     return True, None
 
 
+def check_decision_rationale_reason(data):
+    """[DR] 高风险定级理由校验（decision_rationale.risk_level_reason）"""
+    rc = data.get("risk_classification", {})
+    risk_level = normalize_level(rc.get("risk_level"))
+    if risk_level != "高":
+        return True, None
+
+    reason = data.get("decision_rationale", {}).get("risk_level_reason", "")
+    if not reason or not str(reason).strip():
+        return False, "高风险 finding 必须填写 decision_rationale.risk_level_reason（风险定级理由）"
+    return True, None
+
+
 # ── 主校验 ─────────────────────────────────────────────
 
 def validate_finding(data, exit_on_error=False):
@@ -446,6 +460,10 @@ def validate_finding(data, exit_on_error=False):
     # [G] 根因与证据等级匹配
     passed, gap_msg = check_cause_evidence_gap(data)
     checks["cause_evidence_gap"] = {"passed": passed, "message": gap_msg}
+
+    # [DR] 高风险定级理由
+    passed, dr_msg = check_decision_rationale_reason(data)
+    checks["decision_rationale_reason"] = {"passed": passed, "message": dr_msg}
 
     # ── 判定 ──
     blockers = [k for k, v in checks.items() if not v["passed"] and k in (
@@ -508,6 +526,7 @@ def print_report(report, verbose=False):
             "evidence_grade": "证据等级",
             "intuition_engine": "直觉引擎",
             "cause_evidence_gap": "根因-证据匹配",
+            "decision_rationale_reason": "决策理由(DR)",
         }.get(check_name, check_name)
         print(f"    {status} [{label}] {msg[:120]}")
 

@@ -17,6 +17,7 @@ Usage:
     python phase_gate.py rollback --to phase_1_document_analysis --reason "补充制度分析"
     python phase_gate.py tool-check validate-finding.py           # check tool phase permission
     python phase_gate.py tool-check validate-finding.py --force   # override with audit_trail record
+    python phase_gate.py log-decision --scene 风险定级 --decision 高 --basis "回款超账期且无对账"
 """
 
 import json
@@ -518,6 +519,23 @@ def cmd_rollback(args):
     sys.exit(0)
 
 
+def cmd_log_decision(args):
+    """记录审计决策到 audit_trail（decision 事件）"""
+    ws = find_workspace()
+    data = load_audit()
+    snap_path = snapshot_audit_state(data, ws)
+    detail = f"{args.scene}:{args.decision}:{args.basis}"
+    append_audit_trail(data, "decision", detail)
+    save_audit(data, ws)
+    print(json.dumps({
+        "action": "decision_logged",
+        "event_type": "decision",
+        "detail": detail,
+        "snapshot": snap_path,
+    }, ensure_ascii=False, indent=2))
+    sys.exit(0)
+
+
 def main():
     parser = argparse.ArgumentParser(description="阶段状态机 (地铁闸机模型)")
     sub = parser.add_subparsers(dest="command")
@@ -541,9 +559,15 @@ def main():
     p_tc.add_argument("--phase", default=None, choices=PHASES, help="强制指定阶段 (默认: 从 current-audit.json 读取)")
     p_tc.add_argument("--force", action="store_true", help="强制放行并记录 audit_trail")
 
+    p_log = sub.add_parser("log-decision", help="记录审计决策到 audit_trail (decision 事件)")
+    p_log.add_argument("--scene", required=True, help="决策场景 (程序选择/风险定级/线索排除)")
+    p_log.add_argument("--decision", required=True, help="决策内容")
+    p_log.add_argument("--basis", required=True, help="决策依据")
+
     args = parser.parse_args()
     cmds = {"status": cmd_status, "check": cmd_check, "advance": cmd_advance,
-            "rollback": cmd_rollback, "tool-check": cmd_tool_check}
+            "rollback": cmd_rollback, "tool-check": cmd_tool_check,
+            "log-decision": cmd_log_decision}
     if args.command in cmds:
         cmds[args.command](args)
     else:
