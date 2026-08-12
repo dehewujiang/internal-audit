@@ -6,6 +6,7 @@
 ## 待办（风险整改 — 已全部闭环 2026-08-06，详见下方已完成章节）
 
 ## 待办（其他）
+- 📌 增量制度分析脚本（analysis_manifest.py + incremental_analysis_gate.py）已入库未接入（2026-08-12 确认：全库 0 引用、document-organizer 全量分析、CLAUDE-project 工具清单未提）。判定：设计超前、需求未触发（制度偶尔更新）→ 保留不删，待未来制度更新频繁时接线。记录见 `_shared/scripts/README.md`
 - 🔴 坑2 整改（验证优先/防自证，2026-08-12 诊断完成、待排期实施）：
   - 漏洞2（最危险）：validate-program.py --ir 覆盖率分母改为上游独立风险清单（design-assessments + policy-analyses），防"程序自己列风险又自证覆盖"
   - 漏洞3：证据 reliability_grade 改为系统打章——data_executor 导出自动 A、OCR 自动 C+待确认、AI 只能标 E（第三方）并附来源
