@@ -7,6 +7,7 @@
 
 ## 待办（其他）
 - 📌 增量制度分析脚本（analysis_manifest.py + incremental_analysis_gate.py）已入库未接入（2026-08-12 确认：全库 0 引用、document-organizer 全量分析、CLAUDE-project 工具清单未提）。判定：设计超前、需求未触发（制度偶尔更新）→ 保留不删，待未来制度更新频繁时接线。记录见 `_shared/scripts/README.md`
+- 📌 create_evidence_dirs.py 重构候选（2026-08-12 纳米测试三问发现）：名为建目录、实为 457 行解析器（97% 代码在生成证据清单）；3 处死代码（safe_dirname / 风险名称提取 / programs 参数，v2.1 取消程序目录后遗留）；与 evidence_catalog.py 职责重叠。功能在用（program-generator Step 4），不紧急 → 下次动 evidence 时重构（解析逻辑并入 evidence_catalog 或改名 + 删死代码）
 - 🔴 坑2 整改（验证优先/防自证，2026-08-12 诊断完成、待排期实施）：
   - 漏洞2（最危险）：validate-program.py --ir 覆盖率分母改为上游独立风险清单（design-assessments + policy-analyses），防"程序自己列风险又自证覆盖"
   - 漏洞3：证据 reliability_grade 改为系统打章——data_executor 导出自动 A、OCR 自动 C+待确认、AI 只能标 E（第三方）并附来源
