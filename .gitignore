@@ -28,3 +28,7 @@ node_modules/
 
 # OS
 .DS_Store
+
+# 运行工具痕迹（oh-my-openagent / workbuddy 工作目录，产物已入库，不入版本控制）
+.omo/
+.workbuddy/
