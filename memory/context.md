@@ -1,5 +1,5 @@
 # 技术上下文
-更新时间：2026-08-06
+更新时间：2026-08-12
 
 ## 核心模块关系
 
@@ -13,7 +13,7 @@ internal-audit/
 ├── .claude/
 │   ├── skills/               ← 12 个技能（2 geb-* + 10 个审计 junction）
 │   ├── settings.json         ← extraRules 配置
-│   └── rules/                ← junction → D:\Nut\00_my_digital\12_AGI\rules\
+│   └── rules/                ← 8 份**复制副本**（实测非 junction！源在 D:\Nut\00_my_digital\12_AGI\rules\，改源需手动同步三处：源/项目/workbuddy）
 ├── _shared/scripts/          ← 核心脚本（phase_gate + 7 validate-* + queries + data_executor + audit_gate + check_mandatory_coverage + project_init + program_ir_parser + evidence_catalog + bump-version）
 ├── tools/                    ← pdf_ocr_extractor.py（PaddleOCR）+ 13 个能力声明
 ├── audit-topics/             ← 审计主题模板（人力资源管理、存货管理）
@@ -78,6 +78,13 @@ internal-audit/
 - **C6 推理日志试点**：`phase_gate.py` 新增 `log-decision --scene --decision --basis` 子命令 → append_audit_trail 写 event_type="decision"（detail 格式 `{场景}:{决策}:{依据}`）；finding 复用已有 `decision_rationale` 对象新增子键 `risk_level_reason`（validate-finding.py [DR] 校验 warn 级、仅高风险触发）；audit_gate `_log_to_trail`（{event,source} schema）保持不动——两套 schema 并存（REASON-LOG.md 记录，铺开阶段统一）；`queries.py decide` 读已有子键不受影响；铺开条件 = 跑 1 个真实审计后评估
 - **C7 最小必要上下文**：根目录 `INPUT-BUDGET.md`（7 skill 输入清单 + 裁剪规则，两档：文件级/字段级）；SKILL.md 读取指令改静态过滤（grep 禁"你认为/根据需要"）；execution-assistant 读 design-assessments 按**验证状态**过滤（严禁按 source——两种来源都需验证，宪法 #9/#13）；全量读仅限当前阶段产物；制度文件（P1）禁止裁剪
 - **追加机制**：SKILL.md 变更自动检测——`tests/prompt_snapshots/regression-check.py` + pre-commit.hook（影响卡片引导 + RED 拦截），回应 C7 改 SKILL.md 暴露的快照闸机缺口
+
+## 验证分层与规则拆分（2026-08-12）
+
+- **验证分层**（work-principles.md「〇」）：L1 轻（查资料/概念，直接回答不搞考卷）/ L2 标准（文档/方案，考卷先行+产出核对）/ L3 重（改代码/数据/接口，考卷+机器拍板+回退+守恒+行为验收）；判断标准=是否碰关键数据、有无不可逆后果；任务理解确认同步分层（L1 一句话 / L2/L3 全套）
+- **规则拆分**：源 `D:\Nut\00_my_digital\12_AGI\rules\` 现有 8 份——`coding-safety.md`（编码专用，带 paths frontmatter，只在读代码文件时注入）+ `work-principles.md`（通用，无 frontmatter 启动全量加载）+ compat/geb-l3/good-taste/memory-templates/memory_rules/project-doctrine 6 份。全局/12_AGI CLAUDE.md 前置约束指向 work-principles
+- **坑2 验证优先诊断**（2026-08-12，待整改）：① 程序覆盖率自证——validate-program --ir 的 risk_register 是程序自列，覆盖率分母应改上游独立清单（design-assessments+policy-analyses）；② 证据等级 AI 自标——reliability_grade 由 AI 填，应 data_executor 导出自动 A / OCR 自动 C / AI 只标 E；③ 制度校验看转述——validate-policy-analysis 读 AI JSON 不读原始制度；④ 报告二手汇总（不根治，只记录）
+- **纳米测试三问 25 脚本审查**：2 孤儿保留（analysis_manifest + incremental_analysis_gate，设计超前需求未触发，记录见 _shared/scripts/README.md）；1 偏重（create_evidence_dirs 职责越界+死代码，重构候选）；核心 20 个三问通过
 
 ## 10 个 Skill 流水线
 

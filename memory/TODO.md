@@ -33,6 +33,12 @@
 ## 阻塞
 - 无
 
+## 已完成（2026-08-12）
+- ✅ 规则拆分：coding-safety（编码专用 paths）+ work-principles（通用全量，含验证分层 L1/L2/L3）；三处副本同步 + 两仓库提交
+- ✅ 坑2 诊断：四重闸机核查出 4 漏洞并记档（程序覆盖率自证/证据等级自标/制度校验看转述/报告二手）
+- ✅ 纳米测试三问：25 脚本审查（2 孤儿保留待接线 + 1 偏重重构候选 + 20 核心通过）
+- ✅ 8-11 架构加固收工记忆补写 + 未提交改动处理（coding-safety/omo/workbuddy/data-evaluations）
+
 ## 已完成（2026-08-11）
 - ✅ 架构加固计划 C1-C7 全部闭环（VERSION 2026-08-11-3，金源已提交）：C1 DATAFLOW.md / C2 宪法瘦身+漂移修复 / C3 纳米测试（ADR-026）/ C4 R09 回归用例（p2026-001-hr 脱敏，findings 待补）/ C5 闸机边界验证 / C6 推理日志试点（log-decision 命令 + decision_rationale.risk_level_reason）/ C7 INPUT-BUDGET + SKILL 读取裁剪
 - ✅ SKILL.md 变更自动检测与回归机制（regression-check.py + pre-commit hook 影响卡片 + RED 拦截，b500675/4d21ef9）

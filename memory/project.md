@@ -3,8 +3,14 @@
 ## 项目是什么
 AI 驱动的内部审计辅助流水线，帮 Flan（汽车零部件企业审计经理）覆盖从制度分析到报告生成的全过程。
 
-## 当前状态（2026-08-11）
-🟢 8-11 完成架构加固计划（C1-C7 + F波验证，VERSION 2026-08-11-3）：
+## 当前状态（2026-08-12）
+🟢 8-12 完成四件项目相关事项：
+- **验证分层落地**：work-principles.md 新增「〇、验证分层」（L1 查资料轻验 / L2 文档方案标准验 / L3 改代码数据重验），任务理解确认同步分层（L1 一句话 / L2/L3 全套）
+- **规则按适用面拆分**：coding-safety.md 拆为编码专用（带 paths，只在碰代码文件加载）+ work-principles.md（通用，启动全量加载）；源 D:\Nut\rules\ 8 份，internal-audit/.claude/rules 与 workbuddy 各复制一份（实测非 junction，需手动同步）
+- **坑2 验证优先诊断**：四重闸机逐个核查 → 4 个漏洞记档（程序覆盖率自证 / 证据等级 AI 自标 / 制度校验看转述 / 报告二手汇总），待排期整改
+- **纳米测试三问 25 脚本审查**：2 个孤儿脚本（analysis_manifest + incremental_analysis_gate，保留待接线）+ 1 个偏重（create_evidence_dirs 重构候选），均已记档
+
+8-11 历史：完成架构加固计划（C1-C7 + F波验证，VERSION 2026-08-11-3）：
 - C1 数据流总图（DATAFLOW.md，六阶段全链路 + 断点观察）
 - C2 宪法瘦身（constitution.md ≤85 行，14 条语义零丢失 + 触发指针；CLAUDE-project.md 漂移 bug 修复）
 - C3 纳米测试原则（ADR-026 + OPS 新增规则/脚本前检查清单）
@@ -40,6 +46,7 @@ AI 驱动的内部审计辅助流水线，帮 Flan（汽车零部件企业审计
 - 操作手册: `OPS.md`
 - 项目注册表: `audit-topics/projects-index.json`（2 个项目已注册）
 - 架构加固产物: `DATAFLOW.md`（数据流总图）、`INPUT-BUDGET.md`（上下文裁剪规则）、`REASON-LOG.md`（推理日志设计）、`tools/tool-exhaustion.md`（工具穷举规范）、`tests/prompt_snapshots/regression-check.py` + `pre-commit.hook`（SKILL 变更检测）、`tests/fixtures/regression/`（R09 回归用例）
+- 规则体系: 源 `D:\Nut\00_my_digital\12_AGI\rules\`（8 份：coding-safety 编码专用带 paths / work-principles 通用全量 + 6 份其他）；internal-audit `.claude/rules/` 与 `.workbuddy/rules/` 为**复制副本（实测非 junction）**——改源需手动同步三处
 
 ## 已部署项目
 - P-2026-001: 武汉长源 人力资源管理 phase_3
@@ -47,13 +54,14 @@ AI 驱动的内部审计辅助流水线，帮 Flan（汽车零部件企业审计
 
 ## 当前最大风险
 - 🔴 N8 调查方法合规分级未做（fraud_investigation_methods 含"小黑屋/威胁施压"内容，涉及用户个人合规风险）——用户搁置，建议尽早
+- 🔴 坑2 整改待排期（程序覆盖率自证 + 证据等级 AI 自标，改 validate-program/validate-finding/data_executor）
 - 🔴 部署项目 VERSION.lock 停在 08-06-4——架构加固成果（宪法瘦身/推理日志/上下文裁剪）未上现场，待用户按升级流程部署
 - 🟡 R09 实际抽查未做（清单已交付，用户手工执行）
-- 🟡 未提交改动散落：coding-safety.md 分级验证改动未提交、.omo/.workbuddy 运行痕迹未收纳 gitignore、data/evaluations/2026-05-12.jsonl 删除未确认
+- 🟡 规则三处副本为复制非 junction——改源需手动同步（已实测确认无自动机制）
 - 🟡 广东长华程序 v1.0→v3.0 升级搁置（缺"取证方式"列无法生成 catalog）
 
 ## 下一步
-1. 处理未提交改动（coding-safety.md 分级验证提交、.omo/.workbuddy 收进 .gitignore、data/evaluations 删除确认）— 2026-08-12 待办
+1. 坑2 整改排期（漏洞2 程序覆盖率分母改上游独立清单 + 漏洞3 证据等级系统打章，实施前出规划模型）
 2. 用户按升级流程部署加固成果到双项目（VERSION.lock 08-06-4 → 08-11-3）
 3. 用户执行 R09 人工抽查（清单见 tests/prompt_snapshots/test_prompt_regression.md，commit 标注 `已人工回归: [项目] [评级]`）
 4. C6 推理日志试点评估（跑 1 个真实审计后决定全量铺开）
