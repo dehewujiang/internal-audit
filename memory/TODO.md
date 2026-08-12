@@ -6,6 +6,12 @@
 ## 待办（风险整改 — 已全部闭环 2026-08-06，详见下方已完成章节）
 
 ## 待办（其他）
+- 🔴 坑2 整改（验证优先/防自证，2026-08-12 诊断完成、待排期实施）：
+  - 漏洞2（最危险）：validate-program.py --ir 覆盖率分母改为上游独立风险清单（design-assessments + policy-analyses），防"程序自己列风险又自证覆盖"
+  - 漏洞3：证据 reliability_grade 改为系统打章——data_executor 导出自动 A、OCR 自动 C+待确认、AI 只能标 E（第三方）并附来源
+  - 漏洞1：validate-policy-analysis 抽查原始制度文本与提取 JSON 的对应（关键条款数一致），不只看 AI 转述
+  - 漏洞4：报告不根治，记录"报告可靠性上限 = 前四环节最弱一环"
+  - 实施前先出规划模型供审核；对应新增 ADR
 - 处理未提交改动（2026-08-12）：coding-safety.md 分级验证改动提交确认、.omo/.workbuddy 运行痕迹收进 .gitignore、data/evaluations/2026-05-12.jsonl 删除确认
 - 部署架构加固成果到双项目（VERSION.lock 08-06-4 → 08-11-3，用户按 update-project.ps1 执行）
 - C6 推理日志全量铺开：试点已完成，跑 1 个真实审计项目后评估（见 REASON-LOG.md）
