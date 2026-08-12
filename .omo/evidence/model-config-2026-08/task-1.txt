@@ -1,6 +1,0 @@
-Task 1: 备份 omo.jsonc 到 backup-2026-08-04
-时间: 2026-08-04 14:17:22
-复制: Copy-Item -Force (成功)
-EXISTS=True
-fc /b 比较结果: 无差异 (逐字节一致)
-FC_EXIT=0
