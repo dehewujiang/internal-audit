@@ -6,6 +6,9 @@
 ## 待办（风险整改 — 已全部闭环 2026-08-06，详见下方已完成章节）
 
 ## 待办（其他）
+- 处理未提交改动（2026-08-12）：coding-safety.md 分级验证改动提交确认、.omo/.workbuddy 运行痕迹收进 .gitignore、data/evaluations/2026-05-12.jsonl 删除确认
+- 部署架构加固成果到双项目（VERSION.lock 08-06-4 → 08-11-3，用户按 update-project.ps1 执行）
+- C6 推理日志全量铺开：试点已完成，跑 1 个真实审计项目后评估（见 REASON-LOG.md）
 - P-2026-002 广东长华程序从 v1.0 升级到 v3.0（缺少"取证方式"列，无法自动生成 catalog）— 用户搁置
 - [可选] B1.1/L1.1 目录 60 个证据文件是否迁入 `_files/` 及同步更新 finding 引用路径（`findings/B1.1_考勤数据手工传递篡改_待核实异常.json` 的 evidence.files 硬编码引用）— 待用户决策
 - R09 实际抽查：用户手工执行，commit 标注 `已人工回归: [项目] [GREEN/YELLOW/RED]`（清单见 tests/prompt_snapshots/test_prompt_regression.md）
@@ -21,6 +24,12 @@
 
 ## 阻塞
 - 无
+
+## 已完成（2026-08-11）
+- ✅ 架构加固计划 C1-C7 全部闭环（VERSION 2026-08-11-3，金源已提交）：C1 DATAFLOW.md / C2 宪法瘦身+漂移修复 / C3 纳米测试（ADR-026）/ C4 R09 回归用例（p2026-001-hr 脱敏，findings 待补）/ C5 闸机边界验证 / C6 推理日志试点（log-decision 命令 + decision_rationale.risk_level_reason）/ C7 INPUT-BUDGET + SKILL 读取裁剪
+- ✅ SKILL.md 变更自动检测与回归机制（regression-check.py + pre-commit hook 影响卡片 + RED 拦截，b500675/4d21ef9）
+- ✅ VERSION bump 2026-08-11-3（b6c6d3d 移除 validate-finding.py 死代码 import + bump）
+- ⚠️ 8-11 收工记忆于 08-12 补写；无 feedback 教训记录，如执行中有教训待补充
 
 ## 已完成（2026-08-06）
 - ✅ 全量坏路径修复（36 处/12 文件 → 三标准路径，ADR-023）+ 孤儿文档接入（dynamic_questions→Step 0.4、incremental_update→Step 0.5）+ output_template 补十/十一章（VERSION 2026-08-06-1，a8dd3d2/c4128d8，已部署）

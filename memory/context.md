@@ -69,6 +69,16 @@ internal-audit/
 - **Step 4.5 命令修正**：`validate-program.py --ir <path>` → `--ir --strict`（--ir 为布尔开关，实测）
 - commits: 0746f5c / e133e2b / 26d4cc2 / 181000f / cd72e98
 
+## 架构加固批次（2026-08-11，VERSION 2026-08-11-3，金源已提交、未部署现场）
+
+- **C1 数据流总图**：根目录 `DATAFLOW.md`（六阶段 P0-P4 + 贯穿机制 + 断点观察：推理轨迹无落点 / design-assessments 读 4 次 / 证据缺失闭环待确认）
+- **C2 宪法瘦身**：constitution.md ≤85 行，14 条语义零丢失 + 触发指针（tools/tool-exhaustion.md、CLAUDE-project.md「启动协议」、incremental_update.md、phase_gate.py）；CLAUDE-project.md 漂移修复（"10 hard"→实际条数）+ check_mandatory_coverage 命令补登记
+- **C3 纳米测试**：ADR-026（新增规则/脚本前自问三问）+ OPS.md 检查清单
+- **C4 R09 回归用例**：`tests/fixtures/regression/p2026-001-hr/`（input policy-analysis+audit-program / expected_output validate 输出 / README 脱敏映射；findings 待项目完成后补）
+- **C6 推理日志试点**：`phase_gate.py` 新增 `log-decision --scene --decision --basis` 子命令 → append_audit_trail 写 event_type="decision"（detail 格式 `{场景}:{决策}:{依据}`）；finding 复用已有 `decision_rationale` 对象新增子键 `risk_level_reason`（validate-finding.py [DR] 校验 warn 级、仅高风险触发）；audit_gate `_log_to_trail`（{event,source} schema）保持不动——两套 schema 并存（REASON-LOG.md 记录，铺开阶段统一）；`queries.py decide` 读已有子键不受影响；铺开条件 = 跑 1 个真实审计后评估
+- **C7 最小必要上下文**：根目录 `INPUT-BUDGET.md`（7 skill 输入清单 + 裁剪规则，两档：文件级/字段级）；SKILL.md 读取指令改静态过滤（grep 禁"你认为/根据需要"）；execution-assistant 读 design-assessments 按**验证状态**过滤（严禁按 source——两种来源都需验证，宪法 #9/#13）；全量读仅限当前阶段产物；制度文件（P1）禁止裁剪
+- **追加机制**：SKILL.md 变更自动检测——`tests/prompt_snapshots/regression-check.py` + pre-commit.hook（影响卡片引导 + RED 拦截），回应 C7 改 SKILL.md 暴露的快照闸机缺口
+
 ## 10 个 Skill 流水线
 
 ```

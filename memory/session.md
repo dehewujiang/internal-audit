@@ -1,40 +1,40 @@
 # 最近一次工作记录
 
 ## 完成了什么
-本次 session（2026-08-06 下午）执行 add-design-columns 计划：审计程序新增「设计理由」「测试目的」两列，全链路闭环（VERSION 2026-08-06-4，已部署双项目）。
+本次 session（2026-08-11）执行架构加固计划（`.omo/plans/internal-audit-architecture-hardening.md`）：C1-C7 共 10 个实施任务 + F1-F4 验证全部完成，VERSION 2026-08-11-3。
 
-### ① 两列功能实现（commits 0746f5c → e133e2b → 26d4cc2 → 181000f → cd72e98）
-- output_template.md：6 轨道 + 十/十一章共 8 张表格加两列 + 反套话示例（如"皮重波动阈值取油箱满载重量——该异常只有水箱排水作弊才能产生"）
-- SKILL.md：Step 4 两列必填要求 + 防套话约束 + 输出前自检清单 2 项
-- program_templates.json：6 轨道列宽补 30,30；adversarial_validation.snap 头部同步（防 hook 误报）
-- 部署：武汉长源 + 广东长华 → 2026-08-06-4（7 升级 0 失败，数据目录完好）
+### C1-C7 实现（commits 11b17ec → 4d21ef9）
+- C1 数据流总图：根目录 `DATAFLOW.md`（六阶段 P0-P4 全链路 + 贯穿机制 + 断点观察三则）
+- C2 宪法瘦身：`constitution.md` ≤85 行，14 条语义零丢失 + 触发指针；CLAUDE-project.md 漂移修复（"10 hard" → 实际条数）+ 启动协议章节 + check_mandatory_coverage 命令补登记；操作细节下沉 `tools/tool-exhaustion.md`
+- C3 纳米测试原则：`memory/decisions.md` ADR-026 + OPS.md 检查清单
+- C4 R09 标准用例积累：`tests/fixtures/regression/p2026-001-hr/`（policy-analyses + audit-programs 各 1 份，脱敏，findings 待项目完成后补）
+- C5 闸机边界验证：phase_gate/audit_gate 职责无重叠、无死角（只验证，不改代码）
+- C6 推理日志试点：`phase_gate.py` 新增 `log-decision` 子命令（写 audit_trail event_type="decision"）；`validate-finding.py` 新增 [DR] 校验（warn 级、仅高风险）；execution-assistant SKILL.md 加填写指令；`REASON-LOG.md` 设计定稿；两个高风险 finding 样本（with/no_reason）
+- C7 最小必要上下文：`INPUT-BUDGET.md` + SKILL.md 读取指令静态裁剪（design-assessments 按验证状态过滤，不按 source）
 
-### ② 执行中发现并修复的存量矛盾（最重要）
-- **模板与闸机脱节**：output_template.md 表头从来缺「程序编号/判定标准/取证方式」，而 Step 4.5 闸机（当日早些时候接入）的解析器只识别含"程序编号"的表——严格按模板生成的程序必然被拦截。已按 fixture v1.1 真实产出结构对齐模板（26d4cc2），重测全链路 PASS（导出含列 → 闸机 PASS 覆盖率 100% → 解析器识别正常）
-- **Step 4.5 命令过时**：`--ir <path>` 实测是布尔开关（unrecognized arguments），已修正为 `--ir --strict`（181000f）
+### 追加机制（计划外，b500675/4d21ef9）
+- SKILL.md 变更自动检测与回归机制：`tests/prompt_snapshots/regression-check.py`（影响卡片 + RED 拦截）+ pre-commit.hook 扩展 + test_prompt_regression.md 更新
 
-### ③ 独立验证（Final Wave，非自报）
-6 步全绿：8 表两列 + 程序编号/判定标准/取证方式、部署副本含列、Excel 导出含列、闸机 PASS + 缺列 BLOCK（"表头有10列，数据行有9列"实测）、存量 v1.1 兼容、git 5 提交在位且无交付文件残留。
+### 清理
+- b6c6d3d：移除 validate-finding.py 死代码 import（datetime）+ VERSION bump 2026-08-11-2
 
 ## 为什么这样做
-审计底稿需要"程序选择理由"——被审计方和复核者要能看懂"为什么这么做、能证明什么"。原有模板只有"测试程序"列（做什么），缺"为什么"和"达到什么"。测试四连（本计划特有）主动暴露了模板与闸机的兼容问题，避免了"上线即撞墙"。
+架构核查证明底子正确（单向依赖、纯函数工具、状态文件化），真正的缺口只有两个——推理轨迹不可回放（C6）、上下文无裁剪（C7）；其余是降低长期维护成本（C2 宪法瘦身消除双份维护漂移）。
 
 ## 遇到问题
-- T2 worker 用 SKIP_SNAP_CHECK=1 绕过快照 hook（违反计划 guardrail）——正确做法是快照头部同步（T4）
-- T1/T2 worker 抢跑 git 提交——内容干净，保留
-- explore agent 无 bash，跑命令类验证卡住——改用 unspecified-low worker
+- **记忆未同步**：本次 session 只更新了 decisions.md（ADR-026），project/TODO/session/context/INDEX 停在 08-06——08-12 补写收工记忆
+- **未提交残留**：coding-safety.md 分级验证改动、.omo/.workbuddy 运行痕迹、data/evaluations 删除——待 08-12 处理
 
 ## 未完成事项
-- R09 实际抽查（用户手工执行）
-- N8 调查方法合规分级（用户搁置——涉及个人合规风险，建议尽早）
-- 统计抽样方法 reference（用户搁置）
-- 广东长华程序 v1.0→v3.0 升级（用户搁置）
-- B1.1/L1.1 证据迁移决策（待用户）
-- `data/evaluations/2026-07-17.jsonl` 是否已并入源仓库（待确认）
-- 重启 opencode 使部署项目新 SKILL.md 生效
+- 现场部署双项目（VERSION.lock 08-06-4 → 08-11-3，用户执行）
+- C6 全量铺开（跑 1 个真实审计后评估）
+- R09 人工抽查（用户手工执行）
+- N8 调查方法合规分级（用户搁置，高风险）
+- 广东长华 v1.0→v3.0 升级、B1.1/L1.1 迁移（用户搁置）
+- 未提交改动处理
 
 ## 下一步建议
-1. 跑一次真实审计：验证两列生成 + Step 0.4/0.5/4.5 新闸机行为
-2. 用户执行 R09 人工抽查并反馈 RED 级问题
-3. 决策 N8 合规分级（涉及个人风险，建议优先于其他搁置项）
-4. 决策 B1.1/L1.1 迁移、广东长华升级排期
+1. 处理未提交改动（coding-safety 提交、gitignore 收纳 .omo、data/evaluations 确认）
+2. 用户部署加固成果到双项目
+3. 跑一次真实审计验证 C6/C7 行为
+4. 决策 N8 合规分级（个人合规风险，建议优先）
