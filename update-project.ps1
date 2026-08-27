@@ -146,13 +146,17 @@ if ($isStable) {
     # ── Stable mode: re-copy all directories ──
     Write-Host "── Upgrading (stable mode — recopy) ──" -ForegroundColor Cyan
 
-    # Auto-discover and deploy skills from .claude/skills/ (merge, not replace)
-    $skillsDir = Join-Path $GOLD ".claude\skills"
-    if (Test-Path $skillsDir) {
-        $skillNames = Get-ChildItem $skillsDir -Directory | ForEach-Object { $_.Name }
+    # Auto-discover audit skills at repo root by SKILL.md marker (merge, not replace).
+    # Single source of truth is the repo root; dev-only .claude/skills/ is NOT a source.
+    $skillNames = Get-ChildItem $GOLD -Directory |
+        Where-Object { Test-Path (Join-Path $_.FullName "SKILL.md") } |
+        ForEach-Object { $_.Name }
+    if ($skillNames.Count -eq 0) {
+        Write-Host "  [WARN] No skill dirs found at repo root (SKILL.md marker)" -ForegroundColor Yellow
+    } else {
         foreach ($skill in $skillNames) {
             $destPath = Join-Path $ProjectDir ".claude\skills\$skill"
-            $srcPath = Join-Path $skillsDir $skill
+            $srcPath = Join-Path $GOLD $skill
             # Backup old
             if (Test-Path $destPath) {
                 $backupTarget = Join-Path $backupDir ".claude\skills\$skill"

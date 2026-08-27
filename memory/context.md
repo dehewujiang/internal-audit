@@ -8,10 +8,10 @@ internal-audit/
 ├── CLAUDE.md                 ← 开发版（含 architecture gotchas, rules loading）
 ├── CLAUDE-project.md         ← 运行版（精简，setup-project.ps1 拷贝为审计项目 CLAUDE.md）
 ├── constitution.md           ← 14 条硬约束 + 阶段流转规则 + 启动协议（2026-08-06 恢复）
-├── setup-project.ps1         ← 一键部署：扫描 .claude/skills/ 自动发现技能
+├── setup-project.ps1         ← 一键部署：扫描仓库根（含 SKILL.md 的目录即技能）自动发现
 ├── update-project.ps1        ← 增量升级：逐技能合并而非整目录覆盖
 ├── .claude/
-│   ├── skills/               ← 12 个技能（2 geb-* + 10 个审计 junction）
+│   ├── skills/               ← 2 个 geb 原生真身 + 10 个审计技能 junction 门牌（非取货点，见 ADR-027）
 │   ├── settings.json         ← extraRules 配置
 │   └── rules/                ← 8 份**复制副本**（实测非 junction！源在 D:\Nut\00_my_digital\12_AGI\rules\，改源需手动同步三处：源/项目/workbuddy）
 ├── _shared/scripts/          ← 核心脚本（phase_gate + 7 validate-* + queries + data_executor + audit_gate + check_mandatory_coverage + project_init + program_ir_parser + evidence_catalog + bump-version）
@@ -22,10 +22,13 @@ internal-audit/
 └── memory/                   ← 项目记忆（本目录）
 ```
 
-## 技能注册架构（2026-07-14 修复）
+## 技能注册架构（2026-08-27 改版，见 ADR-027）
 
-- **唯一来源**：`.claude/skills/` — 仓库根目录的 10 个审计技能通过 junction 映射于此
-- **部署一致性**：setup 和 update 都从 `.claude/skills/` 读取技能列表
+- **唯一来源**：仓库根本身的 10 个技能目录 — 含 SKILL.md 的根目录即被视为可部署技能
+- **门牌角色**：`.claude/skills/` 内 10 个审计技能为 junction 门牌，仅服务 AI 工具发现；
+  **没有任何脚本把它当取货点读** — 被清空只影响发现能力，一条重建命令即恢复（附在 ADR-027）
+- geb-bootstrap / geb-workflow 以原生目录保留于 `.claude/skills/`（开发环境专用，不随项目部署）
+- **部署一致性**：setup 和 update 都按 SKILL.md 标记扫根目录读取技能列表
 
 ## 四重闸机体系
 

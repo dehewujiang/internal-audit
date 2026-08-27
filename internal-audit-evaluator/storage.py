@@ -1,5 +1,11 @@
 """
 评估历史存储 - JSONL 格式
+
+[INPUT]: 被本技能的 record_evaluation.py / quality_gate.py 导入，提供评估记录的读写
+[OUTPUT]: EVALUATION_DIR 常量；save_evaluation / load_evaluations / get_latest_evaluation 等存取函数
+[POS]: internal-audit-evaluator 的数据层，与 quality_gate.py（阈值判定）互为读写两端，
+       存储位置必须与 quality_gate.get_eval_dir() 保持一致（均随脚本位置解析到仓库根 data/evaluations）
+[PROTOCOL]: 变更时更新此头部, 然后检查同级 CLAUDE.md
 """
 import json
 import os
@@ -8,8 +14,10 @@ from typing import List, Dict, Any, Optional
 from pathlib import Path
 
 
-# 评估历史存储路径
-EVALUATION_DIR = Path.home() / ".claude" / "skills" / "internal-audit" / "data" / "evaluations"
+# 评估历史存储路径：随脚本位置解析到仓库根（开发仓 = 源仓库根；部署项目 = 项目根）。
+# 禁止写死用户主目录下的外部快照路径——那是导致幽灵目录和读写分离的病根（见 memory/decisions.md）。
+REPO_ROOT = Path(__file__).resolve().parent.parent
+EVALUATION_DIR = REPO_ROOT / "data" / "evaluations"
 
 
 def _ensure_dir():
@@ -17,7 +25,7 @@ def _ensure_dir():
     EVALUATION_DIR.mkdir(parents=True, exist_ok=True)
 
 
-def _get_file_path(date: datetime = None) -> Path:
+def _get_file_path(date: Optional[datetime] = None) -> Path:
     """获取指定日期的存储文件路径"""
     _ensure_dir()
     date = date or datetime.now()

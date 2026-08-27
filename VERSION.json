@@ -1,7 +1,7 @@
 {
-  "version": "2026-08-11-3",
-  "git_commit": "b6c6d3d",
-  "updated_at": "2026-08-11T15:59:14+08:00",
+  "version": "2026-08-27-2",
+  "git_commit": "0a9f2ff",
+  "updated_at": "2026-08-27T16:35:32+08:00",
   "changes": [
     {
       "type": "chore",
@@ -222,6 +222,11 @@
       "type": "feat",
       "file": "script",
       "summary": "SKILL变更自动检测与回归机制（影响卡片+RED拦截）"
+    },
+    {
+      "type": "refactor",
+      "file": "setup-project.ps1",
+      "summary": "技能发现改为扫仓库根（SKILL.md 标记识别），.claude/skills 降级为可再生成门牌不再作为取货点"
     }
   ]
 }

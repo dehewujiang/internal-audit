@@ -5,6 +5,13 @@ quality_gate.py — 质量门工具
 读取评估结果，对比配置阈值，输出通过/重生成指令。
 在每个 Skill 的 Step 5 末尾，记录评估结果后调用。
 
+[INPUT]: internal-audit-evaluator/storage.py 的 JSONL 记录（--eval-id 模式）或外部评估 JSON（--input 模式）；
+         audit-topics/my-config.md 的质量阈值配置
+[OUTPUT]: {"action": "pass|warn|regenerate", ...} 判定指令，退出码 0/1/2
+[POS]: internal-audit-evaluator 的判定层，与 storage.py（数据层）互为读写两端，
+       配置与存储路径均随脚本位置解析到仓库根，禁止指向用户主目录下的外部快照
+[PROTOCOL]: 变更时更新此头部, 然后检查同级 CLAUDE.md
+
 用法：
     # 按 eval-id 检查
     python quality_gate.py --eval-id EVAL-TEST-001
@@ -24,15 +31,21 @@ import os
 import argparse
 import re
 from datetime import datetime
+from typing import Optional
 
 
 # ── 路径 ──────────────────────────────────────────────
 
+# 仓库根：quality_gate.py 位于 {根}/internal-audit-evaluator/ 下。
+# 开发仓 = 源仓库根；部署项目 = 项目根。两种环境通吃，禁止写死外部快照路径。
+REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+
 def get_my_config_path() -> str:
-    """查找 my-config.md"""
+    """查找 my-config.md：优先脚本所在仓库根的 audit-topics/，其次当前工作目录的项目根"""
     candidates = [
-        os.path.expanduser("~/.claude/skills/internal-audit/audit-topics/my-config.md"),
-        os.path.join(os.getcwd(), "internal-audit-workspace", "..", "..", "my-config.md"),
+        os.path.join(REPO_ROOT, "audit-topics", "my-config.md"),
+        os.path.join(os.getcwd(), "audit-topics", "my-config.md"),
     ]
     for p in candidates:
         if os.path.exists(p):
@@ -41,7 +54,8 @@ def get_my_config_path() -> str:
 
 
 def get_eval_dir() -> str:
-    return os.path.expanduser("~/.claude/skills/internal-audit/data/evaluations")
+    """与 internal-audit-evaluator/storage.py 的 EVALUATION_DIR 保持同源"""
+    return os.path.join(REPO_ROOT, "data", "evaluations")
 
 
 # ── 阈值读取 ──────────────────────────────────────────
@@ -143,7 +157,7 @@ def load_from_input(input_path: str) -> dict:
 
 # ── 判定逻辑 ──────────────────────────────────────────
 
-def evaluate(record: dict, thresholds: dict, custom_threshold: float = None) -> dict:
+def evaluate(record: dict, thresholds: dict, custom_threshold: Optional[float] = None) -> dict:
     """
     评估并输出行动指令
     

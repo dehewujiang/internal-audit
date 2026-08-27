@@ -3,12 +3,12 @@
 #        powershell -File setup-project.ps1 -ProjectDir "D:\path\to\project" --stable   (production lock)
 #
 # Junction (default, live sync with gold source — edit gold, changes appear everywhere):
-#   .claude/skills/  8 skill dirs
+#   .claude/skills/  10 audit skill dirs (discovered at repo root by SKILL.md marker)
 #   _shared/         phase_gate, validate, queries, project_init
 #   tools/           pdf_ocr_extractor.py + 13 capability declarations
 #
 # Copy --stable (snapshot at setup time, immune to gold-source changes):
-#   .claude/skills/  all skill dirs copied, not linked
+#   .claude/skills/  all audit skill dirs copied, not linked
 #   _shared/         all scripts copied, not linked
 #   tools/           all tools copied, not linked
 #
@@ -92,18 +92,17 @@ function New-StableCopy {
 $modeLabel = if ($Stable) { "Copy (stable)" } else { "Junction" }
 Write-Host "── Skills ($modeLabel) ──" -ForegroundColor Cyan
 
-# Auto-discover all skills from .claude/skills/ (supports both native dirs and junctions)
-$skillsDir = Join-Path $GOLD ".claude\skills"
-if (-not (Test-Path $skillsDir)) {
-    Write-Host "  [WARN] .claude/skills/ not found in gold source — no skills deployed" -ForegroundColor Yellow
+# Auto-discover audit skills: a repo-root directory containing SKILL.md is a deployable skill.
+# Single source of truth is the repo root. The dev-only .claude/skills/ (geb-*) is NOT a source.
+$SKILLS = Get-ChildItem $GOLD -Directory |
+    Where-Object { Test-Path (Join-Path $_.FullName "SKILL.md") } |
+    ForEach-Object { $_.Name }
+if ($SKILLS.Count -eq 0) {
+    Write-Host "  [WARN] No skill dirs found at repo root (SKILL.md marker) — no skills deployed" -ForegroundColor Yellow
 } else {
-    $SKILLS = Get-ChildItem $skillsDir -Directory | ForEach-Object { $_.Name }
-    if ($SKILLS.Count -eq 0) {
-        Write-Host "  [WARN] No skills found in .claude/skills/" -ForegroundColor Yellow
-    }
     foreach ($skill in $SKILLS) {
         $link   = Join-Path $ProjectDir ".claude\skills\$skill"
-        $target = Join-Path $skillsDir $skill
+        $target = Join-Path $GOLD $skill
         if ($Stable) {
             New-StableCopy -Dest $link -Source $target
         } else {
