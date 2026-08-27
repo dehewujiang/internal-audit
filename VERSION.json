@@ -1,7 +1,7 @@
 {
-  "version": "2026-08-27-2",
-  "git_commit": "0a9f2ff",
-  "updated_at": "2026-08-27T16:35:32+08:00",
+  "version": "2026-08-27-3",
+  "git_commit": "10be1bc",
+  "updated_at": "2026-08-27T16:45:23+08:00",
   "changes": [
     {
       "type": "chore",
@@ -227,6 +227,11 @@
       "type": "refactor",
       "file": "setup-project.ps1",
       "summary": "技能发现改为扫仓库根（SKILL.md 标记识别），.claude/skills 降级为可再生成门牌不再作为取货点"
+    },
+    {
+      "type": "chore",
+      "file": ".gitignore",
+      "summary": "精确忽略 .claude/skills 下10个junction门牌路径(ADR-027)，消除正本/门牌双份记账；账本撤下90条，geb真身照常记账"
     }
   ]
 }

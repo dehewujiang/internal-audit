@@ -32,3 +32,17 @@ node_modules/
 # 运行工具痕迹（oh-my-openagent / workbuddy 工作目录，产物已入库，不入版本控制）
 .omo/
 .workbuddy/
+
+# .claude/skills 下的 10 个审计技能为 junction 门牌（指向仓库根同名正本，见 ADR-027）。
+# junction 内容与正本完全同体，git 不识别链接会导致同一改动双份记账——正本已记账，此处免记。
+# 注意：精确列举，不用通配——geb-bootstrap / geb-workflow 是原生真身目录，必须照常记账。
+.claude/skills/audit-execution-assistant/
+.claude/skills/audit-finding-debate/
+.claude/skills/audit-interview-designer/
+.claude/skills/document-organizer/
+.claude/skills/internal-audit-evaluator/
+.claude/skills/internal-audit-program-generator/
+.claude/skills/internal-audit-report-generator/
+.claude/skills/program-quality-evaluator/
+.claude/skills/project-init/
+.claude/skills/topic-wizard/
