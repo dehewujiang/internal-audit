@@ -40,6 +40,7 @@ python phase_gate.py advance      # 执行前进
 python phase_gate.py rollback --to phase_1_document_analysis --reason "补充制度分析"
 python phase_gate.py tool-check <script_name>                 # exit 0 = 放行，exit 1 = 拦截
 python phase_gate.py tool-check <script_name> --force         # 跨阶段回退时用户确认后临时开放（记录 audit_trail）
+python phase_gate.py checklist --workspace <项目根目录>      # 打勾纸：六句话看板，只看不拦（新桌子，转调 ledger/checklist.py）
 ```
 
 ## 阶段流转语义（与宪法「阶段流转规则」一致）

@@ -17,6 +17,7 @@ Usage:
     python phase_gate.py rollback --to phase_1_document_analysis --reason "补充制度分析"
     python phase_gate.py tool-check validate-finding.py           # check tool phase permission
     python phase_gate.py tool-check validate-finding.py --force   # override with audit_trail record
+    python phase_gate.py checklist --workspace D:\某个审计项目  # 打勾纸：六句话看板，只看不拦（新桌子）
     python phase_gate.py log-decision --scene 风险定级 --decision 高 --basis "回款超账期且无对账"
 """
 
@@ -278,6 +279,18 @@ def append_audit_trail(data: dict, event_type: str, detail: str):
 
 
 # ── CLI commands ──────────────────────────────────────────
+
+
+def cmd_checklist(args):
+    """打勾纸（只看不拦）：转调 ledger/checklist.py，旧闸机命令一个不动。"""
+    import subprocess
+    gold = Path(__file__).resolve().parent.parent.parent
+    script = gold / "ledger" / "checklist.py"
+    if not script.exists():
+        print("打勾纸零件缺失：ledger/checklist.py，用旧闸机 status/check")
+        sys.exit(2)
+    r = subprocess.run([sys.executable, str(script), "--workspace", args.workspace])
+    sys.exit(0)  # 纸不拦路，透传只看不看码
 
 
 def cmd_tool_check(args):
@@ -572,10 +585,13 @@ def main():
     p_log.add_argument("--decision", required=True, help="决策内容")
     p_log.add_argument("--basis", required=True, help="决策依据")
 
+    p_cl = sub.add_parser("checklist", help="打勾纸：六句话看板，只看不拦（新桌子）")
+    p_cl.add_argument("--workspace", required=True, help="老项目根目录（内含 internal-audit-workspace/）")
+
     args = parser.parse_args()
     cmds = {"status": cmd_status, "check": cmd_check, "advance": cmd_advance,
             "rollback": cmd_rollback, "tool-check": cmd_tool_check,
-            "log-decision": cmd_log_decision}
+            "log-decision": cmd_log_decision, "checklist": cmd_checklist}
     if args.command in cmds:
         cmds[args.command](args)
     else:
