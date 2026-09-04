@@ -275,6 +275,9 @@ OCR 会自动检测并标记以下需要人工核对的内容：
 7. **双目录输出**（批量分析时）：
    - `policy-analyses/`：完整分析报告（JSON + Markdown）
    - `design-assessments/`：设计观察（D-XXX 编号，供 Phase 4 验证升级）
+8. **写桌子信号格**（有新桌子 ledger/*.json 才做，没有就跳过）：每条 D-XXX 跑
+   `python ledger/ledger.py add-line <桌子.json> --slot 说不清的信号 --text "D-001 标题（待现场验证）"`，
+   只添不盖。
 
 ---
 
