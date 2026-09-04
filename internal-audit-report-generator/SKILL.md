@@ -158,6 +158,10 @@ Step 2: 先读取 findings/index.json 列清单（{finding_id, origin, risk_leve
          → 计算 {{FINDINGS_ORIGIN_DESIGN}} 和 {{FINDINGS_ORIGIN_EXECUTION}}
          → design类发现 → 填充第4.1章"设计类发现"
          → execution类发现 → 填充第4.2章"执行类发现"
+Step 2b: 读桌子核对（只看不改：工作区有新桌子 ledger/*.json 才做，没有就跳过）
+         → 每条 finding 必须在桌上有一个位（第一格或红格对上单号）
+         → 桌上每个单号必须在 index.json 里存在（防鬼号）
+         → 对不上 → 提醒用户补搬（ledger.py import）或补对单号（ledger.py link-finding），不阻断报告
 Step 3: 读取 audit-programs/ 中最新一份审计程序文档（已执行程序，提取程序清单作背景）
         → 提取程序清单作为背景
 Step 4: 选择报告模板
