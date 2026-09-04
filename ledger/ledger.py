@@ -218,6 +218,19 @@ def cmd_add_evidence(args) -> None:
     print(f"贴好证据：{args.file_}")
 
 
+def cmd_add_line(args) -> None:
+    """添字：往格子里追加一句，不盖旧字（多家写同一格用这个）。"""
+    if args.slot not in LEFT_SLOTS:
+        raise SystemExit(f"没这格：{args.slot}，只能是 {LEFT_SLOTS}")
+    path = Path(args.file)
+    data = load(path)
+    for x in data["left"]:
+        if x["slot"] == args.slot:
+            x["text"] = f"{x['text']}；{args.text}" if x["text"] else args.text
+    save(path, data)
+    print(f"添好：{args.slot}")
+
+
 def cmd_link(args) -> None:
     """小张对单号：红格的怀疑对上问题单号，一次对一个。"""
     if args.slot not in LEFT_SLOTS:
@@ -264,6 +277,12 @@ def main() -> None:
     c.add_argument("--when", required=True)
     c.add_argument("--slot-id", default=None)
     c.set_defaults(fn=cmd_add_evidence)
+
+    c = sub.add_parser("add-line", help="往格子里追加一句")
+    c.add_argument("file")
+    c.add_argument("--slot", required=True, choices=LEFT_SLOTS)
+    c.add_argument("--text", required=True)
+    c.set_defaults(fn=cmd_add_line)
 
     c = sub.add_parser("link-finding", help="左边一格对上问题单号")
     c.add_argument("file")
