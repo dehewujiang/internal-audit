@@ -166,6 +166,10 @@ python audit-interview-designer/script/interview_generator.py \
 | **风险线索** | 涉及控制缺失、执行偏差、系统问题 | `design-assessments/[主题]_设计观察.json` | 按访谈JSON格式追加到 design_observations[] |
 | **证据/记录** | 涉及已获取的文件、数据、照片 | `evidence/[主题]/` | 记录证据清单，提示用户存放文件 |
 
+**写桌子**（有新桌子 ledger/*.json 才做，没有就跳过）：分流完顺手写桌子，只添不盖——
+风险线索跑 `python ledger/ledger.py add-line <桌子.json> --slot 说不清的信号 --text "D-015 标题（访谈确认）"`；
+证据/记录跑 `python ledger/ledger.py add-evidence <桌子.json> --file <文件名> --from <受访人> --when <访谈日期>`。
+
 #### 风险线索：访谈JSON格式
 
 每条风险线索写入 `design-assessments/[主题]_设计观察.json` 的方式：
