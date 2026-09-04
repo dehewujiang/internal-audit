@@ -184,7 +184,8 @@ if ($isStable) {
 
     $dirs = @(
         @{Dest="_shared"; Source=(Join-Path $GOLD "_shared")},
-        @{Dest="tools"; Source=(Join-Path $GOLD "tools")}
+        @{Dest="tools"; Source=(Join-Path $GOLD "tools")},
+        @{Dest="ledger"; Source=(Join-Path $GOLD "ledger")}
     )
 
     $upOk = 0; $upFail = 0
@@ -325,7 +326,7 @@ if ($isStable) {
     }
 
     Write-Host ""
-    Write-Host "  ℹ️  Skills, _shared/, tools/ are junction-linked — already live." -ForegroundColor DarkGray
+    Write-Host "  ℹ️  Skills, _shared/, tools/, ledger/ are junction-linked — already live." -ForegroundColor DarkGray
     Write-Host "     Only config files (CLAUDE.md, constitution.md, OPS.md) were updated." -ForegroundColor DarkGray
 }
 

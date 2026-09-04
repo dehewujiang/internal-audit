@@ -10,7 +10,13 @@
 * 抽屉三张表：问话表、检查表、报告表。
 * 打勾纸三句：证据够了吗、制度看全了吗、红格看了吗。
 
+## 部署约定
+* ledger/ 跟 _shared/ 一个待遇：setup-project 建项目时链接或拷贝，update-project 升级时同步。
+* 5个零件已进 phase_gate 白名单（全阶段可用），已在 CLAUDE.md 注册，穷举检查认得它们。
+
 ## 新旧对照
+* ledger/ 跟 _shared/ 一个待遇：setup-project 建项目时链接或拷贝，update-project 升级时同步。
+* 5个零件已进 phase_gate 白名单（全阶段可用），已在 CLAUDE.md 注册，穷举检查认得它们。
 
 * 左边三格 ← 以前散在检查单、问题单里的怀疑，现在收拢到一处。
 * 右边证据 ← 证据柜（_evidence_catalog.json）的槽位，槽位号、文件名、谁给的、哪天，原样抄过来。

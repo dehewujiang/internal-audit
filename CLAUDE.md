@@ -22,6 +22,11 @@
 | evidence-catalog | 证据清单管理（生成槽位/扫描文件/匹配建议/状态汇总） | level_0 | `skills/internal-audit/_shared/scripts/evidence_catalog.py` |
 | validate-catalog | 证据清单结构校验（槽位必填/唯一性/计数一致性，R05） | level_0 | `skills/internal-audit/_shared/scripts/validate-catalog.py` |
 | validate-index | finding 索引交叉校验（目录vs索引遗漏/幽灵/闭合，R06） | level_0 | `skills/internal-audit/_shared/scripts/validate-index.py` |
+| ledger-keeper | 新桌子管家：开桌/写格/贴证据/对单号/老账搬家（只管写） | level_0 | `skills/internal-audit/ledger/ledger.py` |
+| ledger-gate | 新桌子日常门卫：只读桌子查大事+高风险硬度 | level_0 | `skills/internal-audit/ledger/check.py` |
+| ledger-checklist | 新桌子打勾纸：六句话看板，只看不拦 | level_0 | `skills/internal-audit/ledger/checklist.py` |
+| ledger-audit | 报告前桌子闸机：单缺位/鬼号/红格无单号拦下 | level_0 | `skills/internal-audit/ledger/audit_table.py` |
+| ledger-export | 桌子总览表格：左边/证据/抽屉三页（签字存档） | level_0 | `skills/internal-audit/ledger/export.py` |
 
 ## 关键文件
 

@@ -6,11 +6,13 @@
 #   .claude/skills/  10 audit skill dirs (discovered at repo root by SKILL.md marker)
 #   _shared/         phase_gate, validate, queries, project_init
 #   tools/           pdf_ocr_extractor.py + 13 capability declarations
+#   ledger/          新桌子零件（ledger.py 管家 + check.py 门卫 + checklist 打勾纸 + audit_table 报告闸机 + export 总览表格）
 #
 # Copy --stable (snapshot at setup time, immune to gold-source changes):
 #   .claude/skills/  all audit skill dirs copied, not linked
 #   _shared/         all scripts copied, not linked
 #   tools/           all tools copied, not linked
+#   ledger/          all ledger scripts copied, not linked
 #
 # Copy (always snapshot, regardless of mode):
 #   CLAUDE.md ← CLAUDE-project.md (project version, stripped dev-only noise)
@@ -121,6 +123,18 @@ if ($Stable) {
     New-StableCopy -Dest $sharedLink -Source $sharedTarget
 } else {
     New-Junction -Link $sharedLink -Target $sharedTarget
+}
+
+# ════════════════════════════════════════════════════════
+# 3b. ledger/ — junction (default) or copy (--stable)
+# ════════════════════════════════════════════════════════
+Write-Host "── ledger/ ($modeLabel) ──" -ForegroundColor Cyan
+$ledgerLink = Join-Path $ProjectDir "ledger"
+$ledgerTarget = Join-Path $GOLD "ledger"
+if ($Stable) {
+    New-StableCopy -Dest $ledgerLink -Source $ledgerTarget
+} else {
+    New-Junction -Link $ledgerLink -Target $ledgerTarget
 }
 
 # ════════════════════════════════════════════════════════
@@ -286,6 +300,7 @@ Write-Host "── Self-check ──" -ForegroundColor Cyan
 $checks = @(
     @{ Label="_shared/phase_gate.py"; Path=(Join-Path $ProjectDir "_shared\scripts\phase_gate.py") },
     @{ Label="tools/pdf_ocr_extractor.py"; Path=(Join-Path $ProjectDir "tools\pdf_ocr_extractor.py") },
+    @{ Label="ledger/ledger.py"; Path=(Join-Path $ProjectDir "ledger\ledger.py") },
     @{ Label=".claude/skills/project-init"; Path=(Join-Path $ProjectDir ".claude\skills\project-init") },
     @{ Label="CLAUDE.md"; Path=(Join-Path $ProjectDir "CLAUDE.md") },
     @{ Label="constitution.md"; Path=(Join-Path $ProjectDir "constitution.md") },

@@ -1,7 +1,7 @@
 {
-  "version": "2026-08-27-3",
-  "git_commit": "10be1bc",
-  "updated_at": "2026-08-27T16:45:23+08:00",
+  "version": "2026-09-04-5",
+  "git_commit": "c1c9621",
+  "updated_at": "2026-09-04T15:44:43+08:00",
   "changes": [
     {
       "type": "chore",
@@ -232,6 +232,26 @@
       "type": "chore",
       "file": ".gitignore",
       "summary": "精确忽略 .claude/skills 下10个junction门牌路径(ADR-027)，消除正本/门牌双份记账；账本撤下90条，geb真身照常记账"
+    },
+    {
+      "type": "feat",
+      "file": "ledger",
+      "summary": "新桌子5零件（管家/门卫/打勾纸/报告闸机/总览表格）+phase_gate白名单+CLAUDE注册"
+    },
+    {
+      "type": "feat",
+      "file": "setup-project.ps1,update-project.ps1",
+      "summary": "新建与升级同步ledger目录"
+    },
+    {
+      "type": "skill",
+      "file": "5房间SKILL.md",
+      "summary": "看制度问话执行吵架写桌子+报告房读桌子闸机试点只增步骤"
+    },
+    {
+      "type": "doc",
+      "file": "CLAUDE.md+CLAUDE-project.md",
+      "summary": "部署结构与工具表同步ledger行"
     }
   ]
 }
