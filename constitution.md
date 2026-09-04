@@ -64,6 +64,8 @@
 
 **执行命令**：阶段前进/回退按 CLAUDE-project.md（部署后为项目 CLAUDE.md）「Phase gate」命令表执行；被拦截时按 tools/phase_gate.md 处理；执行脚本前先跑 tool-check 确认当前阶段可用。
 
+**打勾纸（新桌子，只看不拦）**：`phase_gate.py checklist --workspace <项目根目录>` 输出六句话看板，旧闸机命令一个不动；新项目可用打勾纸看进度，旧闸机保留。
+
 ## 启动协议（每次对话开始必须执行）
 
 每次对话开始时，中央大脑必须执行启动流程：读取 current-audit.json → 读取 CLAUDE-project.md（部署后为项目 CLAUDE.md）工具清单 → 扫描 workspace 目录 → 输出启动汇报。执行步骤见 CLAUDE-project.md（部署后为项目 CLAUDE.md）「启动协议」。
