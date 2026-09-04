@@ -1,0 +1,16 @@
+{
+  "schema_version": "1.0",
+  "table": "冲压车间废料多了",
+  "left": [
+    {"slot": "确定的毛病", "red": false, "text": "领料没签字", "ref_finding_ids": []},
+    {"slot": "怀疑偷骗", "red": true, "text": "废料少2吨，可能被拉出去卖了", "ref_finding_ids": []},
+    {"slot": "说不清的信号", "red": false, "text": "丢3张单子：没发生/没管好/被拿走，三种可能都记上", "ref_finding_ids": []}
+  ],
+  "right": [
+    {"slot_id": null, "file": "领料单7张（3张缺）", "from": "班长", "when": "审计当天"},
+    {"slot_id": null, "file": "称重照片", "from": "小王现场拍", "when": "审计当天"},
+    {"slot_id": null, "file": "废料堆照片", "from": "小王现场拍", "when": "审计当天"}
+  ],
+  "drawers": ["问话表", "检查表", "报告表"],
+  "checklist": ["证据够了吗", "制度看全了吗", "红格看了吗"]
+}

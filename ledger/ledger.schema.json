@@ -1,0 +1,8 @@
+{
+  "schema_version": "1.0",
+  "table": "string: 这张桌子查什么事",
+  "left": "固定3格: 确定的毛病 / 怀疑偷骗(标红) / 说不清的信号, 每格 {slot, red, text, ref_finding_ids[]}",
+  "right": "证据列表, 每条 {slot_id(证据柜槽位号,可空), file, from, when}",
+  "drawers": ["问话表", "检查表", "报告表"],
+  "checklist": ["证据够了吗", "制度看全了吗", "红格看了吗"]
+}
