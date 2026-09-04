@@ -616,6 +616,11 @@ Step 3h: 业务现实性检验（可选）
 
 **自动扫描规则**：每次更新前，扫描 `findings/` 下所有 JSON 文件，确保 index.json 与实际情况一致。
 
+**写桌子**（有新桌子 ledger/*.json 才做，没有就跳过）：finding 落定后顺手上桌——
+新单跑 `python ledger/ledger.py import <桌子.json> --workspace <项目根目录> --table <主题> --finding <单号>`
+（舞弊/高风险自动进红格并对单号，其余进第一格，证据原样贴，待查进信号格）；
+桌子已存在只跑 `python ledger/ledger.py link-finding <桌子.json> --slot <确定的毛病|怀疑偷骗> --finding <单号>`。
+
 ## 关键词自动提取规则
 
 每次生成finding时，自动从以下字段提取关键词：

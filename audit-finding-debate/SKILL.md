@@ -139,6 +139,10 @@ AI应以这个层次结构为基线输出，根据难度等级调整强度。初
 2. 辩论摘要 → `debate_sessions[]` 数组
 3. 完整对话 → `debates/DB-{finding_id}-{seq}_transcript.md`
 
+**改桌子**（有新桌子 ledger/*.json 才做，没有就跳过）：辩论改了结论才改桌，没改不动——
+结论有变跑 `python ledger/ledger.py set-slot <桌子.json> --slot <确定的毛病|怀疑偷骗> --text <新结论>`（改前自动拍照，回得去）；
+只补依据不改结论就不用动桌子。
+
 ## 角色库
 
 角色存储在 `references/debate_roles/` 下，包含13个业务角色。
