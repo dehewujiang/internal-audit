@@ -58,6 +58,14 @@ GLOBAL_TOOLS = {
     "decisions_schema.py",
     "data_executor.py",
     "audit_gate.py",
+    # 新桌子 ledger/ 零件（tool-check 只比 basename，见 cmd_check_tool）：
+    # ledger.py=往桌上写, check.py=日常门卫, checklist.py=打勾纸,
+    # audit_table.py=报告前闸机, export.py=总览表格
+    "ledger.py",
+    "check.py",
+    "checklist.py",
+    "audit_table.py",
+    "export.py",
 }
 
 # Evaluator scripts — allowed from Phase 1 onward (no init-phase eval)
