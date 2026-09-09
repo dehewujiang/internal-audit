@@ -36,14 +36,23 @@ The map IS the terrain.
 - 冷启动播种：`/geb-bootstrap`
 - 查看已加载规则：`/memory`
 
-## 规则路由（按路径自动加载）
+## 规则路由（加载关系说明）
 
-编辑文件时，以下规则会按路径自动注入：
+路由由 Claude Code 按各规则文件顶部的 `paths` 字段自动执行，本表仅作概览、不控制加载行为；精确匹配以各文件 `paths` 为准，paths 变更后无需同步本表。
 
-| 触发路径 | 加载规则 |
+无条件常驻（无 `paths`，每次会话启动即加载）：
+- `work-principles.md` — 通用工作原则
+- `memory_rules.md` — 跨项目记忆规则
+- `project-doctrine.md`（本文件）— 项目宪法
+
+按路径加载（有 `paths`，读到匹配文件时才注入）：
+| 规则文件 | 大致触发范围 |
 |---|---|
-| `**/*.{py,js,ts,go,java,rs,html,css,jsx,tsx}` | `coding-safety.md` + `good-taste.md` + `geb-l3.md` |
-| `**/api/**`, `**/interface/**`, `**/public/**` | 额外加载 `compat.md` |
+| `coding-safety.md` | 编码类文件（py/js/ts/go/java/rs/html/css） |
+| `good-taste.md` | 编码类文件（py/js/ts/go/java/rs） |
+| `geb-l3.md` | 代码/文档及常见代码目录（app/api/scripts/components/services/utils 等） |
+| `compat.md` | `api/`、`interface/`、`public/` 目录 |
+| `memory-templates.md` | 仅初始化触发（.geb-bootstrap-trigger） |
 
 
 ## 规则冲突裁决

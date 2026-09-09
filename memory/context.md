@@ -1,7 +1,25 @@
 # 技术上下文
-更新时间：2026-08-12
+更新时间：2026-09-04
 
-## 核心模块关系
+## 新桌子 ledger（2026-09-04，VERSION 2026-09-04-5，已推远程，见 ADR-028）
+
+```
+ledger/
+├── ledger.py        ← 管家：create/set-slot/add-evidence/link-finding/add-line/snaps/rollback/import（写前拍照留20张）
+├── check.py         ← 日常门卫：三格有字/红格对号提醒/证据来源/抽屉 + --workspace 查高风险A/E硬度
+├── checklist.py     ← 打勾纸：六句话看板，只读 workspace，exit 永远0
+├── audit_table.py   ← 报告前闸机：单缺位/鬼号/红格无号 → exit 2
+├── export.py        ← 总览表格：左边/证据/抽屉三页（复用 excel_core）
+├── ledger.schema.json (v1.0) / README.md / examples/冲压车间.json
+```
+
+- 五家接法（SKILL 只增行）：organizer→信号格add-line / interview→信号格+证据 / execution→import单张 / debate→set-slot改字 / report→Step 2b 跑 audit_table.py；program-generator 未动（产出即抽屉检查表）
+- phase_gate 新增 `checklist` 子命令（转调 ledger/checklist.py；登记表动旧行 1 行，旧命令逻辑零动）；constitution 加一句话；tools/phase_gate.md 加一行
+- 部署：setup/update 搬 ledger + GLOBAL_TOOLS 加 5 basename + CLAUDE/CLAUDE-project 注册；VERSION 2026-09-04-5（4 条 changes）
+- 验证基线：广东长华 11 张/37 条/F-004；旧回归 GREEN=2；快照 R08 按"源+照同改"过（cceer/root_cause 加 dated 注记）
+- 小桌 worktree new-table 保留未拆；根下图纸/试搭/进度三份未存档
+
+## 核心模块关系（2026-08-12 存档）
 
 ```
 internal-audit/
