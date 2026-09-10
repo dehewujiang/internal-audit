@@ -8,4 +8,4 @@
 | decisions.md | 2026-09-04 | 新增 ADR-028：加法不减法 ledger sidecar（只拦丢东西不管顺序格式） |
 | context.md | 2026-09-04 | 新增新桌子 ledger 章节（8 文件+五家接法+checklist 命令+部署+验证基线） |
 | feedback.md | 2026-09-04 | 新增 9-04 五则：Edit 锚点/暂存区残留/快照同改/shell 变量/glob 竖线 |
-| user.md | 2026-07-06 | Flan：内审经理，中文，先建模再动手，不要黑话 |
+| user.md | 2026-09-10 | Flan：内审经理，中文，先建模再动手，不要黑话；开发走 worktree→master |
