@@ -1,5 +1,24 @@
 # 技术上下文
-更新时间：2026-09-04
+更新时间：2026-09-10
+
+## 坑2 整改第一批（2026-09-10，VERSION 2026-09-10-1，在 worktree 待合并，见 ADR-029/030）
+
+四处改动：
+- `_shared/scripts/program_ir_parser.py` — 删 `build_ir()` 中 2.1 节首表后的 `break`（原第 341 行），风险清单 5 张表全收；分母 10→34
+- `audit-execution-assistant/references/finding_rules.md` L53 — 校验矩阵「来源可靠性」由 `A级 | B/C级 | D/E级` 改为 `A级或E级 | B/C级 | D级`
+- `internal-audit-report-generator/templates/standard-audit-report.md` + `SKILL.md` — 综合结论加 5.5「报告可靠性上限声明」（固定文案）
+- `_shared/scripts/validate-policy-analysis.py` — 新增原文抽查
+
+**原文抽查设计要点**：
+- 入口：`locate_source_text(data, ws)` 按 `doc_name` 在 `documents/` 找 `{stem}_ocr.txt` → `{stem}.{txt,md,docx}` → 文件名模糊兜底
+- docx：标准库 `zipfile` 读 `word/document.xml` 去标签（零依赖）
+- 条款号：`CLAUSE_RE` 兼容阿拉伯与中文数字，`clause_key()` 归一化后比对
+- **走独立通道**：结果单列顶层 `source_reconciliation`，不进 `checks`、不参与 `action`/退出码。原因：`audit_gate.py:147-152` 只看退出码是否为 0，warn(1) 与 block(2) 在它眼里一样（ADR-030）
+- `--workspace` 参数缺省时 `find_workspace()` 从 CWD 向上找 `internal-audit-workspace/`
+
+**测试入口**：
+- `python tests/test_source_reconciliation.py` — 原文抽查正反例（独立通道不被 `regression-check.py` 覆盖，故做专项断言）
+- `python tests/prompt_snapshots/regression-check.py` — 全量回归基线（改后 2 绿 0 红）
 
 ## 新桌子 ledger（2026-09-04，VERSION 2026-09-04-5，已推远程，见 ADR-028）
 

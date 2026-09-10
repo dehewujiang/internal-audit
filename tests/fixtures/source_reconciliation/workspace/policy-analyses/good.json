@@ -1,0 +1,12 @@
+{
+  "schema_version": "1.0.0",
+  "doc_name": "考勤管理规定",
+  "control_points": [
+    {"control_id": "CP-001", "title": "打卡管理", "source": "第2条"},
+    {"control_id": "CP-002", "title": "加班审批", "source": "第4条"},
+    {"control_id": "CP-003", "title": "请假审批", "source": "第5条"}
+  ],
+  "risk_points": [
+    {"description": "加班未经审批", "severity": "高"}
+  ]
+}

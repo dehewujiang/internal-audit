@@ -1,7 +1,7 @@
 # TODO
 
 ## 进行中
-- 无（2026-09-04 新桌子收工；小桌 worktree new-table 保留未拆）
+- 坑2 整改第一批完成（2026-09-10，VERSION 2026-09-10-1，**在 worktree 分支，待合并回 master**）
 
 ## 待办（风险整改 — 已全部闭环 2026-08-06，详见下方已完成章节）
 
@@ -11,12 +11,12 @@
 - 📌 拆小桌（worktree new-table，尘埃落定后；删前确认分支已并回）
 - 📌 增量制度分析脚本（analysis_manifest.py + incremental_analysis_gate.py）已入库未接入（2026-08-12 确认：全库 0 引用、document-organizer 全量分析、CLAUDE-project 工具清单未提）。判定：设计超前、需求未触发（制度偶尔更新）→ 保留不删，待未来制度更新频繁时接线。记录见 `_shared/scripts/README.md`
 - 📌 create_evidence_dirs.py 重构候选（2026-08-12 纳米测试三问发现）：名为建目录、实为 457 行解析器（97% 代码在生成证据清单）；3 处死代码（safe_dirname / 风险名称提取 / programs 参数，v2.1 取消程序目录后遗留）；与 evidence_catalog.py 职责重叠。功能在用（program-generator Step 4），不紧急 → 下次动 evidence 时重构（解析逻辑并入 evidence_catalog 或改名 + 删死代码）
-- 🔴 坑2 整改（验证优先/防自证，2026-08-12 诊断完成、待排期实施）：
-  - 漏洞2（最危险）：validate-program.py --ir 覆盖率分母改为上游独立风险清单（design-assessments + policy-analyses），防"程序自己列风险又自证覆盖"
-  - 漏洞3：证据 reliability_grade 改为系统打章——data_executor 导出自动 A、OCR 自动 C+待确认、AI 只能标 E（第三方）并附来源
-  - 漏洞1：validate-policy-analysis 抽查原始制度文本与提取 JSON 的对应（关键条款数一致），不只看 AI 转述
-  - 漏洞4：报告不根治，记录"报告可靠性上限 = 前四环节最弱一环"
-  - 实施前先出规划模型供审核；对应新增 ADR
+- 🔴 坑2 整改（验证优先/防自证）：
+  - ✅ 第一批（2026-09-10，VERSION 2026-09-10-1）：三把小刀 + 漏洞1——覆盖率漏表修复（program_ir_parser.py 删 break，分母 10→34）/ E 级证据定义矛盾修正（finding_rules.md L53）/ 报告可靠性上限声明（report-generator 模板 + SKILL 5.5）/ 漏洞1 原文抽查（validate-policy-analysis.py 独立通道 + tests/test_source_reconciliation.py 专项测试）。决策见 ADR-029
+  - ⬜ 第二批：漏洞2 主体（覆盖率分母改上游独立清单）——前置依赖未满足：须先统一上游输出 schema（json-schema.md 声明与真实产物漂移）+ 积累 design-assessments 实例（全库零实例）
+  - ⬜ 第三批：漏洞3 主体（证据等级系统盖章——data_executor 导出自动 A、OCR 自动 C+待确认、AI 只能标 E 并附来源）
+  - 🔴 **新增**：audit_gate 退出码缺陷——只看退出码是否为 0，不区分 warn(1)/block(2)，导致"只提示不阻断"的设计全部失效（ADR-030 记录，本次以独立通道绕开）。建议单独排期修
+  - ⬜ 附带发现：`validate-policy-analysis.py` 的 `check_control_points_traceability` 查的字段列表（source_section/source_doc/source_clause/原文出处）**不含真实产出最常用的 `source` 字段**，会对真实数据误报"缺少原文出处"。下次动该脚本时一并修
 - 处理未提交改动（2026-08-12）：coding-safety.md 分级验证改动提交确认、.omo/.workbuddy 运行痕迹收进 .gitignore、data/evaluations/2026-05-12.jsonl 删除确认
 - 部署架构加固成果到双项目（VERSION.lock 08-06-4 → 08-11-3，用户按 update-project.ps1 执行）
 - C6 推理日志全量铺开：试点已完成，跑 1 个真实审计项目后评估（见 REASON-LOG.md）

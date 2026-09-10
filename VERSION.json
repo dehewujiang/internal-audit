@@ -1,7 +1,7 @@
 {
-  "version": "2026-09-04-5",
-  "git_commit": "c1c9621",
-  "updated_at": "2026-09-04T15:44:43+08:00",
+  "version": "2026-09-10-1",
+  "git_commit": "b014fe6",
+  "updated_at": "2026-09-10T15:41:46+08:00",
   "changes": [
     {
       "type": "chore",
@@ -252,6 +252,31 @@
       "type": "doc",
       "file": "CLAUDE.md+CLAUDE-project.md",
       "summary": "部署结构与工具表同步ledger行"
+    },
+    {
+      "type": "fix",
+      "file": "_shared/scripts/program_ir_parser.py",
+      "summary": "修复风险清单只解析首张表的 break（覆盖率分母由 10 恢复为 34）"
+    },
+    {
+      "type": "docs",
+      "file": "audit-execution-assistant/references/finding_rules.md",
+      "summary": "E 级证据归入「充分」档，消除与 evidence_standards/宪法第3条的定义矛盾"
+    },
+    {
+      "type": "feat",
+      "file": "internal-audit-report-generator",
+      "summary": "综合结论新增 5.5 报告可靠性上限声明（模板 + SKILL 强制规则）"
+    },
+    {
+      "type": "feat",
+      "file": "_shared/scripts/validate-policy-analysis.py",
+      "summary": "新增原文抽查（条款号核对 + 中文数字归一化，独立通道不参与退出码）"
+    },
+    {
+      "type": "test",
+      "file": "tests/test_source_reconciliation.py",
+      "summary": "原文抽查正反例专项测试 + fixture"
     }
   ]
 }
