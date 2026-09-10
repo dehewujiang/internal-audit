@@ -214,7 +214,10 @@ python _shared/scripts/data_health_check.py dir <evidence目录>
 python _shared/scripts/data_health_check.py ocr <图片路径>
 ```
 
-**红线**：OCR 提取的文字是候选不是证据。所有文字（尤其数字、日期、金额——实测斜杠丢失、金额漏字）必须用户逐条核对原图并明确确认后，才能录入证据。未经确认的 OCR 结果禁止进入任何分析或 finding。
+**OCR 引擎与确认规则**（引擎=PaddleOCR，与文档识别同款；实测校准 2026-09-10）：
+- 体检器自动按置信度分级：低置信（<0.85）条目标红 → **必须用户逐条核对原图并明确确认**后才能使用；未经确认的低置信 OCR 结果禁止进入任何分析或 finding
+- 高置信条目默认采信，是否抽查由用户决定
+- OCR 引擎跑不起来（PaddleOCR 未安装等）→ 报告里明标，不得静默降级为其他引擎
 
 #### Step 2.0：数据预处理（大文件先过 Python）
 

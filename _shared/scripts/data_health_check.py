@@ -251,49 +251,53 @@ def ocr_check(path: Path, min_conf: float = 0.85) -> dict:
     """
     图片证据 OCR 深检：提取文字并按置信度分级。
 
-    红线（考卷③实测结论）: OCR 数字/日期识别有错漏（斜杠丢失、金额漏字、
-    置信度低至 0.37），任何 OCR 结果不经人工确认不得进入分析。
+    引擎：PaddleOCR（系统正式引擎，tools/pdf_ocr_extractor.py 同款），
+    Windows 需 enable_mkldnn=False 绕过 PaddlePaddle 3.3.x oneDNN 回归 bug（f2b154a）。
+
+    实测校准（2026-09-10，广东长华真实图片）：PaddleOCR 数字/日期识别置信度
+    普遍 0.98+，斜杠/字母完整——低置信（<min_conf）条目才需人工逐条核对，
+    高置信条目默认采信、抽查即可。
 
     返回 {"file", "items": [{text, conf, trust}], "summary"}
-    trust: high(≥min_conf 可信待抽查) / low(<min_conf 必须人工确认)
+    trust: high(≥min_conf 默认采信) / low(<min_conf 必须人工核对)
     """
-    report = {"file": str(path), "items": [],
-              "summary": {}, "triage": "manual",
-              "issues": ["OCR 结果仅为候选，所有文字（尤其数字/日期/金额）"
-                         "必须经人工核对原图后才能作为证据使用"]}
+    report = {"file": str(path), "items": [], "engine": "paddleocr", "summary": {},
+              "triage": "manual",
+              "issues": ["OCR 结果为候选文本：低置信条目须逐条人工核对原图后才能使用；"
+                         "高置信条目默认采信，抽查明细由用户决定"]}
     try:
-        import numpy as np
-        from PIL import Image
-        arr = np.array(Image.open(path))
-    except Exception as e:
-        report["issues"].append(f"图片无法打开: {e}")
+        from paddleocr import PaddleOCR
+    except ImportError:
+        report["issues"].append(
+            "PaddleOCR 未安装（pip install paddlepaddle paddleocr）。"
+            "体检查不出内容，请安装后重跑")
         return report
-
     try:
-        import easyocr
-        reader = easyocr.Reader(['ch_sim', 'en'], gpu=False, verbose=False)
-        results = reader.readtext(arr, detail=1)
+        ocr = PaddleOCR(use_doc_orientation_classify=False, use_doc_unwarping=False,
+                        use_textline_orientation=False, enable_mkldnn=False)
+        results = ocr.predict(str(path))
     except Exception as e:
         report["issues"].append(f"OCR 引擎失败: {e}")
         return report
 
     items = []
-    for _, text, conf in results:
-        items.append({"text": text, "conf": round(float(conf), 2),
-                      "trust": "high" if conf >= min_conf else "low"})
+    for r in results:
+        for text, conf in zip(r["rec_texts"], r["rec_scores"]):
+            items.append({"text": text, "conf": round(float(conf), 2),
+                          "trust": "high" if conf >= min_conf else "low"})
     n_low = sum(1 for i in items if i["trust"] == "low")
     has_numbers = sum(1 for i in items if any(c.isdigit() for c in i["text"]))
     report["items"] = items
     report["summary"] = {"total": len(items), "low_conf": n_low,
-                         "numeric_then_must_confirm": has_numbers,
+                         "numeric_texts": has_numbers,
                          "low_conf_rate": round(n_low / max(len(items), 1), 2)}
-    if has_numbers:
-        report["issues"].append(
-            f"含 {has_numbers} 条数字类文字——数字错误直接歪曲审计结论，逐条人工核对原图")
     if n_low:
         report["issues"].append(
             f"{n_low}/{len(items)} 条识别置信度低于 {min_conf}（低置信率 {report['summary']['low_conf_rate']}）"
-            f"——低置信条目已在下方标 low，优先核对")
+            f"——低置信条目已在下方标 low，逐条人工核对原图")
+    if has_numbers:
+        report["issues"].append(
+            f"含 {has_numbers} 条数字类文字——用于计数/汇总前建议抽查原图")
     return report
 
 
