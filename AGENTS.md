@@ -1,4 +1,4 @@
-﻿# 内部审计共享配置
+# 内部审计共享配置
 
 本文件为内部审计平台的共享运行配置。所有基于此框架的审计项目共用此文件。
 项目级 CLAUDE.md 只包含项目特有配置。
@@ -17,6 +17,7 @@
 | report-generator | 汇总 finding 生成结构化审计报告 | level_0 | `skills/internal-audit/internal-audit-report-generator/SKILL.md` |
 | validate-finding | finding 格式+根因+证据等级校验 | level_0 | `skills/internal-audit/_shared/scripts/validate-finding.py` |
 | data-executor | LLM 生成的 pandas 代码沙箱执行（大文件分析） | level_0 | `skills/internal-audit/_shared/scripts/data_executor.py` |
+| data-health-check | 数据体检室：证据入桌前体检（Excel真假表头/加密/多版本/图片OCR待人工确认），只看不改 | level_0 | `skills/internal-audit/_shared/scripts/data_health_check.py` |
 | audit-gate | LLM 推理前后的硬闸机（precheck/postcheck） | level_0 | `skills/internal-audit/_shared/scripts/audit_gate.py` |
 | mandatory-check | constitution #10 制度完整性检查 | level_0 | `skills/internal-audit/_shared/scripts/check_mandatory_coverage.py` |
 | evidence-catalog | 证据清单管理（生成槽位/扫描文件/匹配建议/状态汇总） | level_0 | `skills/internal-audit/_shared/scripts/evidence_catalog.py` |

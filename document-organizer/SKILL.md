@@ -166,7 +166,7 @@ Phase C：汇总（只读JSON，不读原文）
 - `Glob` - 批量扫描文档
 - `Write` - 生成分析报告（Markdown + JSON）
 - `Grep` - 关键词搜索
-- **`python tools/pdf_ocr_extractor.py`** - 处理PDF扫描件OCR转换（中文制度文件推荐使用EasyOCR引擎）
+- **`python tools/pdf_ocr_extractor.py`** - 处理PDF扫描件OCR转换（中文制度文件推荐使用PaddleOCR引擎）
 
 ### 扫描件识别技术规范
 
@@ -176,7 +176,7 @@ Phase C：汇总（只读JSON，不读原文）
 
 | OCR引擎 | 推荐场景 | 准确率 | 安装难度 |
 |---------|---------|--------|---------|
-| **EasyOCR** | 中文制度文件（默认） | ⭐⭐⭐⭐⭐ | pip install easyocr |
+| **PaddleOCR** | 中文制度文件（默认） | ⭐⭐⭐⭐⭐ | pip install paddlepaddle paddleocr |
 | Tesseract | 英文文档 | ⭐⭐⭐⭐ | 需安装系统级软件 |
 
 **使用示例**：
@@ -185,7 +185,7 @@ Phase C：汇总（只读JSON，不读原文）
 python tools/pdf_ocr_extractor.py "internal-audit-workspace/documents/NPM001成品仓库管理标准C版.pdf"
 
 # 批量处理（推荐用于制度分析）
-python tools/pdf_ocr_extractor.py --batch "internal-audit-workspace/documents/" "ch_sim"
+python tools/pdf_ocr_extractor.py --batch "internal-audit-workspace/documents/" "ch"
 ```
 
 **OCR 输出文件说明**：

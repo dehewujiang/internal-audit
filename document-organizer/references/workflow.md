@@ -265,7 +265,7 @@ Step 1.5.5: 与规则型提取合并
 1. 标记该PDF为 ocr_required: true
 2. 中止当前文件分析
 3. 提示用户运行OCR工具：
-   python tools/pdf_ocr_extractor.py "<pdf文件>" "./output" "ch_sim"
+   python tools/pdf_ocr_extractor.py "<pdf文件>" "./output" "ch"
 4. 等待用户提供 {文件名}_ocr.txt 后继续分析
 ```
 
@@ -273,7 +273,7 @@ Step 1.5.5: 与规则型提取合并
 
 | OCR引擎 | 推荐场景 | 准确率 | 安装难度 |
 |---------|---------|--------|---------|
-| **EasyOCR** | 中文制度文件（默认） | ⭐⭐⭐⭐⭐ | pip install easyocr |
+| **PaddleOCR** | 中文制度文件（默认） | ⭐⭐⭐⭐⭐ | pip install paddlepaddle paddleocr |
 | Tesseract | 英文文档 | ⭐⭐⭐⭐ | 需安装系统级软件 |
 
 **使用示例**：
@@ -282,7 +282,7 @@ Step 1.5.5: 与规则型提取合并
 python tools/pdf_ocr_extractor.py "internal-audit-workspace/documents/NPM001成品仓库管理标准C版.pdf"
 
 # 批量处理（推荐用于制度分析）
-python tools/pdf_ocr_extractor.py --batch "internal-audit-workspace/documents/" "ch_sim"
+python tools/pdf_ocr_extractor.py --batch "internal-audit-workspace/documents/" "ch"
 ```
 
 **注意事项**：
