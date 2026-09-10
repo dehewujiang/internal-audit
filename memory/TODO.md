@@ -1,14 +1,15 @@
 # TODO
 
 ## 进行中
-- 坑2 整改第一批完成（2026-09-10，VERSION 2026-09-10-1，**在 worktree 分支，待合并回 master**）
+（无）
 
 ## 待办（风险整改 — 已全部闭环 2026-08-06，详见下方已完成章节）
 
 ## 待办（其他）
+- 📌 坑2 整改第一批推远程（已合并 master 851d4a2，master 领先 origin 2 个提交，需用户确认后 push）
 - 📌 新桌子部署到双项目（VERSION 2026-09-04-5，用户按 update-project.ps1 执行；广东长华/武汉长华 VERSION.lock 仍老版）
 - 📌 R09 人工抽查：4 次 SKILL 改动（报告 Step 2b/执行写桌子/问话/看制度/吵架）的钩子欠账，用户手工完整跑一遍报告后 commit 标注 `已人工回归: [项目] [评级]`
-- 📌 拆小桌（worktree new-table，尘埃落定后；删前确认分支已并回）
+- 📌 拆小桌（worktree new-table 分支已并回 master，可随时拆；拆前确认无未提交改动）
 - 📌 增量制度分析脚本（analysis_manifest.py + incremental_analysis_gate.py）已入库未接入（2026-08-12 确认：全库 0 引用、document-organizer 全量分析、CLAUDE-project 工具清单未提）。判定：设计超前、需求未触发（制度偶尔更新）→ 保留不删，待未来制度更新频繁时接线。记录见 `_shared/scripts/README.md`
 - 📌 create_evidence_dirs.py 重构候选（2026-08-12 纳米测试三问发现）：名为建目录、实为 457 行解析器（97% 代码在生成证据清单）；3 处死代码（safe_dirname / 风险名称提取 / programs 参数，v2.1 取消程序目录后遗留）；与 evidence_catalog.py 职责重叠。功能在用（program-generator Step 4），不紧急 → 下次动 evidence 时重构（解析逻辑并入 evidence_catalog 或改名 + 删死代码）
 - 🔴 坑2 整改（验证优先/防自证）：
@@ -35,6 +36,10 @@
 
 ## 阻塞
 - 无
+
+## 已完成（2026-09-10）
+- ✅ 坑2 整改第一批（VERSION 2026-09-10-1，**已合并 master** merge 851d4a2）：覆盖率漏表修复（program_ir_parser 删 break，分母 10→34）/ E 级证据定义矛盾修正（finding_rules L53）/ 报告可靠性上限声明（模板 + SKILL 5.5）/ 制度校验原文抽查（validate-policy-analysis 独立通道 + 专项测试）/ 决策 ADR-029+030
+- ✅ 开发流程确立：worktree 作开发环境，完成后合并回 master（712e2e4）
 
 ## 已完成（2026-09-04）
 - ✅ 新桌子 ledger 架构：ledger/ 8 文件（管家/门卫/打勾纸/报告闸机/总览表格/格式/说明/冲压例子）+ 五家房间接读写（检查单房约定即接口未动）+ 四根线（写/读/拍照20张/老账）+ 硬度（高风险须A/E）+ 闸机 checklist 命令（旧锁零动）+ 部署链同步（setup/update/白名单/注册/打版 2026-09-04-5）+ 推远程（master 与 origin 一致）
