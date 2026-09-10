@@ -333,12 +333,12 @@ def build_ir(md_path):
     risk_register = []
     rr_section = find_risk_register_section(content)
     if rr_section:
+        # 2.1 节按 2.1.1～2.1.5 拆成多张表，须全部收集（曾因 break 只取首表，覆盖度分母残缺）
         for tbl in parse_md_tables(rr_section):
             if _is_risk_register_table(tbl['header']):
                 for row in tbl['rows']:
                     if len(row) >= 3 and any(c.strip() for c in row):
                         risk_register.append(map_row_to_risk(tbl['header'], row))
-                break
     # 去重（按 risk_id）
     seen = set()
     deduped = []

@@ -13,7 +13,7 @@ python _shared/scripts/validate-program.py "tests/fixtures/regression/p2026-001-
 - ✅ [company_facts] 引用了 7 条公司事实: 21\s*亿, 2000\s*人, 紧固件, 冲焊, SAP
 - ✅ [risk_coverage] 风险点 40 个，测试程序 76 个
 - ✅ [column_consistency] 通过
-- ✅ [ir_coverage_rate] 覆盖率 100%（10 个风险）
+- ✅ [ir_coverage_rate] 覆盖率 100%（34 个风险）
 - ✅ [ir_data_source] 0/70 步骤无数据来源
 - ✅ [ir_sampling] 通过
 - 🔴 [ir_criterion] 6 个程序判定标准不达标：A9.1:含模糊词('晋升通过者100%满足基本条件...'); A23.1:含模糊词('确认加班费计算基数的实际执行口径...'); B1.1:含模糊词('出勤天数差异>1天的员工人均调整次数控制在合理范...'); B8.1:含模糊词('特定来源地入职人员集中度显著偏高...'); C9.1:含模糊词('HR服务...1:150为健康...')
@@ -22,6 +22,8 @@ python _shared/scripts/validate-program.py "tests/fixtures/regression/p2026-001-
 
 ## 备注（回归基准说明）
 - 该 exit=1 为**源数据真实状态**（v3.0 程序含 6 处模糊判定标准），非脱敏引入。
+- 2026-09-10：`ir_coverage_rate` 分母由 10 修正为 34——`program_ir_parser.py` 曾因 `break`
+  只解析 2.1 节首张风险表（2.1.1），漏掉 2.1.2～2.1.5。修复后分母完整，exit 不变。
 - 回归用途：P2（program-generator → validate-program --ir --strict）的基准线。若未来 SKILL.md 改动导致输出程序判定标准更精确（模糊词清零、exit 0），即为可感知的改进信号；反之若模糊词增加，需警惕回归。
 - 关键回归指标：风险覆盖率 100%、76 个测试程序、0/70 步骤无数据来源。
 
