@@ -7,7 +7,7 @@ validate-interview.py — 审计访谈问卷 Excel 硬校验脚本
 
 [INPUT]:  访谈问卷 Excel 文件路径 (.xlsx)
 [OUTPUT]: JSON 格式校验报告 {"status": "pass|fail", "checks": [...], "overall": "pass|fail"}
-          退出码: 0 (非--strict 总是 0), 1 (--strict 且有失败项)
+          退出码: 0 (通过，或非--strict 恒 0), 2 (--strict 且有失败项)
 [POS]:    _shared/scripts 的访谈问卷校验工具，被 audit-interview-designer/SKILL.md 引用
 [PROTOCOL]: 变更时更新此头部, 然后检查同级 CLAUDE.md
 """
@@ -295,7 +295,7 @@ def main():
     parser.add_argument(
         "--strict",
         action="store_true",
-        help="严格模式：任一检查失败 → exit(1)"
+        help="严格模式：任一检查失败 → exit(2)"
     )
     args = parser.parse_args()
 
@@ -311,7 +311,7 @@ def main():
     print(json.dumps(report, ensure_ascii=False, indent=2))
 
     if args.strict and not overall:
-        sys.exit(1)
+        sys.exit(2)
 
     sys.exit(0)
 
@@ -319,4 +319,10 @@ def main():
 # ── 入口 ─────────────────────────────────────────────────
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception:
+        # 未预期崩溃 → exit(2) 阻断。绝不能让崩溃的退出码(1)被闸机误判成"警告"而放行
+        import traceback
+        traceback.print_exc()
+        sys.exit(2)
