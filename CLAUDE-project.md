@@ -156,7 +156,7 @@ Every Python script call must pass `phase_gate.py tool-check` first. Exit 1 = bl
 | Phase 1 (document) | `validate-policy-analysis.py`, `pdf_ocr_extractor.py`, `check_mandatory_coverage.py` | policy-analysis |
 | Phase 1.5 (interview) | `validate-interview.py` | interview |
 | Phase 2-3 (program) | `validate-program.py` | program |
-| Phase 3 (execution) | `validate-finding.py`, `evidence_catalog.py`, `data_executor.py`, `data_health_check.py` | finding |
+| Phase 3 (execution) | `validate-finding.py`, `evidence_catalog.py`, `data_executor.py` | finding |
 | Phase 4 (report) | `validate-report.py` | report |
 
 **Globals** (all phases): `phase_gate.py`, `queries.py`, `validate-json.py`, `audit_styles.py`, `excel_core.py`, `decisions_schema.py`, `ledger/ledger.py`, `ledger/check.py`, `ledger/checklist.py`, `ledger/audit_table.py`, `ledger/export.py`

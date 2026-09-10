@@ -46,7 +46,7 @@ PHASE_TOOLS = {
     "phase_1_document_analysis":       {"validate-policy-analysis.py", "pdf_ocr_extractor.py"},
     "phase_1_5_interview":            {"validate-interview.py"},
     "phase_2_program_generation":      {"validate-program.py", "create_evidence_dirs.py"},
-    "phase_3_execution":               {"validate-finding.py", "data_executor.py", "data_health_check.py"},
+    "phase_3_execution":               {"validate-finding.py", "data_executor.py"},
     "phase_4_report":                  {"validate-report.py"},
 }
 
@@ -59,8 +59,6 @@ GLOBAL_TOOLS = {
     "decisions_schema.py",
     "data_executor.py",
     "audit_gate.py",
-    # 数据体检室（入桌前体检: Excel结构/加密/版本混乱/图片OCR待确认）
-    "data_health_check.py",
     # 新桌子 ledger/ 零件（tool-check 只比 basename，见 cmd_check_tool）：
     # ledger.py=往桌上写, check.py=日常门卫, checklist.py=打勾纸,
     # audit_table.py=报告前闸机, export.py=总览表格
