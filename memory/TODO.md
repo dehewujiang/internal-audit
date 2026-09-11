@@ -1,12 +1,14 @@
 # TODO
 
 ## 进行中
-（无）
+- 闸机三档语义修复（2026-09-10，VERSION 2026-09-10-2）：闸机认三档 + 五脚本崩溃兜底 + interview 退出码归位 + 文档两处修正 + 专项测试；**在 worktree 待合并回 master**
 
 ## 待办（风险整改 — 已全部闭环 2026-08-06，详见下方已完成章节）
 
 ## 待办（其他）
-- 📌 坑2 整改第一批推远程（已合并 master 851d4a2，master 领先 origin 2 个提交，需用户确认后 push）
+- 🔴 **闸机接 `--ir`**（2026-09-10 新发现）：`audit_gate.py` 调用 validate-program 时**从不传 `--ir`**，导致覆盖率/判定标准/数据来源三类阻断**从未生效**（而 `DATAFLOW.md:41` 与 program-generator `SKILL.md:426` 都写着应传）。属"加严"，与刚做完的"松绑"分开排期。两个副作用要先处理：`program_ir_parser` 导入失败 → exit 2 会误拦；`ir_parse` 解析失败只算 warn 会误放
+- 📌 推远程（master 领先 origin，需用户确认后 push）
+- 📌 坑2 整改第一批推远程（已合并 master 851d4a2）
 - 📌 新桌子部署到双项目（VERSION 2026-09-04-5，用户按 update-project.ps1 执行；广东长华/武汉长华 VERSION.lock 仍老版）
 - 📌 R09 人工抽查：4 次 SKILL 改动（报告 Step 2b/执行写桌子/问话/看制度/吵架）的钩子欠账，用户手工完整跑一遍报告后 commit 标注 `已人工回归: [项目] [评级]`
 - 📌 拆小桌（worktree new-table 分支已并回 master，可随时拆；拆前确认无未提交改动）
@@ -38,6 +40,7 @@
 - 无
 
 ## 已完成（2026-09-10）
+- ✅ 闸机三档语义修复（VERSION 2026-09-10-2，ADR-031）：`audit_gate.py` 认三档（0 通过 / 1 打印后放行 / ≥2 拦）+ 参数挪进 ACTIONS.args + UTF-8 输出修复；五脚本入口崩溃兜底（异常→exit 2）；`validate-interview.py` 退出码 1→2；`CLAUDE-project.md` 修动作名与 finding 参数两处既存错误；新增 `tests/test_audit_gate_tiers.py` + fixture（三断言，均回退验证）
 - ✅ 坑2 整改第一批（VERSION 2026-09-10-1，**已合并 master** merge 851d4a2）：覆盖率漏表修复（program_ir_parser 删 break，分母 10→34）/ E 级证据定义矛盾修正（finding_rules L53）/ 报告可靠性上限声明（模板 + SKILL 5.5）/ 制度校验原文抽查（validate-policy-analysis 独立通道 + 专项测试）/ 决策 ADR-029+030
 - ✅ 开发流程确立：worktree 作开发环境，完成后合并回 master（712e2e4）
 

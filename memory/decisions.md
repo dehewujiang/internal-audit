@@ -419,3 +419,31 @@
 影响：
 - `validate-policy-analysis.py` 的 `source_reconciliation` 单列顶层字段，不进 `checks`
 - 闸机退出码缺陷记入 TODO，建议单独排期修
+
+## ADR-031
+日期：2026-09-10
+背景：修 ADR-030 记录的闸机退出码缺陷。动手前逐行核对，**修正了 ADR-030 的诊断**——问题不是"闸机一刀切"，而是三处：
+- ① 四个校验脚本（finding/report/program/policy-analysis）在"有警告无阻断"时都返回 exit 1，与"阻断"共用同一个退出码（`validate-finding.py:633`、`validate-report.py:217`、`validate-program.py:455`、`validate-policy-analysis.py:453`）
+- ② `validate-report.py:210-215` / `validate-program.py:449-453` 的 `--strict` 分支**把阻断也映射成 exit 1**——所以"让闸机把 1 当警告放行"这个修法会把真阻断放过去
+- ③ `validate-interview.py` 只有 0/1 两档（非 strict 时无论成败都返回 0）
+
+备选方案：
+- A) 闸机侧把 exit 1 识别为警告 —— 否决：脚本未捕获异常时 Python 也返回 1，"脚本挂了"会被当成"有警告"放行
+- B) 脚本侧统一口径（有警告时返回 0）—— 否决：闸机将失去"有警告"这个信号，无法提示
+- C) 闸机认三档（0=通过 / 1=打印后放行 / ≥2=拦）+ 脚本侧异常兜底 —— **采用**
+
+最终选择：C
+原因：
+- 闸机保持"非 0 = 不通过"的简单契约不变，只是把"能区分"这件事实现出来
+- 脚本侧顶层 try/except 把未预期崩溃转成 exit 2，堵住"崩溃伪装成警告"的入口——**这是方案 C 成立的前提，不做这步闸机就成了摆设**
+- 不动 `--strict` 分支（回归基线正靠它记数），改为闸机调用时**不传** `--strict`，让 report/program 走干净的两档路径
+
+影响：
+- `audit_gate.py`：`do_postcheck` 三档判断；各脚本参数从 if/elif 挪进 ACTIONS 的 `args` 字段（"interview 必须传 --strict"固化进数据，防后人简化时静默关掉）；`main()` 固定 UTF-8 输出（修 Windows 中文控制台崩溃）
+- `validate-interview.py`：`--strict` 失败退出码 1→2
+- 五个校验脚本：入口加顶层兜底，未捕获异常 → exit 2
+- `CLAUDE-project.md`：修两处既存错误（动作名 `validate_*`→`generate_*`、finding 参数 `--strict`→`--exit-on-error`）
+- 新增 `tests/test_audit_gate_tiers.py` + `tests/fixtures/gate_tiers/`：三条断言（警告放行 / 阻断拦下 / 崩溃兜底），全部做过回退验证
+- **替代 ADR-030 的结论**：该缺陷已修。但 `source_reconciliation` 独立通道**保留**——原文抽查本来就不该参与校验结论（它是补充信息，不是判定项），与闸机无关
+- 未做（记入待办）：闸机调用 validate-program 时从未传 `--ir`，导致覆盖率/判定标准/数据来源三类阻断从未生效；文档却写着应传。属"加严"，与本次"松绑"分开做
+- VERSION 2026-09-10-2

@@ -29,6 +29,10 @@ WORKSPACE = Path(os.getcwd())
 
 # ── 动作定义 ──────────────────────────────────────────────
 
+# args: 传给校验脚本的额外参数（留空 = 只传文件路径）。
+#   - validate-interview.py 必须传 --strict：它非 strict 时无论成败都返回 0，闸机会永远放行
+#   - validate-program.py / validate-report.py 刻意不传 --strict：strict 模式下这两个脚本把
+#     "阻断"也编成退出码 1，闸机将无法把它与"警告"区分开（见各自文件的 strict 分支）
 ACTIONS = {
     "generate_finding": {
         "prechecks": [
@@ -37,6 +41,7 @@ ACTIONS = {
         ],
         "postcheck": {
             "script": "validate-finding.py",
+            "args": ["--exit-on-error"],
             "message": "Finding 格式校验未通过"
         }
     },
@@ -62,6 +67,7 @@ ACTIONS = {
         "prechecks": [],
         "postcheck": {
             "script": "validate-interview.py",
+            "args": ["--strict"],
             "message": "访谈材料校验未通过"
         }
     },
@@ -69,6 +75,7 @@ ACTIONS = {
         "prechecks": [],
         "postcheck": {
             "script": "validate-policy-analysis.py",
+            "args": ["--json"],
             "message": "制度分析校验未通过"
         }
     },
@@ -135,28 +142,32 @@ def do_postcheck(action: str, file_path: str) -> int:
         return 0
 
     target = file_path or ""
-    # 不同脚本使用不同的硬校验参数
-    if script_name == "validate-finding.py":
-        cmd = [sys.executable, str(script_path), target, "--exit-on-error"]
-    elif script_name == "validate-policy-analysis.py":
-        cmd = [sys.executable, str(script_path), target, "--json"]
-    else:
-        cmd = [sys.executable, str(script_path), target, "--strict"]
+    # 每个脚本的硬校验参数写在 ACTIONS 里（见该表上方说明），此处不再按脚本名分支
+    cmd = [sys.executable, str(script_path), target] + list(postcheck.get("args", []))
 
     print(f"[GATE] 后置校验: {action} → {script_name} {target}")
     result = subprocess.run(cmd, capture_output=True, text=True)
 
+    # 三档语义：0=通过 / 1=警告（打印后放行） / ≥2=阻断
     if result.returncode == 0:
         print(f"[GATE] ✅ 校验通过")
         _log_to_trail(f"postcheck_pass:{action}")
         return 0
-    else:
-        print(f"[GATE] ❌ {postcheck['message']}")
-        print(f"[GATE] --- 错误详情 ---")
-        print(result.stderr or result.stdout)
+
+    if result.returncode == 1:
+        print(f"[GATE] ⚠️ 校验有警告，放行（{script_name}）")
+        print(f"[GATE] --- 警告详情 ---")
+        print(result.stdout or result.stderr)
         print(f"[GATE] --- 结束 ---")
-        _log_to_trail(f"postcheck_fail:{action}")
-        return 1
+        _log_to_trail(f"postcheck_warn:{action}")
+        return 0
+
+    print(f"[GATE] ❌ {postcheck['message']}")
+    print(f"[GATE] --- 错误详情 ---")
+    print(result.stderr or result.stdout)
+    print(f"[GATE] --- 结束 ---")
+    _log_to_trail(f"postcheck_fail:{action}")
+    return 1
 
 
 def do_status():
@@ -209,6 +220,13 @@ def _log_to_trail(event: str):
 # ── CLI ───────────────────────────────────────────────────
 
 def main():
+    # 校验脚本的输出含 ✅🔴⚠️ 等字符，Windows 中文控制台(GBK)下直接打印会崩
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding="utf-8")
+        except Exception:
+            pass
+
     if len(sys.argv) < 2:
         print("用法:")
         print("  python audit_gate.py status")

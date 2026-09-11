@@ -28,8 +28,8 @@ python _shared/scripts/phase_gate.py rollback --to <phase> --reason "<原因>"
 python _shared/scripts/phase_gate.py tool-check <script_name>
 python _shared/scripts/phase_gate.py tool-check <script_name> --force  # override with audit_trail record
 
-# Validate scripts — use --strict for hard enforcement:
-python _shared/scripts/validate-finding.py <file> --strict
+# Validate scripts (hard-enforcement flag differs per script — finding uses --exit-on-error, not --strict):
+python _shared/scripts/validate-finding.py <file> --exit-on-error
 python _shared/scripts/validate-program.py <file> --strict
 python _shared/scripts/validate-report.py <file> --strict
 python _shared/scripts/validate-policy-analysis.py <file>
@@ -265,9 +265,12 @@ Pure engineering tasks (syntax fix, script repair, data structure optimization, 
 
 | 动作 | 命令 |
 |------|------|
-| 生成 finding 后 | `python _shared/scripts/audit_gate.py postcheck --action validate_finding --file <finding路径>` |
-| 生成审计程序后 | `python _shared/scripts/audit_gate.py postcheck --action validate_program --file <程序路径>` |
-| 生成审计报告后 | `python _shared/scripts/audit_gate.py postcheck --action validate_report --file <报告路径>` |
+| 生成 finding 后 | `python _shared/scripts/audit_gate.py postcheck --action generate_finding --file <finding路径>` |
+| 生成审计程序后 | `python _shared/scripts/audit_gate.py postcheck --action generate_program --file <程序路径>` |
+| 生成审计报告后 | `python _shared/scripts/audit_gate.py postcheck --action generate_report --file <报告路径>` |
+| 生成制度分析后 | `python _shared/scripts/audit_gate.py postcheck --action generate_policy_analysis --file <JSON路径>` |
+| 生成访谈材料后 | `python _shared/scripts/audit_gate.py postcheck --action generate_interview --file <Excel路径>` |
 | 查看项目状态 | `python _shared/scripts/audit_gate.py status` |
 
-闸机校验不通过（exit 1）时，LLM 必须根据错误详情修正输出后重新过闸，不得绕过。
+闸机退出码：`0`=放行（含"只有警告"的情况——警告会打印出来但不再拦截）/ `1`=拦下。
+被拦下时，LLM 必须根据错误详情修正输出后重新过闸，不得绕过。

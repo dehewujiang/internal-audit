@@ -1,7 +1,7 @@
 {
-  "version": "2026-09-10-1",
-  "git_commit": "b014fe6",
-  "updated_at": "2026-09-10T15:41:46+08:00",
+  "version": "2026-09-10-2",
+  "git_commit": "877b3ea",
+  "updated_at": "2026-09-10T16:47:52+08:00",
   "changes": [
     {
       "type": "chore",
@@ -277,6 +277,26 @@
       "type": "test",
       "file": "tests/test_source_reconciliation.py",
       "summary": "原文抽查正反例专项测试 + fixture"
+    },
+    {
+      "type": "fix",
+      "file": "audit_gate.py",
+      "summary": "闸机识别三档退出码——警告(exit 1)打印后放行，阻断(≥2)拦下；此前非0一律拦，致'只提醒不拦'档位不存在"
+    },
+    {
+      "type": "fix",
+      "file": "validate-*.py",
+      "summary": "未捕获异常统一 exit(2) 阻断，防止崩溃退出码(1)被闸机误判成'警告'而放行"
+    },
+    {
+      "type": "fix",
+      "file": "validate-interview.py",
+      "summary": "--strict 失败退出码 1→2，纳入统一三档约定（必须继续传 --strict）"
+    },
+    {
+      "type": "docs",
+      "file": "CLAUDE-project.md",
+      "summary": "修正动作名 validate_*→generate_* 与 finding 校验参数 --strict→--exit-on-error"
     }
   ]
 }

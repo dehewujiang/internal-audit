@@ -13,12 +13,28 @@
 - 入口：`locate_source_text(data, ws)` 按 `doc_name` 在 `documents/` 找 `{stem}_ocr.txt` → `{stem}.{txt,md,docx}` → 文件名模糊兜底
 - docx：标准库 `zipfile` 读 `word/document.xml` 去标签（零依赖）
 - 条款号：`CLAUSE_RE` 兼容阿拉伯与中文数字，`clause_key()` 归一化后比对
-- **走独立通道**：结果单列顶层 `source_reconciliation`，不进 `checks`、不参与 `action`/退出码。原因：`audit_gate.py:147-152` 只看退出码是否为 0，warn(1) 与 block(2) 在它眼里一样（ADR-030）
+- **走独立通道**：结果单列顶层 `source_reconciliation`，不进 `checks`、不参与 `action`/退出码。理由：原文抽查是补充信息、不是判定项，本就不该参与校验结论。（设计时闸机尚不能区分 warn/block，该缺陷已由 ADR-031 修复；独立通道**保留**，理由与闸机无关）
 - `--workspace` 参数缺省时 `find_workspace()` 从 CWD 向上找 `internal-audit-workspace/`
 
 **测试入口**：
 - `python tests/test_source_reconciliation.py` — 原文抽查正反例（独立通道不被 `regression-check.py` 覆盖，故做专项断言）
 - `python tests/prompt_snapshots/regression-check.py` — 全量回归基线（改后 2 绿 0 红）
+
+## 闸机三档语义修复（2026-09-10，VERSION 2026-09-10-2，见 ADR-031）
+
+修复 ADR-030 记录的缺陷——闸机原先对校验脚本"非 0 一律拦"，"警告"与"阻断"无区别。
+
+**四处改动**：
+- `audit_gate.py` `do_postcheck`：三档判断（0=通过 / 1=打印后放行 / ≥2=拦）；各脚本参数从 if/elif 挪进 `ACTIONS[...]["args"]`；`main()` 加 `stdout/stderr.reconfigure(utf-8)`（修 Windows GBK 崩溃）
+- `validate-interview.py:313`：`--strict` 失败 1→2
+- 五个校验脚本入口：`try: main()` / `except Exception: traceback + exit(2)` —— 防崩溃(1)伪装成警告
+- `CLAUDE-project.md`：动作名 `validate_*`→`generate_*`、finding 参数 `--strict`→`--exit-on-error`
+
+**关键约束（已固化进 ACTIONS.args）**：闸机对 report/program **不传** `--strict`（它们的 strict 分支把阻断也映射成 1）；对 interview **必须传** `--strict`（非 strict 恒返回 0）。
+
+**测试入口**：
+- `python tests/test_audit_gate_tiers.py` — 三档断言（警告放行 / 阻断拦下 / 崩溃兜底），fixture 在 `tests/fixtures/gate_tiers/`（xlsx 由测试现场生成，因 `.gitignore` 屏蔽 `*.xlsx`）
+- 三条断言均做过回退验证（撤销对应改动 → 断言变红 → 恢复 → 绿）
 
 ## 新桌子 ledger（2026-09-04，VERSION 2026-09-04-5，已推远程，见 ADR-028）
 
