@@ -3,67 +3,27 @@
 ## 项目是什么
 AI 驱动的内部审计辅助流水线，帮 Flan（汽车零部件企业审计经理）覆盖从制度分析到报告生成的全过程。
 
-## 当前状态（2026-09-10 · 闸机三档修复）
-🟢 修好了"只提醒不拦"这个档位（VERSION 2026-09-10-2，见 ADR-031）：
-- **问题**：四道闸机里的"验收闸机"原先只认"通过 / 不通过"两种结果——校验脚本说的"有警告"和"有阻断"在它眼里一样，都拦。结果系统里**没有"提醒你一下但放你过"这个档位**，所有检查只能二选一：要么拦人，要么闭嘴
-- **修法**：闸机学会认三档（通过 / 有警告就放你过、并打印提醒 / 有阻断才拦）；同时给五个校验脚本加了防崩溃保护——脚本自己出故障时必须报"阻断"，不能被误当成"有警告"悄悄放行
-- **顺手修**：闸机在中文 Windows 上打印带勾叉符号的提示会崩溃（今天就存在的问题）；文档里两处"敲了就报错"的命令（动作名写错、参数名写错）
-- **验证**：新写一组测试，三条断言——警告放行、阻断拦住、崩溃兜底。每条都做了"把改动撤回去、看它是否真的变红"的反向验证
-- **实际影响**：以前因为"报了会被拦"而不敢报的提醒，现在可以正常报出来了
-- **未做**：发现闸机调用程序校验时**从来不传结构化检查参数**，导致"覆盖率 / 判定标准 / 数据来源"三类阻断**从未生效**（而文档写着应该传）——属于"加严"，与本次"松绑"分开做，已记入待办
+## 当前状态（2026-09-11）
+系统功能完整（12 skill + 四重闸机 + 新桌子 ledger），近期在做**规则与记忆体系的瘦身**：
 
-## 当前状态（2026-09-10 · 坑2 第一批）
-🟢 9-10 坑2 整改第一批（三把小刀 + 漏洞1）**已完成并合并回 master**（VERSION 2026-09-10-1，merge commit 851d4a2）：
-- **三把小刀**：① 修覆盖率统计漏表——脚本读《风险识别清单》只读了第一张表（2.1.1），分母被砍掉 3/4；同一份校验报告里"风险点 40 个"与"覆盖率 100%（10 个风险）"并排自相矛盾，修后分母恢复为 34 ② 补 E 级证据定义矛盾——校验矩阵把第三方证据（E 级）当成"证据不足"，与宪法第 3 条、证据标准表打架 ③ 报告新增"可靠性上限"固定声明
-- **漏洞1**：制度分析校验从"只读 AI 自己的转述"改为"打开原始制度文件核对条款号"（原文写"第二条"、AI 写"第2条"，自动归一化后比对；引用原文不存在的条款会被点名）
-- **关键设计**：新检查走独立通道（只报告、不参与退出码）。查证发现闸机只看退出码是否为 0，设成 warn 照样会被拦——「只看不拦」的设计在现有闸机下都会失效（ADR-030 记录，待单独修）
-- **验证**：回归基线 2 绿 0 红；专项测试正反例通过（假条款被点名、真条款不误报）；存量样例退出码不变
-- **未做**：漏洞2、3 主体（前置依赖未满足，见 TODO）
+- **闸机三档**（ADR-031）：原先"有警告"和"有阻断"在闸机眼里一样、都拦——系统里没有"提醒你一下但放你过"这个档位。现在认三档，并给五个校验脚本加了防崩溃保护
+- **规则去重**：项目级规则副本（22 份）全清，统一由 `~/.claude/rules/` 提供；`project-doctrine` 转为按需加载，常驻量 354→274 行
+- **记忆瘦身**：`decisions.md` 清掉实施清单（449→372 行）；新立规矩——只写"为什么"，不写"改了什么"
+- **未上现场**：以上成果均未部署到两个现场项目（见「当前最大风险」）
 
-## 当前状态（2026-09-04）
-🟢 9-04 新桌子 ledger 架构落地并推远程（VERSION 2026-09-04-5，master 与 origin 一致）：
-- **一张桌子**：`ledger/` 8 文件（管家 ledger.py / 门卫 check.py / 打勾纸 checklist.py / 报告闸机 audit_table.py / 总览表格 export.py + 格式/说明/冲压例子）——左边三格（确定的毛病/怀疑偷骗标红/说不清的信号）+ 右边证据（谁给的/啥时候）+ 抽屉三表
-- **五家接桌**：看制度→信号格 / 问话→信号格+证据 / 执行→落定搬单张（红格自动对号）/ 吵架→改结论改字（改前拍照）/ 报告→只读（Step 2b + audit_table 只拦丢东西）；检查单房未接（产出即抽屉检查表，约定即接口）
-- **四根线**：写/读/拍照（20 张滚动+回头）/老账（广东长华 11 张整搬，门卫放行）+ 高风险硬度（须 A/E）+ 打勾纸（phase_gate 新增长 checklist 命令，旧锁零动）
-- **部署链**：setup/update 同步 ledger + 白名单 + CLAUDE 注册 + 打版，新老两条路走通（稳定新建 22 项全过，老升级 8 项 0 失败带备份）
-- **真数验证**：广东长华 F-004 上桌走全程；11 张全过、撕一添鬼拦下；旧回归 2 绿 0 红、快照过
-- 决策 ADR-028（加法不减法：只拦丢东西不管顺序格式）；图纸 `新桌子设计稿_2026-09-04.md` + 进度 `新桌子进度.md` + 试搭 `新桌子试搭/` 在根下（未存档）
-
-## 当前状态（2026-08-12）
-🟢 8-12 完成四件项目相关事项：
-- **验证分层落地**：work-principles.md 新增「〇、验证分层」（L1 查资料轻验 / L2 文档方案标准验 / L3 改代码数据重验），任务理解确认同步分层（L1 一句话 / L2/L3 全套）
-- **规则按适用面拆分**：coding-safety.md 拆为编码专用（带 paths，只在碰代码文件加载）+ work-principles.md（通用，启动全量加载）；源 D:\Nut\rules\ 8 份，internal-audit/.claude/rules 与 workbuddy 各复制一份（实测非 junction，需手动同步）
-- **坑2 验证优先诊断**：四重闸机逐个核查 → 4 个漏洞记档（程序覆盖率自证 / 证据等级 AI 自标 / 制度校验看转述 / 报告二手汇总），待排期整改
-- **纳米测试三问 25 脚本审查**：2 个孤儿脚本（analysis_manifest + incremental_analysis_gate，保留待接线）+ 1 个偏重（create_evidence_dirs 重构候选），均已记档
-
-8-11 历史：完成架构加固计划（C1-C7 + F波验证，VERSION 2026-08-11-3）：
-- C1 数据流总图（DATAFLOW.md，六阶段全链路 + 断点观察）
-- C2 宪法瘦身（constitution.md ≤85 行，14 条语义零丢失 + 触发指针；CLAUDE-project.md 漂移 bug 修复）
-- C3 纳米测试原则（ADR-026 + OPS 新增规则/脚本前检查清单）
-- C4 R09 标准用例积累（tests/fixtures/regression/ p2026-001-hr P1→P2 回归对，脱敏）
-- C5 闸机边界验证（phase_gate/audit_gate 职责无重叠、无死角）
-- C6 审计推理日志试点（phase_gate.py 新增 log-decision 子命令 + finding 新增 decision_rationale.risk_level_reason，REASON-LOG.md 设计定稿）
-- C7 最小必要上下文（INPUT-BUDGET.md + SKILL.md 读取指令静态裁剪，design-assessments 用验证状态过滤）
-- 追加：SKILL.md 变更自动检测与回归机制（tests/prompt_snapshots/regression-check.py + pre-commit hook 影响卡片 + RED 拦截）
-
-8-06 历史：完成四轮整改闭环（version 2026-08-06-1/2/3/4，均已部署双项目）：
-① 全量坏路径修复（36 处残留 → 三标准路径）+ 两个孤儿文档接入（dynamic_questions → Step 0.4 配置补齐、incremental_update → Step 0.5 模式分流）；
-② constitution 恢复 11-14 条硬约束 + 阶段流转规则 + 启动协议（20ad90b 误删回归）+ 证据标准统一 A+E + 对抗验证阈值 + 知识库混源过滤 + U8 清零；
-③ 阶段二（Step 4.5 程序结构化闸机 + 激活轨道校验 + validate-catalog/validate-index 双校验器 + 制度版本强制）+ 阶段三（5 份快照重写 + pre-commit 快照漂移 hook + 人工抽查清单）；
-④ 第四轮（VERSION 2026-08-06-4）：审计程序新增「设计理由」「测试目的」两列（8 张表），执行中发现并修复存量矛盾——模板表头缺「程序编号/判定标准/取证方式」导致 Step 4.5 闸机必然拦截，已按 fixture v1.1 真实结构对齐；Step 4.5 命令 `--ir` 布尔开关修正（commits 0746f5c→cd72e98）。
-9 项风险整改（R01-R09）除 R09 实际抽查（用户手工执行）外全部闭环。四重闸机 + 快照 hook 运行正常。
+> 更早的批次（坑2 第一批 / 新桌子 ledger / 架构加固 C1-C7 / 四轮整改）见 `decisions.md` 的 ADR 与 `context.md`——本文件只写"现在是什么样"。
 
 ## 已完成功能
-- 12 个 skill + 2 evaluators + 8 个校验脚本（validate-finding/program/report/policy-analysis/interview/json + **validate-catalog/validate-index**）+ 4 个新脚本（data_executor/audit_gate/check_mandatory_coverage + compare-snapshots 开发工具）
-- 四重闸机体系（流程/质量/授权/调度）
-- ProgramIR 解析器（program_ir_parser.py）——审计程序 MD → 结构化 IR
-- 审计程序模板含「设计理由」「测试目的」两列（6 轨道 + 增量章节，2026-08-06-4）
-- 证据 v2.0 集中存储（_evidence_catalog.json + _files/）
+- 12 个 skill + 2 evaluators + 8 个校验脚本（validate-finding/program/report/policy-analysis/interview/json + validate-catalog/validate-index）+ 4 个辅助脚本（data_executor/audit_gate/check_mandatory_coverage + compare-snapshots）
+- 四重闸机体系（流程 / 质量 / 授权 / 调度）
+- ProgramIR 解析器——审计程序 MD → 结构化 IR
+- 审计程序模板含「设计理由」「测试目的」两列（6 轨道 + 增量章节）
+- 证据 v2.0 集中存储（`_evidence_catalog.json` + `_files/`）
 - PaddleOCR 引擎（中文识别率 75-85%）
-- 一键部署/增量升级（setup-project.ps1 + update-project.ps1）
+- 一键部署 / 增量升级（setup-project.ps1 + update-project.ps1）
 - 跨项目查询（projects-index.json + queries.py）
 - Prompt 版本管理（tests/prompt_snapshots/ 5 个关键快照）
-- 新桌子 ledger（2026-09-04，VERSION 2026-09-04-5 已推远程）：8 文件 + 五家接读写 + 部署链同步 + 闸机 checklist 命令
+- 新桌子 ledger（8 文件 + 五家接读写 + 部署链同步 + 闸机 checklist 命令）
 
 ## 系统结构
 - 核心仓库: `D:\Nut\00_my_digital\12_AGI\skills\internal-audit\`
@@ -72,25 +32,22 @@ AI 驱动的内部审计辅助流水线，帮 Flan（汽车零部件企业审计
 - 项目版 CLAUDE: `CLAUDE-project.md`
 - 操作手册: `OPS.md`
 - 项目注册表: `audit-topics/projects-index.json`（2 个项目已注册）
-- 架构加固产物: `DATAFLOW.md`（数据流总图）、`INPUT-BUDGET.md`（上下文裁剪规则）、`REASON-LOG.md`（推理日志设计）、`tools/tool-exhaustion.md`（工具穷举规范）、`tests/prompt_snapshots/regression-check.py` + `pre-commit.hook`（SKILL 变更检测）、`tests/fixtures/regression/`（R09 回归用例）
-- 规则体系: 源 `D:\Nut\00_my_digital\12_AGI\rules\`（8 份：coding-safety 编码专用带 paths / work-principles 通用全量 + 6 份其他）；internal-audit `.claude/rules/` 与 `.workbuddy/rules/` 为**复制副本（实测非 junction）**——改源需手动同步三处
+- 架构加固产物: `DATAFLOW.md`、`INPUT-BUDGET.md`、`REASON-LOG.md`、`tools/tool-exhaustion.md`、`tests/prompt_snapshots/regression-check.py` + `pre-commit.hook`、`tests/fixtures/regression/`
+- 规则体系（2026-09-11 起）: 唯一来源 `D:\Nut\00_my_digital\12_AGI\rules\`（8 份），经 `~/.claude/rules/agi` 符号链接对所有项目生效；**项目级不再保存副本**，改源即全局生效
 
 ## 已部署项目
 - P-2026-001: 武汉长源 人力资源管理 phase_3
 - P-2026-002: 广东长华 人力资源管理 phase_2
 
 ## 当前最大风险
-- 🔴 部署项目 VERSION.lock 停在老版——新桌子 ledger（09-04-5）未上现场，广东长华/武汉长华待用户按 update-project.ps1 升级
-- 🔴 N8 调查方法合规分级未做（fraud_investigation_methods 含"小黑屋/威胁施压"内容，涉及用户个人合规风险）——用户搁置，建议尽早
-- 🔴 坑2 整改待排期（程序覆盖率自证 + 证据等级 AI 自标，改 validate-program/validate-finding/data_executor）
-- 🔴 部署项目 VERSION.lock 停在 08-06-4——架构加固成果（宪法瘦身/推理日志/上下文裁剪）未上现场，待用户按升级流程部署
-- 🟡 R09 实际抽查未做（清单已交付，用户手工执行）
-- 🟡 规则三处副本为复制非 junction——改源需手动同步（已实测确认无自动机制）
-- 🟡 广东长华程序 v1.0→v3.0 升级搁置（缺"取证方式"列无法生成 catalog）
+- 🔴 **现场项目版本落后**——两个现场项目的 VERSION.lock 停在老版，新桌子 ledger（09-04-5）、架构加固（08-11-3）、闸机修复（09-10-2）均未上现场。待用户按 `update-project.ps1` 升级
+- 🔴 **N8 调查方法合规分级未做**——`fraud_investigation_methods` 含"小黑屋 / 威胁施压"内容，涉及用户个人合规风险。用户搁置，建议尽早
+- 🔴 **坑2 漏洞2/3 主体未做**——程序覆盖率分母改上游独立清单、证据等级系统打章；前置依赖未满足（上游 schema 未统一、design-assessments 全库零实例）
+- 🟡 **R09 实际抽查未做**——清单已交付，用户手工执行
+- 🟡 **广东长华程序 v1.0→v3.0 升级搁置**——缺"取证方式"列，无法生成 catalog
 
 ## 下一步
-1. 用户按 update-project.ps1 把 09-04-5（含新桌子）部署到双项目（广东长华/武汉长华）
-2. 用户执行 R09 人工抽查（清单见 tests/prompt_snapshots/test_prompt_regression.md，commit 标注 `已人工回归: [项目] [评级]`）——4 次 SKILL 改动的钩子欠账
-3. 坑2 整改排期（漏洞2 程序覆盖率分母改上游独立清单 + 漏洞3 证据等级系统打章，实施前出规划模型）
-4. 拆小桌（worktree new-table，尘埃落定后）
-5. 决策 N8 合规分级（个人合规风险，建议优先）
+1. 按 `update-project.ps1` 把三个版本的建设成果部署到双项目
+2. 用户执行 R09 人工抽查（清单见 `tests/prompt_snapshots/test_prompt_regression.md`，commit 标注 `已人工回归: [项目] [评级]`）
+3. 决策 N8 合规分级（个人合规风险，建议优先）
+4. 坑2 漏洞2 主体之前，先做上游 schema 统一
