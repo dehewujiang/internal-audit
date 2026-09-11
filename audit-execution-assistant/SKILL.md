@@ -443,7 +443,7 @@ C) 忽略（记录原因）
 |------|---------|
 | 证据充分 + 异常确认 | 生成Finding，risk_level按影响判定 |
 | 证据部分充分 + 异常疑似 | 生成Finding，标注"证据部分充分" |
-| 证据不足 | 不生成Finding，标记"需要补充证据" |
+| 证据不足 | 不生成Finding，**并且必须记缺口**（`add-gap`，三种可能方向）——停在"等待补充"是违规（宪法#9） |
 | 涉及舞弊嫌疑 | 无论金额大小，标记为高风险 |
 | 金额 < 重要性水平 | 记录为"观察事项"，不生成Finding（舞弊除外） |
 
@@ -623,7 +623,7 @@ Step 3h: 业务现实性检验（可选）
 **校验结果处理**：
 - 全部通过 → 可生成finding
 - 部分通过 → 生成finding但标注"证据部分充分"
-- 未通过 → 不生成finding，标记"需要补充证据"
+- 未通过 → 不生成finding，**记缺口上桌**（`python ledger/ledger.py add-gap <桌子.json> --finding F-xxx --missing "缺哪份证据"`，三个可能方向必须写全）。禁止停在"证据不足，等待补充"（宪法#9）
 
 ## 输出格式
 
@@ -648,10 +648,20 @@ Step 3h: 业务现实性检验（可选）
 
 **自动扫描规则**：每次更新前，扫描 `findings/` 下所有 JSON 文件，确保 index.json 与实际情况一致。
 
-**写桌子**（有新桌子 ledger/*.json 才做，没有就跳过）：finding 落定后顺手上桌——
-新单跑 `python ledger/ledger.py import <桌子.json> --workspace <项目根目录> --table <主题> --finding <单号>`
-（舞弊/高风险自动进红格并对单号，其余进第一格，证据原样贴，待查进信号格）；
-桌子已存在只跑 `python ledger/ledger.py link-finding <桌子.json> --slot <确定的毛病|怀疑偷骗> --finding <单号>`。
+**写桌子**（桌子在 `internal-audit-workspace/audit-table/*.json`，建项目时已开好；找不到就停下报告，不要跳过——宪法#12）：
+finding 落定后一条命令上桌，进格、对单号、贴证据一次做完（舞弊/高风险自动进"怀疑偷骗"格）——
+```
+python ledger/ledger.py sweep <桌子.json> --workspace <项目根目录> --finding F-xxx
+```
+不想让它自己判断时，也可以手工分三步：`add-line` 进格、`link-finding` 对单号、`add-evidence` 贴证据（每条证据都要写清谁给的、啥时候给的）。
+（`import` 只用于**老项目整桌搬家**，日常不用——桌子已存在时它按设计拒绝。）
+
+**证据缺失必须记账（宪法#9）**：证据完整性校验不通过时，**禁止**停在"证据不足，等待补充"——
+必须把"证据为什么不存在"本身当成一件要查的事，写进信号格，三个方向一个不能少：
+```
+python ledger/ledger.py add-gap <桌子.json> --finding F-xxx --missing "缺的是哪份证据"
+```
+记下的每条缺口都带三种可能：业务未发生 / 管理缺失未留痕 / 证据被消除，执行时逐条追问。
 
 ## 关键词自动提取规则
 

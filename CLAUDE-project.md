@@ -113,8 +113,8 @@ Phase flow: `phase_0_init → phase_1_document_analysis → phase_1_5_interview 
 | `decisions_schema.py` | JSON schema for decision records |
 | `audit_styles.py` | Audit writing style definitions |
 | `excel_core.py` | Excel read/write core (used by program-generator export) |
-| `ledger/ledger.py` | 新桌子管家：开桌/写格/贴证据/对单号/老账搬家 |
-| `ledger/check.py` | 新桌子日常门卫：只读桌子查大事+高风险硬度 |
+| `ledger/ledger.py` | 新桌子管家：开桌/写格/贴证据/对单号/填抽屉/收料(sweep)/记证据缺口(add-gap)/老账搬家 |
+| `ledger/check.py` | 新桌子日常门卫：只读桌子查大事+高风险硬度+信号池有没有沉底 |
 | `ledger/checklist.py` | 新桌子打勾纸：六句话看板，只看不拦 |
 | `ledger/audit_table.py` | 报告前桌子闸机：单缺位/鬼号/红格无单号拦下 |
 | `ledger/export.py` | 桌子总览表格：左边/证据/抽屉三页 |

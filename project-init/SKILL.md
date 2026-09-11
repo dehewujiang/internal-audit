@@ -116,6 +116,7 @@ C) 取消
 ├── internal-audit-workspace/
 │   ├── constitution.md            ← 中央大脑宪法（从全局复制或引用）
 │   ├── current-audit.json         ← 项目状态 + 审计状态
+│   ├── audit-table/               # 桌子：本主题的结论台账（建项目时开一张）
 │   ├── tools/                     ← 工具能力声明（从全局 tools/ 复制）
 │   ├── documents/                 # 待分析的源文档（用户放入）
 │   ├── policy-analyses/           # Phase 1 输出
@@ -205,6 +206,18 @@ python _shared/scripts/queries.py register --path "{project_dir}" \
    可稍后手动注册：
    python queries.py register --path <项目目录> --topic <主题> --period <期间>
 ```
+
+### 4.7 开第一张桌子（新桌子 ledger）
+
+桌子是本主题的结论台账：左边三格（确定的毛病 / 怀疑偷骗 / 说不清的信号）、右边证据、抽屉三张表的入口。
+**建项目时就开一张**——后续看制度 / 问话 / 执行 / 吵架 / 报告五步都往上写；不先开桌，这五步全部无处落笔。
+
+```bash
+python ledger/ledger.py create "internal-audit-workspace/audit-table/{topic_name}.json" --table "{topic_name}"
+```
+
+⚠️ 桌子文件必须落在 `internal-audit-workspace/audit-table/`，**绝不能放 `<项目根>/ledger/`**——
+那是工具目录（指向总库的链接），放那里会把项目数据写进总库，所有项目串味。
 
 ---
 

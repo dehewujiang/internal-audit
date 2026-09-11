@@ -1,16 +1,38 @@
 {
-  "schema_version": "1.0",
+  "schema_version": "1.2",
   "table": "冲压车间废料多了",
   "left": [
-    {"slot": "确定的毛病", "red": false, "text": "领料没签字", "ref_finding_ids": []},
-    {"slot": "怀疑偷骗", "red": true, "text": "废料少2吨，可能被拉出去卖了", "ref_finding_ids": []},
-    {"slot": "说不清的信号", "red": false, "text": "丢3张单子：没发生/没管好/被拿走，三种可能都记上", "ref_finding_ids": []}
+    {"slot": "确定的毛病", "red": false, "text": "领料没签字；CF-001 制度冲突（废料管理制度）：第4.2条要求过磅单据双方签字，第6.1条又说以门卫记录为准", "ref_finding_ids": []},
+    {"slot": "怀疑偷骗", "red": true, "text": "F-2026-004 废料少2吨，可能被拉出去卖了", "ref_finding_ids": ["F-2026-004"]},
+    {"slot": "说不清的信号", "red": false, "text": "丢3张单子：没发生/没管好/被拿走，三种可能都记上；DA-001 过磅房单人值守无复核（看制度，待现场验证）；制度空白：审计主题'废料管理'缺少 mandatory 模块'废料处置'的制度文档", "ref_finding_ids": []}
   ],
   "right": [
     {"slot_id": null, "file": "领料单7张（3张缺）", "from": "班长", "when": "审计当天"},
     {"slot_id": null, "file": "称重照片", "from": "小王现场拍", "when": "审计当天"},
     {"slot_id": null, "file": "废料堆照片", "from": "小王现场拍", "when": "审计当天"}
   ],
-  "drawers": ["问话表", "检查表", "报告表"],
-  "checklist": ["证据够了吗", "制度看全了吗", "红格看了吗"]
+  "drawers": [
+    {"name": "问话表", "path": "internal-audit-workspace/interview-materials/冲压车间_访谈问卷.xlsx", "status": "已收回"},
+    {"name": "检查表", "path": "internal-audit-workspace/audit-programs/程序_v1.md", "status": "执行中"},
+    {"name": "报告表", "path": "", "status": ""}
+  ],
+  "checklist": ["证据够了吗", "制度看全了吗", "红格看了吗"],
+  "ingested": {
+    "废料管理制度_分析.json:CF-001": {
+      "slot": "确定的毛病",
+      "text": "CF-001 制度冲突（废料管理制度）：第4.2条要求过磅单据双方签字，第6.1条又说以门卫记录为准"
+    },
+    "F:F-2026-004": {
+      "slot": "怀疑偷骗",
+      "text": "F-2026-004 废料少2吨，可能被拉出去卖了"
+    },
+    "废料管理_设计观察.json:DA-001": {
+      "slot": "说不清的信号",
+      "text": "DA-001 过磅房单人值守无复核（看制度，待现场验证）"
+    },
+    "current-audit.json:MB-废料处置": {
+      "slot": "说不清的信号",
+      "text": "制度空白：审计主题'废料管理'缺少 mandatory 模块'废料处置'的制度文档"
+    }
+  }
 }

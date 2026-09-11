@@ -4,7 +4,7 @@
 audit_table.py — 报告前查桌子（丢东西就拦下，大模型绕不过去）
 
 [INPUT]:  ledger JSON + 老项目根目录（读 findings/ 和 index.json，只读不写）
-[OUTPUT]: 中文核对报告 + 退出码（0=放行, 2=拦下）
+[OUTPUT]: 中文核对报告 + 退出码（0=放行, 2=拦下；未预期崩溃同样落 2，不留未定义码）
 [POS]:    ledger/ 的报告前闸机，给 report-generator Step 2b 跑的；
           日常门卫（check.py）只提醒，这把是报告签字前的最后一道，红格没对单号也拦。
 [PROTOCOL]: 变更时更新此头部, 然后检查同级 CLAUDE.md
@@ -39,7 +39,7 @@ def main() -> int:
     refs = set(sum([x.get("ref_finding_ids", []) for x in data.get("left", [])], []))
     blocks = []
     for fid in sorted(files - refs):
-        blocks.append(f"单缺位：{fid}在桌上没位子，先搬（ledger.py import）")
+        blocks.append(f"单缺位：{fid}在桌上没位子，先收料（ledger.py sweep）")
     for fid in sorted(refs - files):
         blocks.append(f"鬼号：桌上{fid}在目录里不存在，先对单号（ledger.py link-finding）")
     left = {x.get("slot"): x for x in data.get("left", [])}
@@ -56,4 +56,10 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    try:
+        sys.exit(main())
+    except Exception:
+        # 未预期崩溃 → exit(2)。报告前闸机只认 0/2，崩溃绝不能落进"未定义码"
+        import traceback
+        traceback.print_exc()
+        sys.exit(2)

@@ -4,7 +4,7 @@
 checklist.py — 打勾纸（只看不拦，机器打勾人只看）
 
 [INPUT]:  老项目根目录（内含 internal-audit-workspace/）
-[OUTPUT]: 6个勾/叉 + 去哪补（中文），退出码永远0（纸不拦路）
+[OUTPUT]: 6个勾/叉 + 去哪补（中文），正常永远 0（纸不拦路）；未预期崩溃落 2 以便与正常出票区分
 [POS]:    ledger/ 的打勾纸零件，是 phase_gate.py 旧闸机的接班人；
           旧闸机"不行不让过"，这张纸"行不行都告诉你，过不过你定"。
 [PROTOCOL]: 变更时更新此头部, 然后检查同级 CLAUDE.md
@@ -103,4 +103,10 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    try:
+        sys.exit(main())
+    except Exception:
+        # 未预期崩溃 → exit(2)。打勾纸本该永远 0，崩了必须能和"正常出票"区分开
+        import traceback
+        traceback.print_exc()
+        sys.exit(2)

@@ -3,10 +3,11 @@
 """
 export.py — 桌子总览表格（签字存档用的那张皮）
 
-[INPUT]:  ledger JSON 文件（ledger.schema.json v1.0）
-[OUTPUT]: 总览 Excel（三页：左边三格 / 右边证据 / 抽屉打勾）
+[INPUT]:  ledger JSON 文件（ledger.schema.json v1.2）
+[OUTPUT]: 总览 Excel（三页：左边三格 / 右边证据 / 抽屉打勾）；退出码 0=成功, 2=失败或崩溃
 [POS]:    ledger/ 的表格零件，复用 _shared/scripts 的打印机芯（excel_core），
           是以前三张表之外的第四张，只管排版，不管结论对错。
+          抽屉页两种格式都认：老桌子（1.0）的纯名字、新桌子的 {name,path,status}。
 [PROTOCOL]: 变更时更新此头部, 然后检查同级 CLAUDE.md
 
 用法:
@@ -25,6 +26,14 @@ _SHARED = Path(__file__).resolve().parent.parent / "_shared" / "scripts"
 sys.path.insert(0, str(_SHARED))
 
 from excel_core import ExcelCore
+
+
+def drawer_row(d) -> list:
+    """一行抽屉。老桌子（1.0）的抽屉是纯名字，新桌子是 {name, path, status}——两种都认，
+    否则导一张老桌子会直接抛异常（看着像"工具坏了"，实际只是版本不同）。"""
+    if isinstance(d, dict):
+        return [d.get("name", ""), d.get("path", ""), d.get("status", "")]
+    return [str(d), "", ""]
 
 
 def main() -> None:
@@ -50,14 +59,20 @@ def main() -> None:
     )
     core.add_worksheet(
         "抽屉打勾",
-        ["事项", "在哪"],
-        [[t, "抽屉"] for t in data.get("drawers", [])]
-        + [[c, "打勾纸"] for c in data.get("checklist", [])],
-        col_widths=[24, 10],
+        ["事项", "在哪", "什么状态"],
+        [drawer_row(d) for d in data.get("drawers", [])]
+        + [[c, "打勾纸", ""] for c in data.get("checklist", [])],
+        col_widths=[24, 60, 14],
     )
     core.save()
     print(f"总览表格：{sys.argv[2]}")
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        sys.exit(main())
+    except Exception:
+        # 未预期崩溃 → exit(2)。导出失败必须能和"正常出表"区分开
+        import traceback
+        traceback.print_exc()
+        sys.exit(2)

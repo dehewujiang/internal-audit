@@ -67,11 +67,30 @@
          └──────────────────────────────────────────────┘
 ```
 
+## 信号池流向（2026-09-11 打通）
+
+各房间查出来的东西以前各躺各的，只有问题的"结论"才会进报告。现在统一汇到一张桌子上：
+
+```
+看制度 policy-analyses（控制缺口/风险点/冲突）
+设计观察 design-assessments（看制度＋问话）
+待查项   findings/*.json 的 key_uncertainties
+证据缺失 add-gap（宪法#9，三方向）        ┐
+举报线索 current-audit.json                 ├→ ledger.py sweep → 桌子 audit-table/*.json
+制度空白 current-audit.json.signals ←──────┘   （按各自状态字段自动分格）
+宪法#10 check_mandatory_coverage.py ───────┘
+                                                    │
+                              门卫 check.py：池里有、桌上没有 → 点名（信号池不再只写不读）
+                              报告前 audit_table.py：单缺位/鬼号/红格无单号 → 拦下
+```
+
+分格规则、谁不上桌、怎么改规则，见 `ledger/ledger.schema.json` 的「落格规则」一栏。
+
 ## 断点观察
 
 1. 推理轨迹无落点：audit_trail 只记状态变更（推进/回滚/强制放行），"为什么选这个程序、为什么定高风险"无承载 → C6 试点补 decision 事件
 2. design-assessments 被 P1.5/P2/P3/P4 全量读 4 次，无裁剪 → C7 补最小必要上下文
-3. 证据缺失闭环：P3 证据缺失按宪法 #9 应进信号池，链路待确认 → F1 验证时核对
+3. 证据缺失闭环：P3 证据缺失按宪法 #9 应进信号池 → **已闭**（2026-09-11）：`ledger.py add-gap` 把缺口写成带三种可能方向的信号行（业务未发生 / 管理缺失未留痕 / 证据被消除），执行助手 SKILL 已改为"不得停在等待补充"
 
 ## 图例说明
 

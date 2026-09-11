@@ -1,7 +1,7 @@
 {
-  "version": "2026-09-10-2",
-  "git_commit": "877b3ea",
-  "updated_at": "2026-09-10T16:47:52+08:00",
+  "version": "2026-09-11-1",
+  "git_commit": "5cd9c39",
+  "updated_at": "2026-09-11T16:42:43+08:00",
   "changes": [
     {
       "type": "chore",
@@ -297,6 +297,11 @@
       "type": "docs",
       "file": "CLAUDE-project.md",
       "summary": "修正动作名 validate_*→generate_* 与 finding 校验参数 --strict→--exit-on-error"
+    },
+    {
+      "type": "feat",
+      "file": "ledger",
+      "summary": "新桌子补漏（A/B/C三批）——收料sweep接上11个来源按状态自动分格+宪法#10信号池落地+宪法#9证据缺失记账(add-gap)+抽屉改真入口+高风险硬证据扫全桌+崩溃兜底+老桌子兼容升级(1.0/1.1→1.2)"
     }
   ]
 }

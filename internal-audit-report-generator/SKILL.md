@@ -158,9 +158,13 @@ Step 2: 先读取 findings/index.json 列清单（{finding_id, origin, risk_leve
          → 计算 {{FINDINGS_ORIGIN_DESIGN}} 和 {{FINDINGS_ORIGIN_EXECUTION}}
          → design类发现 → 填充第4.1章"设计类发现"
          → execution类发现 → 填充第4.2章"执行类发现"
-Step 2b: 跑桌子核对（报告前闸机：工作区有新桌子 ledger/*.json 才做，没有就跳过）
-         → 跑 `python ledger/audit_table.py --table <桌子.json> --workspace <项目根目录>`
-         → 退出码0才往下写；退出码2按输出补搬（ledger.py import）或补对单号（ledger.py link-finding），补完重跑
+Step 2b: 跑桌子核对（报告前闸机：桌子在 `internal-audit-workspace/audit-table/*.json`，建项目时已开好；找不到就停下报告，不要跳过——宪法#12）
+         → 先收一次料，把各房间查到但还没上桌的东西补齐（含信号池里的制度空白）：
+           `python ledger/ledger.py sweep <桌子.json> --workspace <项目根目录>`
+         → 再把报告表入口填进抽屉：
+           `python ledger/ledger.py set-drawer <桌子.json> --name 报告表 --path internal-audit-workspace/reports/<报告.md> --status 已定稿`
+         → 然后跑报告前闸机 `python ledger/audit_table.py --table <桌子.json> --workspace <项目根目录>`
+         → 退出码0才往下写；退出码2按输出补齐（单缺位 → `ledger.py sweep`；鬼号/红格没对单号 → `ledger.py link-finding`），补完重跑
 Step 3: 读取 audit-programs/ 中最新一份审计程序文档（已执行程序，提取程序清单作背景）
         → 提取程序清单作为背景
 Step 4: 选择报告模板

@@ -440,6 +440,11 @@ EXPOSED（风险敞口）：
    - 回到 Step 3，**只针对遗漏的风险/轨道重新生成对应程序段**（不是全部重来）
    - 重新运行本步骤（Step 4.5）→ 通过后进入 Step 5
 5. 仅有 warning → 记录在 Step 5 的质量评估中一并考虑
+6. **填抽屉入口**（桌子在 `internal-audit-workspace/audit-table/*.json`，建项目时已开好；找不到就停下报告，不要跳过——宪法#12）：程序文档本身就是抽屉里的"检查表"，落盘后把入口填进去，报告前闸机才查得到它：
+   ```bash
+   python ledger/ledger.py set-drawer <桌子.json> --name 检查表 \
+       --path internal-audit-workspace/audit-programs/<程序文件>.md --status 待执行
+   ```
 
 ---
 
