@@ -270,23 +270,18 @@ if ($isStable) {
         }
     }
 
-    # .claude/rules/ — recopy from gold source
-    $rulesDest = Join-Path $ProjectDir ".claude\rules"
-    $rulesSrc  = Join-Path $GOLD ".claude\rules"
-    if (Test-Path $rulesSrc) {
-        if (Test-Path $rulesDest) {
-            $backupTarget = Join-Path $backupDir ".claude\rules"
-            $backupParent = Split-Path $backupTarget -Parent
-            if (-not (Test-Path $backupParent)) { New-Item -ItemType Directory -Path $backupParent -Force | Out-Null }
-            try { Copy-Item -Path $rulesDest -Destination $backupTarget -Recurse -Force -ErrorAction Stop } catch {}
-        }
+    # .claude/rules/ — 不再搬运（见 setup-project.ps1 说明）。
+    # 顺手禁掉历史遗留的项目级 rules，避免同一份规则被加载两遍。
+    $legacyRules = Join-Path $ProjectDir ".claude\rules"
+    if (Test-Path $legacyRules) {
+        $disabledRules = Join-Path $ProjectDir ".claude\rules.disabled"
         try {
-            if (Test-Path $rulesDest) { Remove-Item $rulesDest -Recurse -Force }
-            Copy-Item -Path $rulesSrc -Destination $rulesDest -Recurse -Force -ErrorAction Stop
-            Write-Host "  [OK]   .claude/rules/ upgraded" -ForegroundColor Green
+            if (Test-Path $disabledRules) { Remove-Item $disabledRules -Recurse -Force }
+            Rename-Item -Path $legacyRules -NewName "rules.disabled" -ErrorAction Stop
+            Write-Host "  [OK]   .claude/rules/ -> rules.disabled（规则改由 ~/.claude/rules/ 提供）" -ForegroundColor Green
             $upOk++
         } catch {
-            Write-Host "  [FAIL] .claude/rules/ — $_" -ForegroundColor Red
+            Write-Host "  [FAIL] .claude/rules/ 禁用失败 — $_" -ForegroundColor Red
             $upFail++
         }
     }

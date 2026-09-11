@@ -216,18 +216,10 @@ if (Test-Path $settingsDest) {
     }
 }
 
-# .claude/rules/ — junction to shared rules repo (coding-safety, good-taste, etc.)
-$rulesDest = Join-Path $ProjectDir ".claude\rules"
-$rulesSrc  = Join-Path $GOLD ".claude\rules"
-if (Test-Path $rulesDest) {
-    Write-Host "  [SKIP] .claude/rules/" -ForegroundColor DarkGray; $ok++
-} elseif (Test-Path $rulesSrc) {
-    if ($Stable) {
-        New-StableCopy -Dest $rulesDest -Source $rulesSrc
-    } else {
-        New-Junction -Link $rulesDest -Target $rulesSrc
-    }
-}
+# .claude/rules/ — 不再搬运（2026-09-11）
+# 规则由 Claude Code 自动从 ~/.claude/rules/ 加载（用户级，对本机所有项目生效）。
+# 项目级副本会让同一份规则被加载两遍；且现场项目只做审计、不写源码，
+# 编码类规则（good-taste / geb-l3 / compat）本就用不上。故不再向现场项目拷贝 rules。
 
 # ════════════════════════════════════════════════════════
 # 5. Data dirs — mkdir (project-owned, empty)

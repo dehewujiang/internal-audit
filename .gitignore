@@ -33,6 +33,10 @@ node_modules/
 .omo/
 .workbuddy/
 
+# .claude/worktrees/ 是 git worktree 的工作目录（内含独立 .git），不属于本仓库内容。
+# 不忽略的话，`git add .claude/` 会把它当"嵌入式仓库"以 gitlink 形式记入索引（2026-09-11 踩过）。
+.claude/worktrees/
+
 # .claude/skills 下的 10 个审计技能为 junction 门牌（指向仓库根同名正本，见 ADR-027）。
 # junction 内容与正本完全同体，git 不识别链接会导致同一改动双份记账——正本已记账，此处免记。
 # 注意：精确列举，不用通配——geb-bootstrap / geb-workflow 是原生真身目录，必须照常记账。
