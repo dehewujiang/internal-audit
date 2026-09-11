@@ -1,42 +1,62 @@
 # 技术上下文
-更新时间：2026-09-10
+更新时间：2026-09-11
 
-## 坑2 整改第一批（2026-09-10，VERSION 2026-09-10-1，已合并 master 851d4a2，见 ADR-029/030）
+**本文件是系统的技术快照**——只写"现在是什么样"。历史批次（为什么改、怎么改的）见 `decisions.md` 的 ADR 与 git log。
 
-四处改动：
-- `_shared/scripts/program_ir_parser.py` — 删 `build_ir()` 中 2.1 节首表后的 `break`（原第 341 行），风险清单 5 张表全收；分母 10→34
-- `audit-execution-assistant/references/finding_rules.md` L53 — 校验矩阵「来源可靠性」由 `A级 | B/C级 | D/E级` 改为 `A级或E级 | B/C级 | D级`
-- `internal-audit-report-generator/templates/standard-audit-report.md` + `SKILL.md` — 综合结论加 5.5「报告可靠性上限声明」（固定文案）
-- `_shared/scripts/validate-policy-analysis.py` — 新增原文抽查
+## 核心模块关系
 
-**原文抽查设计要点**：
-- 入口：`locate_source_text(data, ws)` 按 `doc_name` 在 `documents/` 找 `{stem}_ocr.txt` → `{stem}.{txt,md,docx}` → 文件名模糊兜底
-- docx：标准库 `zipfile` 读 `word/document.xml` 去标签（零依赖）
-- 条款号：`CLAUSE_RE` 兼容阿拉伯与中文数字，`clause_key()` 归一化后比对
-- **走独立通道**：结果单列顶层 `source_reconciliation`，不进 `checks`、不参与 `action`/退出码。理由：原文抽查是补充信息、不是判定项，本就不该参与校验结论。（设计时闸机尚不能区分 warn/block，该缺陷已由 ADR-031 修复；独立通道**保留**，理由与闸机无关）
-- `--workspace` 参数缺省时 `find_workspace()` 从 CWD 向上找 `internal-audit-workspace/`
+```
+internal-audit/
+├── CLAUDE.md                 ← 开发版（含 architecture gotchas, rules loading）
+├── CLAUDE-project.md         ← 运行版（精简，setup-project.ps1 拷贝为审计项目 CLAUDE.md）
+├── constitution.md           ← 14 条硬约束 + 阶段流转规则 + 启动协议
+├── setup-project.ps1         ← 一键部署：扫描仓库根（含 SKILL.md 的目录即技能）自动发现
+├── update-project.ps1        ← 增量升级：逐技能合并而非整目录覆盖
+├── .claude/
+│   ├── skills/               ← 2 个 geb 原生真身 + 10 个审计技能 junction 门牌（非取货点，见 ADR-027）
+│   └── settings.json
+│   （注意：.claude/rules/ 已于 2026-09-11 移除——规则统一由 ~/.claude/rules/ 提供，见下）
+├── _shared/scripts/          ← phase_gate + validate-* ×8 + queries + data_executor + audit_gate
+│                                + check_mandatory_coverage + project_init + program_ir_parser
+│                                + evidence_catalog + bump-version
+├── ledger/                   ← 新桌子（见下）
+├── tools/                    ← pdf_ocr_extractor.py（PaddleOCR）+ 13 个能力声明
+├── audit-topics/             ← 审计主题模板（人力资源管理、存货管理）
+├── tests/prompt_snapshots/   ← 5 个 prompt 快照 + compare-snapshots 漂移检测 hook
+├── tests/fixtures/           ← 回归用例（regression / source_reconciliation / gate_tiers）
+├── [10 个 skill 目录]/        ← 各含 SKILL.md + references/
+└── memory/                   ← 项目记忆（本目录）
+```
 
-**测试入口**：
-- `python tests/test_source_reconciliation.py` — 原文抽查正反例（独立通道不被 `regression-check.py` 覆盖，故做专项断言）
-- `python tests/prompt_snapshots/regression-check.py` — 全量回归基线（改后 2 绿 0 红）
+## 规则体系（2026-09-11 定型）
 
-## 闸机三档语义修复（2026-09-10，VERSION 2026-09-10-2，见 ADR-031）
+- **唯一来源**：`D:\Nut\00_my_digital\12_AGI\rules\`（8 份），经 `~/.claude/rules/agi` 符号链接对所有项目生效。**项目级不再保存副本**——改源即全局生效
+- **加载方式由各文件头部的 `paths` 决定**：
+  - 常驻（无 paths）：`work-principles.md`、`memory_rules.md`
+  - 按需（有 paths）：`coding-safety.md`（源码文件）、`good-taste.md`、`geb-l3.md`、`project-doctrine.md`（源码文件）、`compat.md`（api/interface/public）、`memory-templates.md`（假路径，几乎不加载）
+- **裁决表位置**：规则冲突时的优先级见 `~/.claude/CLAUDE.md`〈规则冲突裁决〉（2026-09-11 从 project-doctrine 迁入，因该文件改为按需加载）
+- **`~/.claude/` 已纳入版本控制**（含 CLAUDE.md、settings.json、hooks、plans）
 
-修复 ADR-030 记录的缺陷——闸机原先对校验脚本"非 0 一律拦"，"警告"与"阻断"无区别。
+## 闸机体系
 
-**四处改动**：
-- `audit_gate.py` `do_postcheck`：三档判断（0=通过 / 1=打印后放行 / ≥2=拦）；各脚本参数从 if/elif 挪进 `ACTIONS[...]["args"]`；`main()` 加 `stdout/stderr.reconfigure(utf-8)`（修 Windows GBK 崩溃）
-- `validate-interview.py:313`：`--strict` 失败 1→2
-- 五个校验脚本入口：`try: main()` / `except Exception: traceback + exit(2)` —— 防崩溃(1)伪装成警告
-- `CLAUDE-project.md`：动作名 `validate_*`→`generate_*`、finding 参数 `--strict`→`--exit-on-error`
+```
+流程闸机:  phase_gate check/advance          → exit 0/1/2（阶段转换）
+质量闸机:  validate-*.py                      → exit 0/1/2（产物校验）
+授权闸机:  phase_gate tool-check <script>     → exit 0/1（工具分域）
+调度闸机:  audit_gate precheck/postcheck       → exit 0/1（LLM 推理前后硬闸机）
+```
 
-**关键约束（已固化进 ACTIONS.args）**：闸机对 report/program **不传** `--strict`（它们的 strict 分支把阻断也映射成 1）；对 interview **必须传** `--strict`（非 strict 恒返回 0）。
+**退出码语义（2026-09-10 统一）**：校验脚本 `0=通过 / 1=警告 / ≥2=阻断`；调度闸机认三档——`0` 放行、`1` 打印警告后放行、`≥2` 拦下。
 
-**测试入口**：
-- `python tests/test_audit_gate_tiers.py` — 三档断言（警告放行 / 阻断拦下 / 崩溃兜底），fixture 在 `tests/fixtures/gate_tiers/`（xlsx 由测试现场生成，因 `.gitignore` 屏蔽 `*.xlsx`）
-- 三条断言均做过回退验证（撤销对应改动 → 断言变红 → 恢复 → 绿）
+**已知缺口**：`audit_gate.py` 调用 `validate-program.py` 时**从不传 `--ir`**，导致"覆盖率 / 判定标准 / 数据来源"三类阻断从未生效（文档却写着应传）。属待排期的"加严"项。
 
-## 新桌子 ledger（2026-09-04，VERSION 2026-09-04-5，已推远程，见 ADR-028）
+**两个易忘约束（已固化进 `ACTIONS[...]["args"]`）**：
+- `validate-interview.py` **必须传** `--strict`——它非 strict 时无论成败都返回 0，闸机会永远放行
+- `validate-report.py` / `validate-program.py` **刻意不传** `--strict`——它们的 strict 分支把"阻断"也映射成退出码 1，闸机将无法与"警告"区分
+
+**崩溃兜底**：五个校验脚本入口均有 `try/except → exit(2)`，防止"脚本挂了"（Python 默认返回 1）被误判成"有警告"放行。
+
+## 新桌子 ledger
 
 ```
 ledger/
@@ -45,102 +65,27 @@ ledger/
 ├── checklist.py     ← 打勾纸：六句话看板，只读 workspace，exit 永远0
 ├── audit_table.py   ← 报告前闸机：单缺位/鬼号/红格无号 → exit 2
 ├── export.py        ← 总览表格：左边/证据/抽屉三页（复用 excel_core）
-├── ledger.schema.json (v1.0) / README.md / examples/冲压车间.json
+└── ledger.schema.json (v1.0) / README.md / examples/冲压车间.json
 ```
 
-- 五家接法（SKILL 只增行）：organizer→信号格add-line / interview→信号格+证据 / execution→import单张 / debate→set-slot改字 / report→Step 2b 跑 audit_table.py；program-generator 未动（产出即抽屉检查表）
-- phase_gate 新增 `checklist` 子命令（转调 ledger/checklist.py；登记表动旧行 1 行，旧命令逻辑零动）；constitution 加一句话；tools/phase_gate.md 加一行
-- 部署：setup/update 搬 ledger + GLOBAL_TOOLS 加 5 basename + CLAUDE/CLAUDE-project 注册；VERSION 2026-09-04-5（4 条 changes）
-- 验证基线：广东长华 11 张/37 条/F-004；旧回归 GREEN=2；快照 R08 按"源+照同改"过（cceer/root_cause 加 dated 注记）
-- 小桌 worktree new-table 保留未拆；根下图纸/试搭/进度三份未存档
+- **五家接法**（各 SKILL 只增行）：organizer→信号格 add-line / interview→信号格+证据 / execution→import 单张 / debate→set-slot 改字 / report→Step 2b 跑 audit_table.py；program-generator 未接（产出即抽屉检查表，约定即接口）
+- **四根线**：写 / 读 / 拍照（20 张滚动+回头）/ 老账 + 高风险硬度（须 A/E 级证据）
+- `phase_gate.py` 新增 `checklist` 子命令（转调 `ledger/checklist.py`）
+- 设计原则（ADR-028）：**加法不减法**——只拦丢东西，不管顺序格式
 
-## 核心模块关系（2026-08-12 存档）
+## 技能注册架构（见 ADR-027）
 
-```
-internal-audit/
-├── CLAUDE.md                 ← 开发版（含 architecture gotchas, rules loading）
-├── CLAUDE-project.md         ← 运行版（精简，setup-project.ps1 拷贝为审计项目 CLAUDE.md）
-├── constitution.md           ← 14 条硬约束 + 阶段流转规则 + 启动协议（2026-08-06 恢复）
-├── setup-project.ps1         ← 一键部署：扫描仓库根（含 SKILL.md 的目录即技能）自动发现
-├── update-project.ps1        ← 增量升级：逐技能合并而非整目录覆盖
-├── .claude/
-│   ├── skills/               ← 2 个 geb 原生真身 + 10 个审计技能 junction 门牌（非取货点，见 ADR-027）
-│   ├── settings.json         ← extraRules 配置
-│   └── rules/                ← 8 份**复制副本**（实测非 junction！源在 D:\Nut\00_my_digital\12_AGI\rules\，改源需手动同步三处：源/项目/workbuddy）
-├── _shared/scripts/          ← 核心脚本（phase_gate + 7 validate-* + queries + data_executor + audit_gate + check_mandatory_coverage + project_init + program_ir_parser + evidence_catalog + bump-version）
-├── tools/                    ← pdf_ocr_extractor.py（PaddleOCR）+ 13 个能力声明
-├── audit-topics/             ← 审计主题模板（人力资源管理、存货管理）
-├── tests/prompt_snapshots/   ← 5 个 prompt 快照 + compare-snapshots 漂移检测 hook
-├── [10 个 skill 目录]/        ← 各含 SKILL.md + references/
-└── memory/                   ← 项目记忆（本目录）
-```
-
-## 技能注册架构（2026-08-27 改版，见 ADR-027）
-
-- **唯一来源**：仓库根本身的 10 个技能目录 — 含 SKILL.md 的根目录即被视为可部署技能
-- **门牌角色**：`.claude/skills/` 内 10 个审计技能为 junction 门牌，仅服务 AI 工具发现；
-  **没有任何脚本把它当取货点读** — 被清空只影响发现能力，一条重建命令即恢复（附在 ADR-027）
+- **唯一来源**：仓库根本身的 10 个技能目录——含 SKILL.md 的根目录即被视为可部署技能
+- **门牌角色**：`.claude/skills/` 内 10 个审计技能为 junction 门牌，仅服务 AI 工具发现；**没有任何脚本把它当取货点读**——被清空只影响发现能力，一条重建命令即恢复
 - geb-bootstrap / geb-workflow 以原生目录保留于 `.claude/skills/`（开发环境专用，不随项目部署）
-- **部署一致性**：setup 和 update 都按 SKILL.md 标记扫根目录读取技能列表
+- setup 和 update 都按 SKILL.md 标记扫根目录读取技能列表
 
-## 四重闸机体系
-
-```
-流程闸机:  phase_gate check/advance          → exit 0/1/2（阶段转换）
-质量闸机:  validate-*.py                      → exit 0/1（产物校验）
-授权闸机:  phase_gate tool-check <script>     → exit 0/1（工具分域）
-调度闸机:  audit_gate precheck/postcheck       → exit 0/1（LLM 推理前后硬闸机）
-```
-
-## ProgramIR 体系（2026-08-06 已接入工作流，R04 闭环）
+## ProgramIR 体系
 
 - `program_ir_parser.py` — 审计程序 Markdown → ProgramIR JSON（含 risk_register + coverage + uncovered_risks；兼容增量章节 S 编号与 -C 勘误后缀）
-- `validate-program.py --ir` — 结构化校验模式（覆盖率<80%→block; 开关词/模糊词检查; 空数据源>30%→block）
-- **接入点**：program-generator SKILL.md Step 4.5（解析→校验→激活轨道比对→修复闭环）；Step 3 有自检屏障一；Step 5 有前置声明
-
-## 已发现的 9 项风险（2026-08-06 全部闭环，除 R09 实际抽查）
-
-| ID | 风险 | 状态 |
-|:---|:---|:---|
-| R01 | cceer_standards.md A+B vs SKILL.md A+E 矛盾 | ✅ 统一 A+E（fa412dd） |
-| R02 | 对抗验证 30%/50% 定量阈值丢失 | ✅ 补回（fa412dd） |
-| R03 | 5/5 prompt 快照过期 | ✅ 重写对齐（26c511d） |
-| R04 | ProgramIR 闸机未接入工作流 | ✅ Step 4.5 接入（fa143a4） |
-| R05 | 缺 validate-catalog.py | ✅ 新建+挂接（fa143a4） |
-| R06 | 缺 validate-index.py | ✅ 新建+挂接（fa143a4） |
-| R07 | 风险→程序覆盖修复闭环缺失 | ✅ 三重屏障（fa143a4） |
-| R08 | 缺 git pre-commit 快照对比 hook | ✅ compare-snapshots + hook（26c511d） |
-| R09 | 缺端到端回归测试 | ⏳ 抽查清单已交付，实际抽查用户执行 |
-
-## 新增治理（2026-08-06 批次）
-- constitution 14 条硬约束（恢复 11-14：证据链/禁自行替代/必走技能/声明来源）+ 阶段流转规则 + 启动协议
-- 三标准路径：`audit-topics/`（公司数据）、`_shared/scripts/`（脚本）、`.claude/skills/{skill}/`（跨技能）
-- 知识库混源过滤：非制造业场景在 internal_audit_risk_framework 附录A / cheatsheet 附录B
-- 制度版本强制：document_info.version/effective_date 必填（warn 级校验，存量兼容）
-
-## 第四轮（2026-08-06 下午，VERSION 2026-08-06-4，已部署双项目）
-
-- 审计程序模板新增「设计理由」「测试目的」两列（output_template.md 8 张表：6 轨道 + S1/S2 增量章节）；SKILL.md Step 4 两列必填要求 + 防套话约束 + 自检清单 2 项；program_templates.json 列宽补 30,30
-- **模板表头对齐真实产出结构**（ADR-025）：8 表全部含「程序编号/判定标准/取证方式」列（解析器 `_is_program_table` 与闸机硬查要求）——修复模板与 Step 4.5 闸机的兼容矛盾（测试四连暴露）
-- **Step 4.5 命令修正**：`validate-program.py --ir <path>` → `--ir --strict`（--ir 为布尔开关，实测）
-- commits: 0746f5c / e133e2b / 26d4cc2 / 181000f / cd72e98
-
-## 架构加固批次（2026-08-11，VERSION 2026-08-11-3，金源已提交、未部署现场）
-
-- **C1 数据流总图**：根目录 `DATAFLOW.md`（六阶段 P0-P4 + 贯穿机制 + 断点观察：推理轨迹无落点 / design-assessments 读 4 次 / 证据缺失闭环待确认）
-- **C2 宪法瘦身**：constitution.md ≤85 行，14 条语义零丢失 + 触发指针（tools/tool-exhaustion.md、CLAUDE-project.md「启动协议」、incremental_update.md、phase_gate.py）；CLAUDE-project.md 漂移修复（"10 hard"→实际条数）+ check_mandatory_coverage 命令补登记
-- **C3 纳米测试**：ADR-026（新增规则/脚本前自问三问）+ OPS.md 检查清单
-- **C4 R09 回归用例**：`tests/fixtures/regression/p2026-001-hr/`（input policy-analysis+audit-program / expected_output validate 输出 / README 脱敏映射；findings 待项目完成后补）
-- **C6 推理日志试点**：`phase_gate.py` 新增 `log-decision --scene --decision --basis` 子命令 → append_audit_trail 写 event_type="decision"（detail 格式 `{场景}:{决策}:{依据}`）；finding 复用已有 `decision_rationale` 对象新增子键 `risk_level_reason`（validate-finding.py [DR] 校验 warn 级、仅高风险触发）；audit_gate `_log_to_trail`（{event,source} schema）保持不动——两套 schema 并存（REASON-LOG.md 记录，铺开阶段统一）；`queries.py decide` 读已有子键不受影响；铺开条件 = 跑 1 个真实审计后评估
-- **C7 最小必要上下文**：根目录 `INPUT-BUDGET.md`（7 skill 输入清单 + 裁剪规则，两档：文件级/字段级）；SKILL.md 读取指令改静态过滤（grep 禁"你认为/根据需要"）；execution-assistant 读 design-assessments 按**验证状态**过滤（严禁按 source——两种来源都需验证，宪法 #9/#13）；全量读仅限当前阶段产物；制度文件（P1）禁止裁剪
-- **追加机制**：SKILL.md 变更自动检测——`tests/prompt_snapshots/regression-check.py` + pre-commit.hook（影响卡片引导 + RED 拦截），回应 C7 改 SKILL.md 暴露的快照闸机缺口
-
-## 验证分层与规则拆分（2026-08-12）
-
-- **验证分层**（work-principles.md「〇」）：L1 轻（查资料/概念，直接回答不搞考卷）/ L2 标准（文档/方案，考卷先行+产出核对）/ L3 重（改代码/数据/接口，考卷+机器拍板+回退+守恒+行为验收）；判断标准=是否碰关键数据、有无不可逆后果；任务理解确认同步分层（L1 一句话 / L2/L3 全套）
-- **规则拆分**：源 `D:\Nut\00_my_digital\12_AGI\rules\` 现有 8 份——`coding-safety.md`（编码专用，带 paths frontmatter，只在读代码文件时注入）+ `work-principles.md`（通用，无 frontmatter 启动全量加载）+ compat/geb-l3/good-taste/memory-templates/memory_rules/project-doctrine 6 份。全局/12_AGI CLAUDE.md 前置约束指向 work-principles
-- **坑2 验证优先诊断**（2026-08-12，待整改）：① 程序覆盖率自证——validate-program --ir 的 risk_register 是程序自列，覆盖率分母应改上游独立清单（design-assessments+policy-analyses）；② 证据等级 AI 自标——reliability_grade 由 AI 填，应 data_executor 导出自动 A / OCR 自动 C / AI 只标 E；③ 制度校验看转述——validate-policy-analysis 读 AI JSON 不读原始制度；④ 报告二手汇总（不根治，只记录）
-- **纳米测试三问 25 脚本审查**：2 孤儿保留（analysis_manifest + incremental_analysis_gate，设计超前需求未触发，记录见 _shared/scripts/README.md）；1 偏重（create_evidence_dirs 职责越界+死代码，重构候选）；核心 20 个三问通过
+- `validate-program.py --ir` — 结构化校验模式（覆盖率 <80% → block；开关词/模糊词检查；空数据源 >30% → block）
+- **接入点**：program-generator SKILL.md Step 4.5（解析→校验→激活轨道比对→修复闭环）
+- **注意**：解析器收集《风险识别清单》时须收全 2.1.1~2.1.5 五张表（曾因 `break` 只读首表，覆盖率分母残缺）
 
 ## 10 个 Skill 流水线
 
@@ -154,14 +99,24 @@ finding-debate               (Phase 3.5, 可选)
 report-generator             (Phase 4 → reports/)
 ```
 
+## 三标准路径与制度治理
+
+- **三标准路径**：`audit-topics/`（公司数据）、`_shared/scripts/`（脚本）、`.claude/skills/{skill}/`（跨技能）
+- **制度版本强制**：`document_info.version` / `effective_date` 必填（warn 级校验，存量兼容）
+- **知识库混源过滤**：非制造业场景在 `internal_audit_risk_framework` 附录A / `cheatsheet` 附录B
+- **推理日志**（试点）：`phase_gate.py log-decision --scene --decision --basis` → audit_trail；finding 的 `decision_rationale.risk_level_reason`（warn 级、仅高风险触发）。铺开条件 = 跑 1 个真实审计后评估
+
 ## 关键技术约束
+
 - 状态传递：全部通过文件系统，不通过内存
-- finding schema 1.2.0（扁平结构：title/risk_level/origin/evidence[]）
+- finding schema 1.2.0（扁平结构：title / risk_level / origin / evidence[]）
 - 证据等级 A-E 五级，高风险 finding 必须 A 或 E
-- 项目命名：project_name 必须等于项目文件夹名
-- data_executor 安全：import 白名单（仅 pandas/numpy）+ threading.Timer 超时
+- 项目命名：`project_name` 必须等于项目文件夹名
+- `data_executor` 安全：import 白名单（仅 pandas/numpy）+ threading.Timer 超时
+- **业务规则只写"为什么"**（本文件与 decisions.md）；"改了什么"交给 git
 
 ## 已部署项目
+
 | ID | 项目 | 主题 | 阶段 |
 |:---:|------|------|------|
 | P-2026-001 | 武汉长源 | 人力资源管理 | phase_3_execution |
