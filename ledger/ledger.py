@@ -195,6 +195,16 @@ def _route_gap(status: str) -> str:
     return LEFT_SLOTS[0] if status == "已确认" else LEFT_SLOTS[2]
 
 
+def _audit_state(ws: Path) -> dict:
+    """current-audit.json 的 audit_state。标准位置在 internal-audit-workspace/ 里
+    （project-init 建的就在那）；老项目放在项目根的也认。两处都没有 → 空。"""
+    for p in (ws / "internal-audit-workspace" / "current-audit.json",
+              ws / "current-audit.json"):
+        if p.exists():
+            return _read_json(p).get("audit_state") or {}
+    return {}
+
+
 def _looks_fraud(item: dict) -> bool:
     """是不是舞弊嫌疑。先看明确写的分类，没写才看字眼——宁可多进红格，不可漏（宪法#2）。"""
     if "舞弊" in f"{item.get('category', '')}{item.get('type', '')}{item.get('kind', '')}":
@@ -206,6 +216,7 @@ def _looks_fraud(item: dict) -> bool:
 
 def scan_policy(ws: Path) -> list:
     """看制度查出来的三样：控制缺口（CG）、风险点（RP）、制度冲突（CF）。"""
+    GRADE = {"high": "高", "medium": "中", "low": "低"}
     out = []
     d = ws / "internal-audit-workspace" / "policy-analyses"
     if not d.is_dir():
@@ -214,7 +225,8 @@ def scan_policy(ws: Path) -> list:
         a = _read_json(p)
         doc = str(a.get("doc_name") or p.stem)
         for g in a.get("control_gaps") or []:
-            gid = str(g.get("id") or "").strip()
+            # 编号字段两个名字都认：文档声明 id，真实批量产出用 gap_id——2026-09-14 广东长华实撞
+            gid = str(g.get("id") or g.get("gap_id") or "").strip()
             slot = _route_gap(str(g.get("verification_status") or ""))
             if not gid or not slot:
                 continue
@@ -223,15 +235,16 @@ def scan_policy(ws: Path) -> list:
                         "text": f"{gid} 控制缺口（{doc}）：{_short(str(what), 60)}"
                                 f"（{g.get('verification_status')}）"})
         for r in a.get("risk_points") or []:
-            rid = str(r.get("risk_id") or r.get("id") or "").strip()
+            rid = str(r.get("risk_id") or r.get("rp_id") or r.get("id") or "").strip()
             if not rid:
                 continue
             sev = str(r.get("severity") or r.get("risk_level") or "未标")
+            sev = GRADE.get(sev.lower(), sev)
             desc = r.get("risk_description") or r.get("description") or ""
             out.append({"id": f"{p.name}:{rid}", "slot": LEFT_SLOTS[2],
                         "text": f"{rid} 风险点（{sev}，{doc}）：{_short(str(desc), 60)}"})
         for c in a.get("conflicts") or []:
-            cid = str(c.get("id") or "").strip()
+            cid = str(c.get("id") or c.get("conflict_id") or "").strip()
             if not cid:
                 continue
             # 冲突没有"状态字段"——两份制度对不上，本身就是读出来的事实，不是待验的猜想
@@ -242,10 +255,14 @@ def scan_policy(ws: Path) -> list:
 
 def scan_design(ws: Path) -> list:
     """设计观察（待现场验证的假设）。JSON 优先，没有 JSON 才读 DA-*.md——
-    两份是同一批东西的两种写法，都读会让一件事在桌上占两行。"""
+    两份是同一批东西的两种写法，都读会让一件事在桌上占两行。
+    current-audit.json 标了 design_observations_consumed=true（观察已消化进审计程序），
+    就不再挂回桌面——消化了的东西再上桌，会把已经变成问题单的事摆两行。"""
     out = []
     d = ws / "internal-audit-workspace" / "design-assessments"
     if not d.is_dir():
+        return out
+    if _audit_state(ws).get("design_observations_consumed") is True:
         return out
     jsons = sorted(d.glob("*.json"))
     if jsons:
@@ -270,10 +287,7 @@ def scan_design(ws: Path) -> list:
 def scan_state(ws: Path) -> list:
     """信号池（宪法#10 制度空白）＋ 举报线索——两样都住在 current-audit.json 里。"""
     out = []
-    p = ws / "current-audit.json"
-    if not p.exists():
-        return out
-    st = _read_json(p).get("audit_state") or {}
+    st = _audit_state(ws)
     for s in st.get("signals") or []:
         if not isinstance(s, dict):
             continue
@@ -321,10 +335,72 @@ def scan_findings(ws: Path, only: str = None) -> tuple:
     return items, rows
 
 
+def _known_anchors(ws: Path) -> set:
+    """制度分析／设计观察里已有的编号集合——判断程序文件里的风险"有没有户口"用。
+    编号是去重的唯一凭据：找得到＝同一件事已经在桌上，找不到＝推演出的新假设。"""
+    ids = set()
+    for p in (ws / "internal-audit-workspace" / "policy-analyses").glob("*.json"):
+        a = _read_json(p)
+        for g in a.get("control_gaps") or []:
+            ids.add(str(g.get("gap_id") or g.get("id") or "").strip().upper())
+        for r in a.get("risk_points") or []:
+            ids.add(str(r.get("rp_id") or r.get("risk_id") or r.get("id") or "").strip().upper())
+        for c in a.get("conflicts") or []:
+            ids.add(str(c.get("conflict_id") or c.get("id") or "").strip().upper())
+    for p in (ws / "internal-audit-workspace" / "design-assessments").glob("*.json"):
+        for o in _read_json(p).get("design_observations") or []:
+            ids.add(str(o.get("id") or "").strip().upper())
+    ids.discard("")
+    return ids
+
+
+def _load_ir_parser():
+    """审计程序的解析器在 _shared/scripts/program_ir_parser.py（validate-program 也在用）。
+    借它的现成解析，不另写一套 markdown 解析——两处共用，修一处两处受益。"""
+    shared = Path(__file__).resolve().parent.parent / "_shared" / "scripts"
+    if str(shared) not in sys.path:
+        sys.path.insert(0, str(shared))
+    try:
+        import program_ir_parser
+        return program_ir_parser
+    except Exception as e:
+        raise SystemExit(f"审计程序解析器用不了（{shared / 'program_ir_parser.py'}）：{e}")
+
+
+def scan_programs(ws: Path) -> list:
+    """审计程序 2.1 风险清单：推演出的假设上桌（信号格）。
+
+    制度类的条目与制度分析同源——**有户口的就不上**，不然同一件事在桌上摆两行。
+    户口＝来源标注里的 CG/RP/CF/D 编号在制度分析里找得到；找不到（或压根没有编号）
+    的按推演处理照上，宁可多几行可删的，不可漏收。
+    程序本体（65 条测试指令）是"要做的事"，不在这里收——归抽屉·检查表。
+    """
+    d = ws / "internal-audit-workspace" / "audit-programs"
+    mds = sorted(d.glob("*.md")) if d.is_dir() else []
+    if not mds:
+        return []
+    parser = _load_ir_parser()
+    known = _known_anchors(ws)
+    out = []
+    for p in mds:
+        for r in parser.build_ir(p).get("risk_register") or []:
+            rid = str(r.get("risk_id") or "").strip()
+            if not rid:
+                continue
+            if known & {str(a).strip().upper() for a in r.get("fact_anchors") or []}:
+                continue
+            label = str(r.get("raw_id") or rid).strip()
+            kind = _short(str(r.get("type") or "推演"), 8)
+            out.append({"id": f"{p.name}:{rid}", "slot": LEFT_SLOTS[2],
+                        "text": f"{label} 推演风险（{kind}）：{_short(str(r.get('title') or ''), 60)}"})
+    return out
+
+
 def scan_workspace(ws: Path) -> tuple:
     """扫遍所有房间，收成两摞：要上桌的条目、要贴的证据。只看不改。"""
     items, rows = scan_findings(ws)
-    return items + scan_policy(ws) + scan_design(ws) + scan_state(ws), rows
+    return (items + scan_policy(ws) + scan_design(ws) + scan_state(ws)
+            + scan_programs(ws)), rows
 
 
 def _slot_cell(table: dict, name: str) -> dict:

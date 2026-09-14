@@ -375,6 +375,133 @@ def test_sweep_routing():
 # ══════════════════════════════════════════════════════════════
 # 断言 8（C2）：收料只添不盖——反复收不重复，状态变了只挪格
 # ══════════════════════════════════════════════════════════════
+def test_real_fieldnames():
+    print("\n[8b] 真实产物字段名兜底：广东长华撞出来的两条")
+    ws = SANDBOX / "真实字段项目"
+    wsx = ws / "internal-audit-workspace"
+    for sub in ("policy-analyses", "design-assessments"):
+        (wsx / sub).mkdir(parents=True, exist_ok=True)
+
+    # ① 字段名兜底：真实 document-organizer 产出用 gap_id/rp_id/conflict_id，
+    #    沙箱测试当初照抄代码字段名（id/risk_id），等于自己考自己——2026-09-14 实撞
+    (wsx / "policy-analyses" / "HR_分析.json").write_text(json.dumps({
+        "schema_version": "1.0",
+        "analysis_date": "2026-07-17", "company": "某公司", "audit_topic": "人力资源",
+        "documents_analyzed": [{"file": "a.md", "title": "考勤管理制度"}],
+        "control_gaps": [
+            {"gap_id": "CG-HR-001", "document": "考勤制度", "verification_status": "已确认",
+             "description": "考勤数据→薪资计算缺少签收确认机制"},
+            {"gap_id": "CG-HR-002", "document": "考勤制度", "verification_status": "待确认",
+             "description": "调休假制度合规性待核实"},
+        ],
+        "risk_points": [
+            {"rp_id": "RP-HR-001", "document": "考勤制度", "risk_level": "high",
+             "description": "综合管理科五权合一"},
+        ],
+        "conflicts": [
+            {"conflict_id": "CF-HR-001", "documents": "两份制度",
+             "description": "全勤奖条款打架"},
+        ],
+    }, ensure_ascii=False), encoding="utf-8")
+
+    # ② 已消化的设计观察不再挂回桌面：current-audit.json 标了 consumed
+    (wsx / "design-assessments" / "HR_观察.json").write_text(json.dumps({
+        "schema_version": "1.0.0",
+        "design_observations": [
+            {"id": "D-001", "title": "产假天数低于法定", "status": "pending",
+             "source": "document-organizer"},
+            {"id": "D-002", "title": "已消化的观察", "status": "verified",
+             "source": "interview"},
+        ],
+    }, ensure_ascii=False), encoding="utf-8")
+    (wsx / "current-audit.json").write_text(json.dumps({
+        "audit_state": {"design_observations_consumed": True},
+    }, ensure_ascii=False), encoding="utf-8")
+
+    t = SANDBOX / "真实字段桌.json"
+    _run("ledger.py", "create", t, "--table", "人力资源")
+    r = _run("ledger.py", "sweep", t, "--workspace", ws)
+    check("真实字段项目收料能跑（退出码 0）", r.returncode == 0, f"退出码={r.returncode}")
+    d = json.loads(t.read_text(encoding="utf-8-sig"))
+    cells = {x["slot"]: x["text"] for x in d["left"]}
+    sure, sig = cells["确定的毛病"], cells["说不清的信号"]
+
+    # ① 列名兜底
+    check("gap_id 编号也能上桌（已确认→确定格）", "CG-HR-001" in sure)
+    check("gap_id 待确认→信号格", "CG-HR-002" in sig)
+    check("rp_id 风险点→信号格", "RP-HR-001" in sig)
+    check("conflict_id 冲突→确定格", "CF-HR-001" in sure)
+    check("风险点等级 high 译成中文", "高" in sig)
+
+    # ② 消化口径
+    check("已消化（consumed）→ 设计观察一律不上桌", "D-001" not in sig and "D-002" not in sig)
+
+
+def test_program_risks():
+    print("\n[8c] 程序风险清单：推演的上桌，制度类的有户口就不上（去重）")
+    ws = SANDBOX / "程序风险项目"
+    wsx = ws / "internal-audit-workspace"
+    for sub in ("policy-analyses", "audit-programs"):
+        (wsx / sub).mkdir(parents=True, exist_ok=True)
+
+    # 制度分析里已有一条控制缺口（这就是"户口"）
+    (wsx / "policy-analyses" / "废料_分析.json").write_text(json.dumps({
+        "schema_version": "1.0.0",
+        "control_gaps": [{"gap_id": "CG-001", "description": "过磅无复核",
+                          "verification_status": "已确认"}],
+    }, ensure_ascii=False), encoding="utf-8")
+
+    # 程序文件的风险清单：两条纯推演 + 三条制度类（户口命中/户口查无/衍生）
+    (wsx / "audit-programs" / "废料审计程序_v1.0.md").write_text("""# 废料审计程序
+
+## 二、情境分析
+
+### 2.1 风险识别清单
+
+| 风险编号 | 风险名称 | 风险描述 | 来源标注 |
+|------|------|------|------|
+| R01 | 单人值守偷卖废料 | 值班员独自过磅，无人复核 | 【经验类】 |
+| R02 | 地磅数据被改 | 地磅软件无操作日志 | 【系统类-推演】 |
+| R19 | 过磅无复核 | 与制度分析同一件事 | 【制度类-设计缺陷：CG-001（废料管理制度）】 |
+| R20 | 台账未登记 | 指向一条制度分析里根本没有的缺口 | 【制度类-设计缺陷：CG-999（废料管理制度）】 |
+| R21 | 值班交接无留痕 | 由已有缺口衍生出的新问题 | 【制度类-设计缺陷：CG-001衍生（废料管理制度）】 |
+
+## 三、测试程序（轨道A：控制有效性测试）
+
+<!-- track A -->
+| 风险编号 | 风险名称 | 控制有效性测试程序 | 取数来源 |
+|------|------|------|------|
+| R01 | 单人值守偷卖废料 | 现场观察过磅流程 | 现场 |
+""", encoding="utf-8")
+
+    t = SANDBOX / "程序风险桌.json"
+    _run("ledger.py", "create", t, "--table", "废料管理")
+    r = _run("ledger.py", "sweep", t, "--workspace", ws)
+    check("带程序文件的项目收料能跑（退出码 0）", r.returncode == 0, f"退出码={r.returncode}")
+    d = json.loads(t.read_text(encoding="utf-8-sig"))
+    cells = {x["slot"]: x["text"] for x in d["left"]}
+    sig = cells["说不清的信号"]
+    everything = cells["确定的毛病"] + cells["怀疑偷骗"] + sig
+
+    check("推演风险（经验类）→ 上桌，落信号格", "R01" in sig)
+    check("推演风险（系统类）→ 上桌，落信号格", "R02" in sig)
+    check("制度类·户口命中 → 不上桌（制度分析已收）", "R19" not in everything)
+    check("制度类·户口查无 → 仍上桌（宁可多收不可漏）", "R20" in sig)
+    check("制度类·衍生款 → 严处理，不上桌", "R21" not in everything)
+    check("被跳过的衍生条正文也没漏进桌上", "值班交接" not in everything)
+
+    # 守恒：程序风险净上桌 = 推演 2 条 + 户口查无 1 条 = 3（不是 0，也不是 5）
+    risk_lines = [l for x in d["left"] for l in x["text"].split("；")
+                  if l.startswith(("R01", "R02", "R19", "R20", "R21"))]
+    check("守恒：只有 3 条程序风险上桌（2 推演 + 1 户口查无）",
+          len(risk_lines) == 3, f"实际 {len(risk_lines)}：{risk_lines}")
+
+    # 反复收不重复（R 条目也走 ingested 记账）
+    before = table_text(t)
+    _run("ledger.py", "sweep", t, "--workspace", ws)
+    check("再收一次 → 一个字没变", table_text(t) == before)
+
+
 def test_sweep_idempotent():
     print("\n[8] 收料：反复收不重复；状态变了只挪格不两挂")
     ws = _make_source_project("幂等项目")
@@ -486,6 +613,12 @@ def test_skill_docs():
         check(f"{d.split('/')[0]}：产出后填抽屉入口",
               "set-drawer" in (REPO_ROOT / d).read_text(encoding="utf-8"))
 
+    # 洞察要有户口：对抗验证补充建议不能只留程序文件尾部
+    gen = (REPO_ROOT / "internal-audit-program-generator/SKILL.md").read_text(encoding="utf-8")
+    check("程序生成：对抗验证补充建议须立设计观察户口",
+          "立户口" in gen and "design-assessments/" in gen)
+    check("程序生成：制度类风险沿用原编号（防重复）", "沿用原编号" in gen)
+
 
 def main():
     print(f"沙箱：{SANDBOX}")
@@ -496,6 +629,8 @@ def main():
     test_drawers()
     test_legacy_table()
     test_sweep_routing()
+    test_real_fieldnames()
+    test_program_risks()
     test_sweep_idempotent()
     test_pool_consumed()
     test_add_gap()

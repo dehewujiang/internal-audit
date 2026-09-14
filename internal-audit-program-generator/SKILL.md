@@ -227,6 +227,8 @@ AI 自由推演风险点，按三类标注。**优先质量而非数量，禁止
 | 【公司类】 | 每个风险点必须在 about-me.md 中有 ≥2 条独立事实作为支撑依据，且须说明每条事实与该风险之间的因果链路 | 基于 about-me.md 公司特征推演 |
 | 【制度类-设计缺陷】 | 每个风险点必须引用具体的制度编号和条款内容，不得使用"制度规定不足"等模糊描述 | 来自 document-organizer JSON |
 
+**防重复（2026-09-14 定）**：制度类风险若与制度分析 JSON 中已有的 `control_gaps`（CG-）/`risk_points`（RP-）/`design_observations`（D-）/`conflicts`（CF-）说的是**同一件事**，**不得重新编号重写描述**——直接沿用原编号（`R21 = CG-HR-009`，正文引用原条目的 id 与描述，可补充审计视角）。推演出的**新**风险才启用新的 R 编号。这保证"程序 ↔ 制度分析 ↔ 问题单"三处对同一件事只有一个名字，报告阶段不用人肉对账。
+
 **事实锚定自检规则**：每输出一个风险点后，立即自检——"我能否指向 about-me.md 或 my-config.md 或制度分析JSON的具体行来支持这个风险的存在？"如果不能，进行标注。
 
 **详细规范**：见 [references/step2_risk_identification.md](./references/step2_risk_identification.md)
@@ -347,6 +349,7 @@ EXPOSED（风险敞口）：
 - 裁判阶段禁止参考红队推理链，只读红队输出方案
 - 红队阶段前必须输出安全前导语
 - 对抗验证结果写入 `audit_trail`，记录 event_type = adversarial_test
+- **对抗验证产生的补充建议要立户口**（2026-09-14）：每条 PARTIALLY_COVERED / EXPOSED 的补充建议（如"AV-01 派遣工个人侧验证"）除了写进程序文件尾部，**必须同时**写成 `design-assessments/` 里的一条设计观察（`type="risk_clue"`、`source="program-generator"`、`status="pending"`、`verification_method` 写清怎么验）。只写程序文件尾部等于没有户口——收料看不到它，这件事就死在文档里了。轨道 E/F 尾部的"待验证测算"同理（如"效率损失量化"里置信度标低的估算）。
 
 **详细规范**：见 [references/step3_program_generation.md](./references/step3_program_generation.md)
 
