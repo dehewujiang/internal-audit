@@ -7,6 +7,8 @@ description: |
   新增功能（v2.0）: findings → Excel 报告（发现汇总 / 评分表 / 管理层反馈）
   
   使用: report_generator.py --template full|summary
+  使用: progress_report.py --workspace <项目根目录> --out 进度表.xlsx
+  使用: report_to_word.py 报告.md 报告.docx
 ---
 
 # 内部审计报告生成器

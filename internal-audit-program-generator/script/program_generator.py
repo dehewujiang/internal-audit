@@ -105,6 +105,7 @@ def parse_markdown_sections(md_path: str) -> Dict[str, str]:
         'boundary_tests': '',     # 轨道 D
         'efficiency_tests': '',   # 轨道 E
         'compliance_tests': '',   # 轨道 F
+        'supplement_tests': '',   # S 增量补充（第十/十一章，访谈/举报加菜）
     }
 
     track_mapping = {
@@ -131,6 +132,17 @@ def parse_markdown_sections(md_path: str) -> Dict[str, str]:
             if match:
                 tracks_data[track_key] = match.group(1).strip()
 
+    # S 增量补充（第十/十一章）：访谈/举报加菜，不属于 A-F 六轨，单独成表。
+    # 作废行原样导出（章看得见），只管排版不管结论。
+    supp_parts = []
+    for num in ('十', '十一'):
+        m = re.search(rf'^##\s*{num}[、．.][^\n]*\n(.*?)(?=^##\s|\Z)',
+                      content, re.DOTALL | re.MULTILINE)
+        if m and m.group(1).strip():
+            supp_parts.append(m.group(1).strip())
+    if supp_parts:
+        tracks_data['supplement_tests'] = '\n\n'.join(supp_parts)
+
     return tracks_data
 
 
@@ -152,6 +164,7 @@ def filter_activated_tracks(
         'D': 'boundary_tests',
         'E': 'efficiency_tests',
         'F': 'compliance_tests',
+        'S': 'supplement_tests',
     }
 
     result = []
@@ -163,7 +176,8 @@ def filter_activated_tracks(
 
         if is_activated and content:
             track_cfg = track_config['tracks'].get(track_id, {})
-            sheet_name = track_cfg.get('sheet_name', f'轨道{track_id}')
+            default_name = f'增量补充({track_id})' if track_id == 'S' else f'轨道{track_id}'
+            sheet_name = track_cfg.get('sheet_name', default_name)
             result.append((track_id, sheet_name, track_cfg, content))
             activated_count += 1
 

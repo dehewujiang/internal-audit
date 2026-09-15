@@ -3,15 +3,17 @@
 """
 export.py — 桌子总览表格（签字存档用的那张皮）
 
-[INPUT]:  ledger JSON 文件（ledger.schema.json v1.2）
-[OUTPUT]: 总览 Excel（三页：左边三格 / 右边证据 / 抽屉打勾）；退出码 0=成功, 2=失败或崩溃
+[INPUT]:  ledger JSON 文件（ledger.schema.json v1.2）[[ --workspace 项目根目录]]
+[OUTPUT]: 总览 Excel（三页：左边三格 / 右边证据 / 抽屉打勾；带 --workspace
+          时多一页"作废一览"：程序文件里盖了章的行，签字时看得见但不计数）；
+          退出码 0=成功, 2=失败或崩溃
 [POS]:    ledger/ 的表格零件，复用 _shared/scripts 的打印机芯（excel_core），
           是以前三张表之外的第四张，只管排版，不管结论对错。
           抽屉页两种格式都认：老桌子（1.0）的纯名字、新桌子的 {name,path,status}。
 [PROTOCOL]: 变更时更新此头部, 然后检查同级 CLAUDE.md
 
 用法:
-    python ledger/export.py 桌子.json 总览.xlsx
+    python ledger/export.py 桌子.json 总览.xlsx [--workspace D:\某个审计项目]
 """
 
 import json
@@ -36,10 +38,45 @@ def drawer_row(d) -> list:
     return [str(d), "", ""]
 
 
+def deleted_rows(ws: Path) -> list:
+    """作废一览：程序文件里盖了章的行（编号/标题/原因）。只管排版，不管结论。
+    解析器坏了/没程序文件 → 空（导出不因看不清而崩）。"""
+    d = ws / "internal-audit-workspace" / "audit-programs"
+    mds = sorted(d.glob("*.md")) if d.is_dir() else []
+    if not mds:
+        return []
+    try:
+        sys.path.insert(0, str(_SHARED))
+        import program_ir_parser as parser
+    except Exception:
+        return []
+    rows = []
+    for p in mds:
+        try:
+            ir = parser.build_ir(p)
+        except Exception:
+            continue
+        for r in ir.get("risk_register", []) or []:
+            if r.get("is_deleted"):
+                rows.append([r.get("raw_id", ""), r.get("title", "")[:40],
+                             "风险", "作废（原纸留痕，不计数）"])
+        for s in ir.get("steps", []) or []:
+            if s.get("is_deleted"):
+                rows.append([s.get("step_id", ""), s.get("title", "")[:40],
+                             f"程序{s.get('track', '')}", "作废（原纸留痕，不计数）"])
+    return rows
+
+
 def main() -> None:
-    if len(sys.argv) != 3:
-        print("用法: python ledger/export.py 桌子.json 总览.xlsx")
+    if len(sys.argv) not in (3, 5):
+        print("用法: python ledger/export.py 桌子.json 总览.xlsx [--workspace 项目根目录]")
         raise SystemExit(2)
+    ws = None
+    if len(sys.argv) == 5:
+        if sys.argv[3] != "--workspace":
+            print("用法: python ledger/export.py 桌子.json 总览.xlsx [--workspace 项目根目录]")
+            raise SystemExit(2)
+        ws = Path(sys.argv[4])
     data = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8-sig"))
     left = data.get("left", [])
     core = ExcelCore(sys.argv[2])
@@ -64,6 +101,13 @@ def main() -> None:
         + [[c, "打勾纸", ""] for c in data.get("checklist", [])],
         col_widths=[24, 60, 14],
     )
+    if ws is not None:
+        core.add_worksheet(
+            "作废一览",
+            ["编号", "标题", "种类", "说明"],
+            deleted_rows(ws),
+            col_widths=[14, 50, 12, 30],
+        )
     core.save()
     print(f"总览表格：{sys.argv[2]}")
 
