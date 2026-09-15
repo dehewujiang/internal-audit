@@ -157,3 +157,57 @@ def print_errata_list(errata_items):
         date = item.get("date", "-")
         source = item.get("source", "-")
         print(f"  {step_id:<12} {correction:<12} {reason:<50} {date:<12} {source:<10}")
+
+
+def _cell_lines(text):
+    return [x for x in (text or "").split("；") if x.strip()]
+
+
+def print_table_card(path, table):
+    """一张桌子：三格几条 + 抽屉状态 + 证据几条"""
+    print(f"🗂️  桌子：{table.get('table', path.stem)}\n")
+    for x in table.get("left", []):
+        n = len(_cell_lines(x.get("text", "")))
+        refs = len(x.get("ref_finding_ids", []))
+        print(f"  {x.get('slot', '?')}: {n} 条（对单 {refs} 张）")
+    print(f"  右边证据: {len(table.get('right', []))} 条")
+    print(f"\n  抽屉:")
+    for d in table.get("drawers", []):
+        status = d.get("status") or "空"
+        print(f"    {d.get('name', '?')}: {status}")
+    print(f"\n  收料本子: {len(table.get('ingested', {}))} 条机器行")
+
+
+def print_evidence_card(catalog):
+    """证据柜：总数/已收/没主的槽点名"""
+    items = catalog.get("items", [])
+    filled = [it for it in items if it.get("file")]
+    orphans = [it for it in items if not (it.get("source_programs") or [])]
+    print(f"🗄️  证据柜：共 {len(items)} 槽，已收 {len(filled)} 槽\n")
+    if orphans:
+        print(f"  没主的槽（{len(orphans)} 个）:")
+        for it in orphans:
+            print(f"    {it.get('id', '?')}: {it.get('name', '')[:40]}")
+    else:
+        print("  个个槽都有主")
+
+
+def print_status_card(audit):
+    """状态账本：一句话看到哪了"""
+    st = audit.get("audit_state", {})
+    print(f"📍 状态：{audit.get('status', '未知阶段')}\n")
+    print(f"  程序版本: {st.get('program_version', audit.get('program_version', '未记'))}")
+    consumed = st.get("design_observations_consumed", "-")
+    print(f"  问话消化完: {consumed}")
+    wb = st.get("whistleblower_pending") or []
+    print(f"  举报待办: {len(wb)} 条")
+    progs = st.get("programs", {})
+    print(f"  现场加菜: 新增 {len(progs.get('added', []))} 条、"
+          f"停用 {len(progs.get('deferred', []))} 条")
+    hist = st.get("sweep_history") or []
+    if hist:
+        last = hist[-1]
+        print(f"  上次收料: {last.get('at', '?')} "
+              f"(新增{last.get('added', 0)}条、挪格{last.get('moved', 0)}条)")
+    else:
+        print("  上次收料: 还没收过")

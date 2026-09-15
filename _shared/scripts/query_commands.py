@@ -21,12 +21,14 @@ from query_data_sources import (
     find_workspace, get_findings_dir, get_design_assessments_dir,
     get_policy_analyses_dir, get_audit_programs_dir, load_program_index,
     load_projects_index, save_projects_index, scan_project,
-    search_in_json,
+    search_in_json, load_audit_tables, load_evidence_catalog,
+    load_current_audit, search_program_steps, search_tables,
 )
 from query_display import (
     print_findings_table, print_decision_detail,
     print_control_point_details, print_program_steps_for_procedures,
     print_peer_steps, print_errata_list,
+    print_table_card, print_evidence_card, print_status_card,
 )
 
 
@@ -181,21 +183,44 @@ def cmd_summary(args):
         if data.get("eval_avg") is not None:
             print(f"\n    📈 评估历史（90天）: {data['eval_count']} 条记录，平均分 {data['eval_avg']:.1f}/10")
 
+        tables = load_audit_tables()
+        if tables:
+            print(f"\n    🗂️  桌上:")
+            for path, table in tables:
+                counts = "、".join(
+                    f"{x.get('slot', '?')}{len([l for l in (x.get('text') or '').split('；') if l.strip()])}条"
+                    for x in table.get("left", []))
+                print(f"      {table.get('table', path.stem)}: {counts}／"
+                      f"证据{len(table.get('right', []))}条")
+        catalog = load_evidence_catalog()
+        if catalog.get("items"):
+            filled = sum(1 for it in catalog["items"] if it.get("file"))
+            print(f"    🗄️  证据柜: 共 {len(catalog['items'])} 槽，已收 {filled} 槽")
+
 
 def cmd_search(args):
-    """全文搜索 finding 正文"""
+    """全文搜索（默认只搜问题单正文；--in 可扩大到程序/桌子）"""
     source = create_data_source(args)
     term = args.term
-    results = source.search(term)
+    scope = getattr(args, "scope", "finding") or "finding"
+    if source.is_cross_project or scope == "finding":
+        results = source.search(term)
+    elif scope == "program":
+        results = search_program_steps(term)
+    elif scope == "table":
+        results = search_tables(term)
+    else:  # all
+        results = source.search(term) + search_program_steps(term) + search_tables(term)
 
     if not results:
         print(f"🔍 {source.name}搜索「{term}」: 无匹配")
         return
 
-    print(f"🔍 {source.name}搜索「{term}」: {len(results)} 个 finding 匹配\n")
+    print(f"🔍 {source.name}搜索「{term}」: {len(results)} 个匹配\n")
     for r in results:
         project_tag = f" [{r.get('_project', '')}]" if source.is_cross_project else ""
-        print(f"  📌{project_tag} {r['finding_id']} [{r['risk']}] {r['title'][:50]}")
+        kind = f"[{r.get('kind', '问题单')}]" if r.get("kind") else ""
+        print(f"  📌{project_tag}{kind} {r['finding_id']} [{r['risk']}] {r['title'][:50]}")
         max_per_finding = 3 if source.is_cross_project else 5
         for field_path, context in r["matches"][:max_per_finding]:
             print(f"     {field_path}: {context[:80]}")
@@ -203,7 +228,36 @@ def cmd_search(args):
             print(f"     ... 还有 {len(r['matches']) - max_per_finding} 个匹配")
         print()
 
-    print(f"共 {len(results)} 个 finding 匹配「{term}」")
+    print(f"共 {len(results)} 个匹配「{term}」")
+
+
+def cmd_table(args):
+    """桌子：三格几条 + 抽屉状态"""
+    tables = load_audit_tables()
+    if not tables:
+        print("📂 还没开桌（audit-table/ 里没东西）")
+        return
+    for path, table in tables:
+        print_table_card(path, table)
+        print()
+
+
+def cmd_evidence(args):
+    """证据柜：总数/已收/没主的槽"""
+    catalog = load_evidence_catalog()
+    if not catalog.get("items"):
+        print("📂 证据柜是空的（还没生成 _evidence_catalog.json）")
+        return
+    print_evidence_card(catalog)
+
+
+def cmd_status(args):
+    """状态账本：走到哪一步、程序第几版、上次啥时候收的"""
+    audit = load_current_audit()
+    if not audit:
+        print("📂 还没建账（current-audit.json 不存在）")
+        return
+    print_status_card(audit)
 
 
 def cmd_analyses(args):
@@ -754,13 +808,15 @@ def cmd_errata(args):
 
     errata_items = []
 
-    # 来源 1：program_index.json 中的 errata 标记
+    # 来源 1：program_index.json / program_ir.json 中的 errata 标记
     index = load_program_index()
     for step in index.get("steps", []):
-        if step.get("errata"):
+        if step.get("errata") or step.get("is_errata"):
+            corrects = step.get("corrects", "")
+            correction = (corrects + " → " + step.get("step_id", "?")) if corrects else "-"
             errata_items.append({
                 "step_id": step.get("step_id", "?"),
-                "correction": step.get("corrects", "-") + " → " + step.get("step_id", "?") if step.get("corrects") else "-",
+                "correction": correction,
                 "reason": step.get("errata_reason", ""),
                 "date": step.get("errata_date", "-"),
                 "source": "program_index",

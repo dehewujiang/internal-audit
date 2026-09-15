@@ -6,6 +6,9 @@ query_data_sources.py — 统一数据源抽象层
 实现相同接口，消除调用方对数据来源的感知。
 
 [INPUT]:  findings/index.json + findings/F-*.json + evaluator JSONL + projects-index.json
+          + program_ir.json（新程序索引，老 *_program_index.json 当备胎）
+          + audit-table/*.json（桌子）+ evidence/_evidence_catalog.json（证据柜）
+          + current-audit.json（状态账本）
 [OUTPUT]: query_findings / search / summary / compare_years 统一返回格式
 [POS]:    _shared/scripts 的数据访问层，被 queries.py CLI 入口调用
 """
@@ -53,10 +56,27 @@ def get_audit_programs_dir() -> Path:
 
 
 def load_program_index() -> dict:
-    """读取 audit-programs/ 下的 program_index.json，返回 {steps: [...]} 结构。
+    """读取审计程序索引，返回 {steps: [...]} 结构。
 
-    如果索引文件不存在，返回空结构（不报错——索引文件是可选的伴生文件）。
+    优先读 program_ir.json（新索引，S/X/-C 全认）；没有才回退读
+    audit-programs/ 下的 *_program_index.json（老索引）。都没有 → 空结构。
     """
+    iw = find_workspace()
+    ir_path = iw / "program_ir.json"
+    if ir_path.exists():
+        try:
+            with open(ir_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            if "steps" not in data:
+                data["steps"] = []
+            return data
+        except (json.JSONDecodeError, FileNotFoundError):
+            pass
+    return load_legacy_program_index()
+
+
+def load_legacy_program_index() -> dict:
+    """读 audit-programs/ 下的 *_program_index.json（老索引，备胎）。"""
     programs_dir = get_audit_programs_dir()
     if not programs_dir.exists():
         return {"steps": []}
@@ -75,7 +95,92 @@ def load_program_index() -> dict:
     return {"steps": []}
 
 
-def get_projects_index_path() -> Path:
+def get_audit_tables_dir() -> Path:
+    return find_workspace() / "audit-table"
+
+
+def get_evidence_catalog_path() -> Path:
+    return find_workspace() / "evidence" / "_evidence_catalog.json"
+
+
+def get_current_audit_path() -> Path:
+    return find_workspace() / "current-audit.json"
+
+
+def load_audit_tables() -> list:
+    """读 audit-table/*.json，返回 [(path, table), ...]。没有 → 空。"""
+    ddir = get_audit_tables_dir()
+    if not ddir.exists():
+        return []
+    out = []
+    for fpath in sorted(ddir.glob("*.json")):
+        try:
+            with open(fpath, "r", encoding="utf-8-sig") as f:
+                out.append((fpath, json.load(f)))
+        except (json.JSONDecodeError, FileNotFoundError):
+            continue
+    return out
+
+
+def load_evidence_catalog() -> dict:
+    """读 evidence/_evidence_catalog.json。没有 → 空结构。"""
+    path = get_evidence_catalog_path()
+    if not path.exists():
+        return {"items": []}
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except (json.JSONDecodeError, FileNotFoundError):
+        return {"items": []}
+
+
+def load_current_audit() -> dict:
+    """读 current-audit.json。没有 → 空。"""
+    path = get_current_audit_path()
+    if not path.exists():
+        return {}
+    try:
+        with open(path, "r", encoding="utf-8-sig") as f:
+            return json.load(f)
+    except (json.JSONDecodeError, FileNotFoundError):
+        return {}
+
+
+def search_program_steps(term: str) -> list:
+    """在程序步骤里全文搜（编号/标题/做法）。返回统一形状的匹配。"""
+    index = load_program_index()
+    results = []
+    for step in index.get("steps", []):
+        probe = {"step_id": step.get("step_id", ""), "title": step.get("title", ""),
+                 "procedure": step.get("procedure", "")}
+        matches = search_in_json(probe, term)
+        if matches:
+            results.append({
+                "kind": "程序步骤",
+                "finding_id": step.get("step_id", "?"),
+                "title": step.get("title", "")[:50],
+                "risk": step.get("track", "-"),
+                "matches": matches, "_project": "",
+            })
+    return results
+
+
+def search_tables(term: str) -> list:
+    """在桌子（左边格子字 + 右边证据）里全文搜。"""
+    results = []
+    for fpath, table in load_audit_tables():
+        probe = {"left": [x.get("text", "") for x in table.get("left", [])],
+                 "right": [e.get("file", "") for e in table.get("right", [])]}
+        matches = search_in_json(probe, term)
+        if matches:
+            results.append({
+                "kind": "桌子",
+                "finding_id": fpath.stem,
+                "title": table.get("table", "")[:50],
+                "risk": "-",
+                "matches": matches, "_project": "",
+            })
+    return results
     """Find projects-index.json from gold source (same dir as this script's repo)"""
     script_dir = Path(__file__).resolve().parent
     gold_root = script_dir.parent.parent  # _shared/../.. = gold root

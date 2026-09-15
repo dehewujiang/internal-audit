@@ -39,6 +39,10 @@ queries.py — 审计数据查询工具（CLI 路由器）
     python queries.py decide --all
 
     python queries.py errata
+
+    python queries.py table       # 桌子：三格几条 + 抽屉状态
+    python queries.py evidence    # 证据柜：总数/已收/没主的槽
+    python queries.py status      # 状态账本：走到哪一步、上次啥时候收的
 """
 import sys
 import argparse
@@ -51,7 +55,7 @@ if sys.platform == "win32":
 from query_commands import (
     cmd_findings, cmd_trend, cmd_compare, cmd_summary,
     cmd_search, cmd_analyses, cmd_register, cmd_decide,
-    cmd_trace, cmd_errata,
+    cmd_trace, cmd_errata, cmd_table, cmd_evidence, cmd_status,
 )
 
 
@@ -90,6 +94,9 @@ def main():
     p_search = sub.add_parser("search", help="全文搜索 finding 正文")
     p_search.add_argument("term", help="搜索关键词")
     p_search.add_argument("--cross-project", action="store_true", help="跨项目搜索")
+    p_search.add_argument("--in", dest="scope", default="finding",
+                          choices=["finding", "program", "table", "all"],
+                          help="搜哪儿（默认只搜问题单；all 连程序和桌上一起搜）")
 
     # analyses
     p_analyses = sub.add_parser("analyses", help="查询制度分析结果")
@@ -119,6 +126,11 @@ def main():
     # errata
     p_errata = sub.add_parser("errata", help="查询审计程序勘误记录")
 
+    # table / evidence / status（新三样）
+    sub.add_parser("table", help="桌子：三格几条 + 抽屉状态")
+    sub.add_parser("evidence", help="证据柜：总数/已收/没主的槽")
+    sub.add_parser("status", help="状态账本：走到哪一步、上次啥时候收的")
+
     args = parser.parse_args()
 
     commands = {
@@ -132,6 +144,9 @@ def main():
         "decide": cmd_decide,
         "register": cmd_register,
         "errata": cmd_errata,
+        "table": cmd_table,
+        "evidence": cmd_evidence,
+        "status": cmd_status,
     }
 
     commands[args.command](args)
