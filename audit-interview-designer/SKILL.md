@@ -172,6 +172,7 @@ python audit-interview-designer/script/interview_generator.py \
 证据/记录跑 `python ledger/ledger.py add-evidence <桌子.json> --file <文件名> --from <受访人> --when <访谈日期>`；
 问话表本身也生好了的话，把入口填进抽屉：
 `python ledger/ledger.py set-drawer <桌子.json> --name 问话表 --path internal-audit-workspace/interview-materials/<问卷.xlsx> --status 已收回`。
+收完把报的三个数（新增几条、挪格几条、补证据几条）告诉用户。
 
 #### 风险线索：访谈JSON格式
 

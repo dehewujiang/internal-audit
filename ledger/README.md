@@ -45,6 +45,8 @@ python ledger/ledger.py sweep 桌子.json --workspace D:\某个审计项目
 python ledger/ledger.py sweep 桌子.json --workspace D:\某个审计项目 --dry-run
 ```
 
+收完把报的三个数（新增几条、挪格几条、补证据几条）告诉用户——加菜/问话/执行三处干活说明统一这句。
+
 ## 老项目搬家
 
 老项目第一次上桌用 `import`（桌子还不存在时才能用）：
