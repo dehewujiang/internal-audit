@@ -185,3 +185,6 @@
 | audit-finding-debate | P3.5 | 无强制；可选经 index.json 定位 | — |
 | internal-audit-report-generator | P4 | design-assessments 字段白名单+status 过滤；findings 经 index.json；audit-programs 只读最新 | 字段级+文件级 |
 | internal-audit-evaluator | 框架 | 无输入读取，不裁剪 | — |
+| ledger sweep（2026-09-14 新增） | 收料 | 确定性脚本全量扫房间，AI 只看回显三个数（新增/挪格/补证据），房间全文不进上下文 | 脚本级 |
+| queries table/evidence/status/lineage/brief（2026-09-15 新增） | 查询 | 读小文件整本（桌子/证据柜/账本单文件）；程序追溯读 program_ir.json 整本（新索引单文件，老索引当备胎） | 文件级 |
+| progress_report / report_to_word（2026-09-15 新增） | 汇报 | 出表时全量读，AI 只看回显行数；对外只发包不给系统 | 脚本级 |
