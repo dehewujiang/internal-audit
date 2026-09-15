@@ -43,6 +43,11 @@ queries.py — 审计数据查询工具（CLI 路由器）
     python queries.py table       # 桌子：三格几条 + 抽屉状态
     python queries.py evidence    # 证据柜：总数/已收/没主的槽
     python queries.py status      # 状态账本：走到哪一步、上次啥时候收的
+
+    python queries.py lineage F-2026-005  # 来龙去脉卡：八段一次看全
+    python queries.py brief F-2026-005    # 沟通发言稿：四段一次念完
+    # 人话触发（用户说下面这些话时跑对应命令，不用记命令）：
+    #   "查F-xxx的来龙去脉" → lineage；"跟对方谈F-xxx" / "沟通卡" → brief
 """
 import sys
 import argparse
@@ -56,6 +61,7 @@ from query_commands import (
     cmd_findings, cmd_trend, cmd_compare, cmd_summary,
     cmd_search, cmd_analyses, cmd_register, cmd_decide,
     cmd_trace, cmd_errata, cmd_table, cmd_evidence, cmd_status,
+    cmd_lineage, cmd_brief,
 )
 
 
@@ -108,6 +114,11 @@ def main():
     p_trace = sub.add_parser("trace", help="跨实体追溯（支持 finding/步骤/控制点 ID）")
     p_trace.add_argument("target", help="ID: finding (F-2026-001) / 步骤 (A7.2) / 控制点 (CP-001)")
 
+    # lineage / brief（一张单一次拼全 / 沟通发言稿）
+    p_lineage = sub.add_parser("lineage", help="来龙去脉卡：一张单八段一次看全")
+    p_lineage.add_argument("target", help="Finding ID（如 F-2026-005）")
+    p_brief = sub.add_parser("brief", help="沟通发言稿：四段一次念完")
+    p_brief.add_argument("target", help="Finding ID（如 F-2026-005）")
     # decide
     p_decide = sub.add_parser("decide", help="查询决策追溯链")
     p_decide.add_argument("id_or_finding", nargs="?", help="决策ID (D-YYYY-NNN) 或 finding ID (F-YYYY-NNN)")
@@ -147,6 +158,8 @@ def main():
         "table": cmd_table,
         "evidence": cmd_evidence,
         "status": cmd_status,
+        "lineage": cmd_lineage,
+        "brief": cmd_brief,
     }
 
     commands[args.command](args)

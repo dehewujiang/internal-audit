@@ -211,3 +211,91 @@ def print_status_card(audit):
               f"(新增{last.get('added', 0)}条、挪格{last.get('moved', 0)}条)")
     else:
         print("  上次收料: 还没收过")
+
+
+def print_lineage_card(b):
+    """来龙去脉卡：八段一次看全"""
+    print(f"🔗 来龙去脉：{b['finding_id']} — {b['title'][:50]}")
+    print(f"  风险{b['risk']}｜状态{b['status']}｜来源{b['origin']}\n")
+    print("  一、来路")
+    if b["obs"]:
+        print(f"    设计观察 {b['obs_id']}：{b['obs']['title'][:40]}")
+        if b["obs"]["snippet"]:
+            print(f"    原文一句话：{b['obs']['snippet']}")
+    elif b["obs_id"]:
+        print(f"    设计观察 {b['obs_id']}（纸还没落）")
+    else:
+        print("    直接执行发现，无设计观察号")
+    print("  二、程序")
+    if b["steps"]:
+        for s in b["steps"]:
+            print(f"    {s.get('step_id', '?')} [{s.get('track', '')}]："
+                  f"{s.get('title', '')[:40]}")
+            for n in s.get("_notes", []):
+                print(f"      ⚠️ {n}")
+    else:
+        print("    没关联程序号")
+    print("  三、证据")
+    if b["evidence"]:
+        for e in b["evidence"]:
+            print(f"    {e['name'][:40]}｜{e['source']}给｜{e['when']}｜{e['grade']}级")
+    if b["gap"]:
+        print(f"    ⚠️ 还有缺口，先按三个方向问："
+              f"{' / '.join(['业务未发生', '管理缺失未留痕', '证据被消除'])}")
+    if not b["evidence"] and not b["gap"]:
+        print("    无")
+    print("  四、桌位")
+    if b["slot"]:
+        print(f"    摆在「{b['slot']}」" + ("，已对单✓" if b["linked"] else ""))
+    else:
+        print("    还没上桌")
+    print("  五、控制点")
+    if b["related_ctrl"]:
+        print(f"    {b['related_ctrl']}", end="")
+        if b["ctrl_detail"]:
+            print(f"（{b['ctrl_detail'].get('source_file', '')}）")
+        else:
+            print("（制度分析里没找到）")
+    else:
+        print("    没关联控制点")
+    print("  六、同源")
+    for fid, ft in (b["same_ctrl"] + b["same_obs"]):
+        print(f"    {fid}：{ft}")
+    if not (b["same_ctrl"] + b["same_obs"]):
+        print("    无")
+    print("  七、决定")
+    if b["decisions"]:
+        for d in b["decisions"]:
+            print(f"    {d.get('decision_id', '?')}：{d.get('decision', '')[:40]}")
+    else:
+        print("    还没记相关决定")
+
+
+def print_brief_card(b):
+    """沟通发言稿：四段一次念完"""
+    print(f"🎙️ 沟通卡：{b['finding_id']} — {b['title'][:50]}\n")
+    print("  一、从哪里来")
+    if b["obs"]:
+        print(f"    {b['obs']['title'][:40]}：{b['obs']['snippet']}")
+    else:
+        print(f"    来源{b['origin']}，{b['title'][:60]}")
+    print("  二、执行了什么程序")
+    if b["steps"]:
+        for s in b["steps"]:
+            print(f"    {s.get('step_id', '?')}：{s.get('title', '')[:40]}")
+            for n in s.get("_notes", []):
+                print(f"      ⚠️ {n}")
+    else:
+        print("    没关联程序号")
+    print("  三、拿到什么证据")
+    if b["evidence"]:
+        for e in b["evidence"]:
+            print(f"    {e['name'][:40]}｜{e['source']}给｜{e['when']}｜{e['grade']}级")
+    if b["gap"]:
+        print(f"    ⚠️ 还有缺口，先按三个方向问："
+              f"{' / '.join(['业务未发生', '管理缺失未留痕', '证据被消除'])}")
+    print("  四、得出什么发现")
+    print(f"    依据：{b['criteria'][:60]}")
+    print(f"    现状：{b['condition'][:60]}")
+    print(f"    根因：{b['cause'][:60]}")
+    print(f"    影响建议：{b['consequence'][:40]} / {b['recommendation'][:40]}")

@@ -661,6 +661,10 @@ python ledger/ledger.py sweep <桌子.json> --workspace <项目根目录> --find
 必须把"证据为什么不存在"本身当成一件要查的事，写进信号格，三个方向一个不能少：
 ```
 python ledger/ledger.py add-gap <桌子.json> --finding F-xxx --missing "缺的是哪份证据"
+
+**查与说**（用户说人话，不用记命令）：用户说"查F-xxx的来龙去脉" → 跑
+`python _shared/scripts/queries.py lineage F-xxx`（八段一次看全）；用户说"跟对方谈F-xxx"或"沟通卡" →
+跑 `python _shared/scripts/queries.py brief F-xxx`（四段发言稿一次念完）。
 ```
 记下的每条缺口都带三种可能：业务未发生 / 管理缺失未留痕 / 证据被消除，执行时逐条追问。
 

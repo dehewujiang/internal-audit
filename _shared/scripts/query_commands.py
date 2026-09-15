@@ -260,6 +260,151 @@ def cmd_status(args):
     print_status_card(audit)
 
 
+# ── 来龙去脉（一张单一次拼全）──────────────────────────
+
+GAP_DIRECTIONS = ("业务未发生", "管理缺失未留痕", "证据被消除")
+
+
+def _match_steps(related_procs):
+    """按程序号在新索引里找步骤（大小写不敏感，编号/标题都认）"""
+    if not related_procs:
+        return []
+    index = load_program_index()
+    steps = index.get("steps", [])
+    matched = []
+    for proc_ref in related_procs:
+        ref_upper = str(proc_ref).upper().strip()
+        for step in steps:
+            sid = str(step.get("step_id", "")).upper()
+            title_s = str(step.get("title", "")).upper()
+            if ref_upper and (ref_upper in sid or ref_upper in title_s):
+                if step not in matched:
+                    matched.append(step)
+    return matched
+
+
+def _norm_evidence(finding):
+    """证据归一化：list 与 {primary/supporting} 两种写法都认"""
+    ev = finding.get("evidence", [])
+    items = []
+    if isinstance(ev, dict):
+        for key in ("primary_evidence", "supporting_evidence"):
+            items.extend(ev.get(key) or [])
+    elif isinstance(ev, list):
+        items = ev
+    out = []
+    for e in items:
+        if not isinstance(e, dict):
+            continue
+        out.append({"name": e.get("name", "未命名"),
+                    "source": e.get("source") or "未注明",
+                    "when": e.get("obtained_date") or "未注明",
+                    "grade": e.get("reliability_grade") or "未定级"})
+    return out
+
+
+def build_lineage_bundle(fid):
+    """拼一张单的来龙去脉。数据全是现成的纸，不另起新账；缺纸就空着，不崩。"""
+    b = {"finding_id": fid, "found": False}
+    finding = load_finding(fid)
+    if not finding:
+        return b
+    b["found"] = True
+    b["title"] = finding.get("finding_title", finding.get("title", ""))
+    rc = finding.get("risk_classification", {}) or {}
+    b["risk"] = rc.get("risk_level", finding.get("risk_level", "-"))
+    b["status"] = finding.get("status", "-")
+    b["origin"] = finding.get("finding_metadata", {}).get("origin", finding.get("origin", "-"))
+    for k in ("criteria", "condition", "cause", "consequence", "recommendation"):
+        b[k] = finding.get(k, "") or ""
+    # 设计观察（含问话原文一句话）
+    obs_id = finding.get("design_observation_id", "") or ""
+    b["obs_id"] = obs_id
+    b["obs"] = None
+    if obs_id:
+        for fpath in sorted(get_design_assessments_dir().glob("*.json")) \
+                if get_design_assessments_dir().exists() else []:
+            try:
+                data = json.load(open(fpath, "r", encoding="utf-8"))
+            except Exception:
+                continue
+            for obs in data.get("design_observations", data.get("observations", [])):
+                if isinstance(obs, dict) and obs.get("id") == obs_id:
+                    b["obs"] = {"title": obs.get("title", ""),
+                                "snippet": (obs.get("description", "") or "")[:60],
+                                "source": obs.get("source", ""),
+                                "status": obs.get("status", "")}
+                    break
+    # 程序步骤 + 顶替/作废提示
+    related_procs = finding.get("related_procedures", []) or []
+    steps = _match_steps(related_procs)
+    all_steps = load_program_index().get("steps", [])
+    for s in steps:
+        sid = s.get("step_id", "")
+        notes = []
+        if s.get("is_errata"):
+            notes.append(f"勘误修正，原{s.get('corrects', '?')}")
+        for o in all_steps:
+            if o.get("corrects") == sid and o.get("step_id") != sid:
+                notes.append(f"已被 {o.get('step_id')} 顶替")
+        if s.get("is_deleted"):
+            notes.append("已作废（原纸留痕）")
+        s["_notes"] = notes
+    b["steps"] = steps
+    # 控制点
+    b["related_ctrl"] = finding.get("related_control", "") or ""
+    b["ctrl_detail"] = _load_all_control_points().get(b["related_ctrl"])
+    # 证据 + 缺口
+    b["evidence"] = _norm_evidence(finding)
+    b["gap"] = (not b["evidence"]) or str(b["status"]) == "待补充"
+    # 桌位
+    b["slot"] = ""
+    b["linked"] = False
+    for _path, table in load_audit_tables():
+        for x in table.get("left", []):
+            if fid in (x.get("ref_finding_ids") or []):
+                b["slot"] = x.get("slot", "")
+                b["linked"] = True
+            elif fid in (x.get("text") or "") and not b["slot"]:
+                b["slot"] = x.get("slot", "") + "（未对单）"
+    # 同源别的单
+    fdir = get_findings_dir()
+    b["same_ctrl"] = []
+    b["same_obs"] = []
+    if b["related_ctrl"]:
+        b["same_ctrl"] = _find_related_findings(
+            fdir, fid, lambda o: o.get("related_control") == b["related_ctrl"])
+    if obs_id:
+        b["same_obs"] = _find_related_findings(
+            fdir, fid, lambda o: o.get("design_observation_id") == obs_id)
+    # 决定链
+    ws = find_workspace()
+    records = _collect_decision_logs(ws, fdir)
+    b["decisions"] = [d for d in records
+                      if any(fid in str(r) for r in d.get("context_refs", []))]
+    return b
+
+
+def cmd_lineage(args):
+    """来龙去脉卡：一张单八段一次看全"""
+    from query_display import print_lineage_card
+    b = build_lineage_bundle(args.target)
+    if not b["found"]:
+        print(f"❌ 未找到 {args.target}")
+        return
+    print_lineage_card(b)
+
+
+def cmd_brief(args):
+    """沟通发言稿：四段一次念完"""
+    from query_display import print_brief_card
+    b = build_lineage_bundle(args.target)
+    if not b["found"]:
+        print(f"❌ 未找到 {args.target}")
+        return
+    print_brief_card(b)
+
+
 def cmd_analyses(args):
     """查询制度分析结果"""
     analyses_dir = get_policy_analyses_dir()
