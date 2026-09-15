@@ -19,6 +19,7 @@ Usage:
     python phase_gate.py tool-check validate-finding.py --force   # override with audit_trail record
     python phase_gate.py checklist --workspace D:\某个审计项目  # 打勾纸：六句话看板，只看不拦（新桌子）
     python phase_gate.py log-decision --scene 风险定级 --decision 高 --basis "回款超账期且无对账"
+    python phase_gate.py log-program-change --type added --id X-001 --reason "发现新风险"
 """
 
 import json
@@ -178,6 +179,8 @@ def check_exit_conditions(ws: Path, current_phase: str, data: dict, args=None) -
         if data.get("audit_state", {}).get("whistleblower_pending"):
             issues.append({"type": "prompt_update", "msg": "举报材料尚未纳入审计程序", "suggested_skill": "internal-audit-program-generator", "trigger": "whistleblower"})
 
+        issues.extend(check_consumed_consistency(data, ws))
+
     elif current_phase == "phase_3_execution":
         if not data.get("audit_state", {}).get("report_type"):
             issues.append({"type": "block", "msg": "报告类型未选择。请返回 report-generator 选择报告类型（标准/专项/舞弊/跟踪）。"})
@@ -252,6 +255,62 @@ def check_tool_allowed(tool_name: str, phase: str) -> dict:
         "reason": f"{base} 在 {phase} 不可用",
         "available": available,
     }
+
+
+def _obs_covered_by_s(obs: dict, stext: str) -> bool:
+    """一条待处理线索在 S 补充文字里找得到号（编号命中，或标题前 6 字命中）→ 对上号了。"""
+    oid = str(obs.get("id") or "").strip().upper()
+    if oid and oid in stext:
+        return True
+    title = str(obs.get("title") or "").strip()
+    if len(title) >= 6 and title[:6].upper() in stext:
+        return True
+    return False
+
+
+def check_consumed_consistency(data: dict, iw: Path) -> list:
+    """消化对号保险：账本标了"已消化"，就得在 S 补充里找得到每条待处理线索的号。
+    对不上 → prompt_update（先对号再标；--force 可过）。解析器坏了/没文件 → 空
+    （门卫不因自己看不清而拦路）。iw = internal-audit-workspace 目录。"""
+    if data.get("audit_state", {}).get("design_observations_consumed") is not True:
+        return []
+    try:
+        from program_ir_parser import build_ir
+    except Exception:
+        return []
+    pending = []
+    ddir = iw / "design-assessments"
+    if ddir.is_dir():
+        for f in sorted(ddir.glob("*.json")):
+            try:
+                content = json.loads(f.read_text(encoding="utf-8-sig"))
+            except Exception:
+                continue
+            for o in content.get("design_observations") or []:
+                if isinstance(o, dict) and o.get("type") == "risk_clue" and o.get("status") == "pending":
+                    pending.append(o)
+    if not pending:
+        return []
+    stext = ""
+    pdir = iw / "audit-programs"
+    if pdir.is_dir():
+        for md in sorted(pdir.glob("*.md")):
+            try:
+                ir = build_ir(md)
+            except Exception:
+                continue
+            for s in ir.get("steps", []) or []:
+                if s.get("track") == "S" and not s.get("is_deleted"):
+                    stext += " " + " ".join(str(s.get(k) or "")
+                                            for k in ("step_id", "title", "procedure", "clue_basis")).upper()
+    missing = [o for o in pending if not _obs_covered_by_s(o, stext)]
+    if not missing:
+        return []
+    ids = "、".join(str(o.get("id") or "?") for o in missing[:10])
+    return [{"type": "prompt_update",
+             "msg": f"{len(missing)}条待处理线索在S补充中找不到对应，先对号再标消化（{ids}）",
+             "suggested_skill": "internal-audit-program-generator",
+             "trigger": "interview"}]
 
 
 def snapshot_audit_state(data: dict, ws: Path):
@@ -542,6 +601,42 @@ def cmd_rollback(args):
     sys.exit(0)
 
 
+def cmd_log_program_change(args):
+    """现场改程序记账：新增进 added、停用进 deferred（并从 pending 摘掉）、替代只记历史。
+    每次都拍照 + 大事记 + 更新历史。缺的格子就地补（老账本不作废）。"""
+    ws = find_workspace()
+    data = load_audit()
+    snap_path = snapshot_audit_state(data, ws)
+    st = data.setdefault("audit_state", {})
+    progs = st.setdefault("programs", {})
+    pid, ptype = args.id, args.type
+    if ptype == "added":
+        lst = progs.setdefault("added", [])
+        if pid not in lst:
+            lst.append(pid)
+    elif ptype == "deferred":
+        lst = progs.setdefault("deferred", [])
+        if pid not in lst:
+            lst.append(pid)
+        pend = progs.get("pending") or []
+        if pid in pend:
+            pend.remove(pid)
+            progs["pending"] = pend
+    hist = st.setdefault("program_update_history", [])
+    hist.append({"date": datetime.now().strftime("%Y-%m-%d"),
+                 "id": pid, "type": ptype, "reason": args.reason})
+    append_audit_trail(data, "program_change", f"{pid} {ptype}：{args.reason}")
+    data["updated_at"] = datetime.now().strftime("%Y-%m-%d")
+    save_audit(data, ws)
+    print(json.dumps({
+        "action": "program_change_logged",
+        "id": pid,
+        "type": ptype,
+        "snapshot": snap_path,
+    }, ensure_ascii=False, indent=2))
+    sys.exit(0)
+
+
 def cmd_log_decision(args):
     """记录审计决策到 audit_trail（decision 事件）"""
     ws = find_workspace()
@@ -587,13 +682,20 @@ def main():
     p_log.add_argument("--decision", required=True, help="决策内容")
     p_log.add_argument("--basis", required=True, help="决策依据")
 
+    p_pc = sub.add_parser("log-program-change", help="现场改程序记账 (added/deferred + 更新历史 + 大事记)")
+    p_pc.add_argument("--type", required=True, choices=["added", "deferred", "substituted"],
+                      help="新增 / 停用(盖章保留原行) / 替代换方法")
+    p_pc.add_argument("--id", required=True, help="程序编号 (如 X-001/A-003)")
+    p_pc.add_argument("--reason", required=True, help="变更原因")
+
     p_cl = sub.add_parser("checklist", help="打勾纸：六句话看板，只看不拦（新桌子）")
     p_cl.add_argument("--workspace", required=True, help="老项目根目录（内含 internal-audit-workspace/）")
 
     args = parser.parse_args()
     cmds = {"status": cmd_status, "check": cmd_check, "advance": cmd_advance,
             "rollback": cmd_rollback, "tool-check": cmd_tool_check,
-            "log-decision": cmd_log_decision, "checklist": cmd_checklist}
+            "log-decision": cmd_log_decision, "log-program-change": cmd_log_program_change,
+            "checklist": cmd_checklist}
     if args.command in cmds:
         cmds[args.command](args)
     else:

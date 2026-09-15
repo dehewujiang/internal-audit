@@ -211,10 +211,12 @@
 
 | 字段 | 更新内容 |
 |------|---------|
-| `design_observations_consumed` | 追加本次已处理的 design_observation id 列表 |
+| `design_observations_consumed` | 核对后标 `true`（见下"对号保险"；`false` = 还有没处理的，`true` = 全进了 S 补充） |
 | `whistleblower_pending` | 已生成程序的举报线索移出 pending（标记 consumed） |
 | `program_version` | 版本号递增（如 v1.0 → v1.1） |
 | `program_update_history` | 追加一条更新记录（时间、新增 S 编号、来源线索 id） |
+
+**对号保险**：标 `true` 之前，先查每条待处理线索（`type="risk_clue"` 且 `status="pending"`）在 S 补充里有没有对应的号（编号命中，或标题前 6 字命中）——对不上就不标，等下一轮。过门检查（`phase_gate.py check`）会自动帮你对一遍，对不上会喊"先对号再标消化"。
 
 **同时**：将新增的十、十一章追加到现有 audit-programs 程序文档末尾，不覆盖一至九章。
 

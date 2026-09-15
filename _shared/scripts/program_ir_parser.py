@@ -72,6 +72,10 @@ def parse_risk_ids(cell):
 
 ANCHOR_RE = re.compile(r'\b(?:CP|CG|RP|CF|D)-[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*', re.IGNORECASE)
 
+# 作废章：执行中停用的程序行标注"【已删除-原因：XXX】"，原行保留。
+# 解析器只打标不删行（留痕）；覆盖度/校验/收料凭此标排除。
+DELETED_RE = re.compile(r'【已删除')
+
 
 def extract_anchors(cell):
     """从来源标注列提取 CP-/CG-/RP-/CF-/D- 编号。"""
@@ -202,6 +206,11 @@ def _find_col(header, *keywords):
     return -1
 
 
+def _is_deleted_row(header, row):
+    """行里任一单元格带"【已删除"章 → 作废行（原行保留，只打标）。"""
+    return any(DELETED_RE.search(c or '') for c in row)
+
+
 def map_row_to_step(header, row, track_id):
     """把一行单元格映射成结构化 step 字典。"""
     c_risk = _find_col(header, '风险编号')
@@ -247,6 +256,7 @@ def map_row_to_step(header, row, track_id):
         "clue_basis": _cell_at(row, c_clue),
         "is_errata": is_errata,
         "corrects": corrects,
+        "is_deleted": _is_deleted_row(header, row),
     }
 
 
@@ -281,6 +291,7 @@ def map_row_to_risk(header, row):
         "desc": _cell_at(row, c_desc),
         "source_tag": source_tag,
         "fact_anchors": extract_anchors(source_tag),
+        "is_deleted": _is_deleted_row(header, row),
     }
 
 
@@ -385,10 +396,14 @@ def build_ir(md_path):
         if 'S' not in activated_tracks and any(s['track'] == 'S' for s in steps):
             activated_tracks.append('S')
 
-    # 覆盖度（校验器计算，但解析器也填一份方便直接用）
-    register_ids = {r['risk_id'] for r in risk_register if r['risk_id']}
+    # 覆盖度（校验器计算，但解析器也填一份方便直接用）。
+    # 作废的不计数：作废风险不进分母（不查了），作废步骤不算覆盖（没人跑）。
+    # 行本身保留在 risk_register/steps 里（留痕），只凭 is_deleted 排除。
+    register_ids = {r['risk_id'] for r in risk_register if r['risk_id'] and not r.get('is_deleted')}
     covered = set()
     for s in steps:
+        if s.get('is_deleted'):
+            continue
         covered.update(s['risk_refs'])
     uncovered = register_ids - covered
     coverage_rate = (len(register_ids - uncovered) / len(register_ids)) if register_ids else 1.0
@@ -405,6 +420,8 @@ def build_ir(md_path):
         "decision_log": parse_decision_log(content),
         "risk_register": risk_register,
         "steps": steps,
+        "deleted_risk_ids": sorted(r['risk_id'] for r in risk_register if r.get('is_deleted') and r['risk_id']),
+        "deleted_step_ids": sorted(s['step_id'] for s in steps if s.get('is_deleted') and s['step_id']),
         "coverage": {
             "covered_risks": sorted(covered),
             "uncovered_risks": [{"risk_id": rid, "reason": ""} for rid in sorted(uncovered)],

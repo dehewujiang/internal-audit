@@ -77,3 +77,12 @@
 - "替代"和"删除"必须保留原始程序内容，不得直接删除或覆盖
 - "新增"的 X 编号按顺序递增（X-001, X-002...）
 - 所有新增程序在后续执行摘要和报告中纳入统计
+
+## 回写账本（三种变更都要跑，只追加不改旧数）
+
+程序文件改完后跑一条记账命令，账本（`current-audit.json`）跟着动——拍照 + 大事记 + 更新历史一次做完，缺的格子就地补：
+```
+python _shared/scripts/phase_gate.py log-program-change --type added --id X-001 --reason "发现新风险"
+```
+`--type` 三选一：`added`（新增，进 added）、`deferred`（停用盖章，进 deferred 并从 pending 摘掉）、`substituted`（替代换方法，只记历史）。
+账本才是机器认的数，程序末尾的记录表留给人看。

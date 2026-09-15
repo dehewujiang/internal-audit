@@ -260,6 +260,10 @@ def _parse_evidence_rows(section_text: str, track_id: str) -> list:
         if evidence_col < 0:
             continue
 
+        # 作废行不占槽（原行在程序文件里留着，只是不再要证据）
+        if any('【已删除' in (p or '') for p in parts):
+            continue
+
         # 找程序编号
         code = None
         if code_col >= 0 and code_col < len(parts):
@@ -353,16 +357,34 @@ def generate_evidence_catalog(md_path: str, evidence_root: Path,
     merged = _merge_evidence_slots(raw_slots)
     now = datetime.now().strftime('%Y-%m-%d')
 
+    # 合流旧纸条：重做只加新格，已贴的"谁给的、啥时候"按标准化名认回来，不擦。
+    catalog_path = evidence_root / '_evidence_catalog.json'
+    old_files = {}
+    old_created = None
+    if catalog_path.exists():
+        try:
+            old = json.loads(catalog_path.read_text(encoding='utf-8'))
+            old_created = old.get('created_at')
+            for it in old.get('items') or []:
+                if it.get('file'):
+                    old_files[_normalize_evidence_name(it.get('name') or '')] = (
+                        it.get('file'), it.get('collected_at'))
+        except Exception:
+            pass
+    for m in merged:
+        key = _normalize_evidence_name(m['name'])
+        if key in old_files:
+            m['file'], m['collected_at'] = old_files[key]
+
     catalog = {
         'project': project_name,
-        'created_at': now,
+        'created_at': old_created or now,
         'updated_at': now,
         'total_slots': len(merged),
-        'filled_slots': 0,
+        'filled_slots': sum(1 for m in merged if m['file']),
         'items': merged,
     }
 
-    catalog_path = evidence_root / '_evidence_catalog.json'
     evidence_root.mkdir(parents=True, exist_ok=True)
     with open(catalog_path, 'w', encoding='utf-8') as f:
         json.dump(catalog, f, ensure_ascii=False, indent=2)

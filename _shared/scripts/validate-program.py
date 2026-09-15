@@ -212,7 +212,8 @@ FUZZY_WORDS = ['较大', '过多', '不足', '一般', '偏高', '偏低', '显�
 
 def check_ir_coverage_rate(ir):
     """[IR] 覆盖度：风险清单 − 程序覆盖，覆盖率 < 80% → block"""
-    register_ids = {r['risk_id'] for r in ir.get('risk_register', []) if r['risk_id']}
+    register_ids = {r['risk_id'] for r in ir.get('risk_register', [])
+                    if r['risk_id'] and not r.get('is_deleted')}
     if not register_ids:
         return True, "未抽到风险清单，覆盖度检查跳过（请确认 2.1/2.2 风险识别清单表存在）"
     rate = ir['coverage']['coverage_rate']
@@ -235,6 +236,8 @@ def check_ir_criterion(ir):
     """[IR] 判定标准量化：纯开关词 / 模糊词 / 空 → block"""
     bad = []
     for s in ir['steps']:
+        if s.get('is_deleted'):
+            continue  # 作废行留痕但不参检
         c = (s.get('criterion') or '').strip()
         sid = s.get('step_id', '?')
         if not c:
@@ -252,9 +255,9 @@ def check_ir_criterion(ir):
 
 def check_ir_data_source(ir):
     """[IR] 数据来源比例：空 data_source 步骤 > 30% → block"""
-    steps = ir['steps']
+    steps = [s for s in ir['steps'] if not s.get('is_deleted')]  # 作废行留痕但不参检
     if not steps:
-        return True, "无步骤，跳过"
+        return True, "无有效步骤，跳过"
     empty = [s['step_id'] for s in steps if not (s.get('data_source') or '').strip()]
     ratio = len(empty) / len(steps)
     if ratio > 0.3:
@@ -265,7 +268,8 @@ def check_ir_data_source(ir):
 def check_ir_sampling(ir):
     """[IR] 轨道A 抽样方法缺失 → warn（非阻断）"""
     missing = [s['step_id'] for s in ir['steps']
-               if s.get('track') == 'A' and not (s.get('sampling') or '').strip()]
+               if s.get('track') == 'A' and not s.get('is_deleted')
+               and not (s.get('sampling') or '').strip()]
     if missing:
         return False, f"{len(missing)} 个轨道A步骤缺抽样方法：{', '.join(missing[:10])}"
     return True, None

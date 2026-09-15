@@ -14,7 +14,9 @@ ledger.py — 新桌子的管家（只管"往桌上写"，不管"查"和"拍照"
   2. 右边每条证据必须写"谁给的、啥时候给的"，缺一个就不让贴
   3. 每次只改桌上的一处，不碰其他格
   4. 收料（sweep）只添不盖：人写的字一个字不动；机器只认自己上次写的那几条
-     （记在 ingested 里），所以同一条反复收不会变两行，状态变了只从这格挪到那格
+     （记在 ingested 里），所以同一条反复收不会变两行，状态变了只从这格挪到那格；
+     盖了"作废"章的行下架（只动本子里的机器行，原纸不动）；收完回写账本
+     （sweep_history + 大事记，只追加）
 
 用法:
     python ledger.py create 桌子.json --table "冲压车间废料多了"
@@ -387,6 +389,8 @@ def scan_programs(ws: Path) -> list:
             rid = str(r.get("risk_id") or "").strip()
             if not rid:
                 continue
+            if r.get("is_deleted"):
+                continue  # 作废行不上桌（原行在程序文件里留着，只是不收）
             if known & {str(a).strip().upper() for a in r.get("fact_anchors") or []}:
                 continue
             label = str(r.get("raw_id") or rid).strip()
@@ -394,6 +398,74 @@ def scan_programs(ws: Path) -> list:
             out.append({"id": f"{p.name}:{rid}", "slot": LEFT_SLOTS[2],
                         "text": f"{label} 推演风险（{kind}）：{_short(str(r.get('title') or ''), 60)}"})
     return out
+
+
+def scan_deleted_program_risks(ws: Path) -> set:
+    """程序文件里盖了"作废"章的风险编号集合（ingested 键格式"文件名:编号"）。
+    只认明确的章，不认"没了"——改名/搬文件造成的对不上，不在这里下架。"""
+    d = ws / "internal-audit-workspace" / "audit-programs"
+    mds = sorted(d.glob("*.md")) if d.is_dir() else []
+    if not mds:
+        return set()
+    try:
+        parser = _load_ir_parser()
+    except SystemExit:
+        return set()
+    dead = set()
+    for p in mds:
+        try:
+            risks = parser.build_ir(p).get("risk_register") or []
+        except Exception:
+            continue
+        for r in risks:
+            if r.get("is_deleted") and str(r.get("risk_id") or "").strip():
+                dead.add(f"{p.name}:{str(r.get('risk_id')).strip()}")
+    return dead
+
+
+def prune_deleted(table: dict, dead_ids: set) -> int:
+    """下架作废行：只动收料本子里记过的机器行，人写的字不动。
+    原纸（程序文件）一个字节不动，留痕不受影响。"""
+    book = table.get("ingested", {})
+    n = 0
+    for key in [k for k in book if k in dead_ids]:
+        old = book.pop(key)
+        if old.get("slot") in LEFT_SLOTS and old.get("text"):
+            _drop_line(table, old["slot"], old["text"], "")
+        n += 1
+    return n
+
+
+def _writeback_sweep(ws: Path, added: int, moved: int, nevd: int, pruned: int) -> bool:
+    """收料回写账本：记"啥时候收、收几条"，大事记加一行。只追加不改旧数。
+    没账本（老项目/纯桌子）就跳过，不崩。"""
+    audit = None
+    for p in (ws / "internal-audit-workspace" / "current-audit.json",
+              ws / "current-audit.json"):
+        if p.exists():
+            audit = p
+            break
+    if audit is None:
+        return False
+    try:
+        data = json.loads(audit.read_text(encoding="utf-8-sig"))
+    except Exception:
+        return False
+    from datetime import datetime
+    st = data.setdefault("audit_state", {})
+    hist = st.setdefault("sweep_history", [])
+    hist.append({
+        "at": datetime.now().strftime("%Y-%m-%d %H:%M"),
+        "added": added, "moved": moved, "evidence": nevd, "pruned": pruned,
+    })
+    trail = st.setdefault("audit_trail", [])
+    trail.append({
+        "timestamp": datetime.now().isoformat(),
+        "event_type": "sweep",
+        "detail": f"收料：新增{added}条、挪格{moved}条、补证据{nevd}条、下架作废{pruned}条",
+    })
+    audit.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+    return True
 
 
 def scan_workspace(ws: Path) -> tuple:
@@ -504,14 +576,24 @@ def cmd_sweep(args) -> None:
         for k, v in trial["ingested"].items():
             if k not in data.get("ingested", {}):
                 print(f"  + {v['slot']}｜{_short(v['text'], 70)}")
+        if not args.finding:
+            pruned = prune_deleted(trial, scan_deleted_program_risks(ws))
+            if pruned:
+                print(f"  - 会下架作废 {pruned} 条（原纸留着，只是不摆了）")
         return
     added, moved = apply_items(data, items)
     nevd = apply_evidence(data, rows)
-    if not (added or moved or nevd):
+    pruned = 0
+    if not args.finding:
+        pruned = prune_deleted(data, scan_deleted_program_risks(ws))
+    if not (added or moved or nevd or pruned):
         print("收料：桌上已是最新，没有新的")
         return
     save(path, data)
+    _writeback_sweep(ws, added, moved, nevd, pruned)
     print(f"收料：新增 {added} 条、挪格 {moved} 条、补证据 {nevd} 条")
+    if pruned:
+        print(f"下架作废：{pruned} 条（原纸留着，只是不摆了）")
 
 
 def cmd_add_gap(args) -> None:
