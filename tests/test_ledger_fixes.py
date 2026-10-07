@@ -596,12 +596,15 @@ def test_skill_docs():
     check("建项目技能：会开桌子", "ledger.py create" in init)
     check("建项目技能：桌子落地在 audit-table/", "audit-table" in init)
 
-    # C1/C2/C4：收料和缺口要走命令，写桌子的技能必须提
+    # C1/C2/C4：写桌子的技能必须直接写桌（v2.0：add-line 带来源，不再 sweep 抄）
     for d in ("document-organizer/SKILL.md", "audit-interview-designer/SKILL.md",
-              "audit-execution-assistant/SKILL.md",
-              "internal-audit-report-generator/SKILL.md"):
-        check(f"{d.split('/')[0]}：用 sweep 收料",
-              "ledger.py sweep" in (REPO_ROOT / d).read_text(encoding="utf-8"))
+              "audit-execution-assistant/SKILL.md"):
+        text = (REPO_ROOT / d).read_text(encoding="utf-8")
+        check(f"{d.split('/')[0]}：直接写桌子(add-line)",
+              "add-line" in text and "--room" in text)
+    check("报告技能：读桌子",
+          "audit-table" in (REPO_ROOT / "internal-audit-report-generator/SKILL.md")
+          .read_text(encoding="utf-8"))
     check("执行技能：证据缺失走 add-gap",
           "add-gap" in (REPO_ROOT / "audit-execution-assistant/SKILL.md")
           .read_text(encoding="utf-8"))
