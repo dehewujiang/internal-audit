@@ -617,10 +617,16 @@ def test_skill_docs():
               "set-drawer" in (REPO_ROOT / d).read_text(encoding="utf-8"))
 
     # 洞察要有户口：对抗验证补充建议不能只留程序文件尾部
-    gen = (REPO_ROOT / "internal-audit-program-generator/SKILL.md").read_text(encoding="utf-8")
+    # （2026-10-07 原Step 3.7并入Step 4.6，户口规则迁至 references/red_team_attack.md；
+    #   主SKILL.md保留并轨说明，两处任一含规则即算在位）
+    gen_sub = [""]
+    for d in ("internal-audit-program-generator/SKILL.md",
+              "internal-audit-program-generator/references/red_team_attack.md"):
+        gen_sub.append((REPO_ROOT / d).read_text(encoding="utf-8"))
+    gen = gen_sub[1] + gen_sub[2]
     check("程序生成：对抗验证补充建议须立设计观察户口",
           "立户口" in gen and "design-assessments/" in gen)
-    check("程序生成：制度类风险沿用原编号（防重复）", "沿用原编号" in gen)
+    check("程序生成：制度类风险沿用原编号（防重复）", "沿用原编号" in gen_sub[1])
 
 
 def main():

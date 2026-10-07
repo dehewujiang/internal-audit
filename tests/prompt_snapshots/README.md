@@ -12,7 +12,7 @@
 | `intuition_engine.snap` | audit-execution-assistant/references/intuition_engine.md | 星座检测/反直觉红旗/时间维度 |
 | `root_cause_challenge.snap` | audit-execution-assistant/SKILL.md Step 根因质证 | 根因分析与替代解释检查 |
 | `evidence_grading.snap` | audit-execution-assistant/references/evidence_standards.md | A-E 五级证据等级标准 |
-| `adversarial_validation.snap` | internal-audit-program-generator/SKILL.md 轨道B | 对抗验证红蓝队规则 |
+| `adversarial_validation.snap` | internal-audit-program-generator/references/red_team_attack.md（原 Step 3.7 已并入 Step 4.6） | 对抗验证红蓝队规则（裁判判定+阈值+户口） |
 
 ## 更新频率
 

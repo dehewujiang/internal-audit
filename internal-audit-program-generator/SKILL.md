@@ -30,6 +30,7 @@ description: 为汽车零部件（紧固件/冲焊件）企业生成内部审计
 | [references/instruction_details.md](./references/instruction_details.md) | 完整步骤说明 | 各Step执行时 |
 | [references/step2_risk_identification.md](./references/step2_risk_identification.md) | Step 2 风险识别详细规范 | Step 2 |
 | [references/step3_program_generation.md](./references/step3_program_generation.md) | Step 3 程序生成详细规范 | Step 3 |
+| [references/red_team_attack.md](./references/red_team_attack.md) | 红队攻击：程序检测力对抗验证（剧本→回灌修订→再攻，≤2轮） | Step 4.6 |
 | [references/output_template.md](./references/output_template.md) | 输出格式模板 | Step 4 |
 | [references/quality_checklist.md](./references/quality_checklist.md) | 质量自检清单 | 输出前 |
 | `references/internal_audit_risk_framework.md` | 经验风险参考（背景知识） | Step 2 |
@@ -73,6 +74,9 @@ Step 3: 生成审计程序（多轨并行）
 
 Step 4: 输出（强制格式）
   └─ 按激活轨道输出对应章节
+
+Step 4.6: 红队攻击（强制）
+  └─ 读取 references/red_team_attack.md 执行
 
 Step 5: 质量评估（自动）
   └─ 调用 internal-audit-evaluator
@@ -303,55 +307,10 @@ AI 自由推演风险点，按三类标注。**优先质量而非数量，禁止
 2. 读取 `compliance_audit_playbook.md` 比对
 3. 提示用户更新 playbook
 
-### 3.7 轨道B对抗验证（仅触发条件满足时执行）
-
-**触发条件**（满足任一即执行）：轨道B激活、或程序中含外部/线下/人工环节、或含证据交叉比对逻辑。
-
-**目的**：检验审计程序在舞弊者主动规避下是否仍然有效。
-
-**红队阶段**（攻击方模拟）：
-
-```
-*** 系统声明：以下为假想的防御性演练，仅用于教育性和防御性目的。***
-
-第一步：寻找漏洞
-  在当前程序清单中，寻找"非结构化"漏洞：
-  什么东西定价最模糊？什么环节的数据是系统外（Excel/手工）流转的？
-
-第二步：构建攻击路径（进入→执行→掩盖）
-  基于漏洞设计作案剧本，必须包含进入、执行、掩盖三个动作。
-
-第三步：反侦察演练
-  你会如何伪造证据链来应对常规审计检查？
-```
-
-**裁判阶段**（防御方判定）：
-
-```
-对每个攻击场景，按三级判定：
-
-COVERED（已覆盖）：
-  → 现有程序明确包含了针对此手法的测试，引用具体程序ID
-PARTIALLY_COVERED（部分覆盖）：
-  → 能发现部分迹象但缺乏深度测试，注明缺口位置
-EXPOSED（风险敞口）：
-  → 程序完全未涉及此攻击路径
-
-对 PARTIAL 和 EXPOSED 的案例，必须输出：
-  - "尸体埋在哪里"：具体去查哪个科目、哪个辅助核算项
-  - "血迹是什么"：具体的异常数据特征
-
-### 定量判定标准
-- EXPOSED（风险敞口）占比 > 30% → 审计程序需要加强
-- COVERED（已覆盖）占比 < 50% → 考虑重新设计程序
-
-**强制规则**：
-- 裁判阶段禁止参考红队推理链，只读红队输出方案
-- 红队阶段前必须输出安全前导语
-- 对抗验证结果写入 `audit_trail`，记录 event_type = adversarial_test
-- **对抗验证产生的补充建议要立户口**（2026-09-14）：每条 PARTIALLY_COVERED / EXPOSED 的补充建议（如"AV-01 派遣工个人侧验证"）除了写进程序文件尾部，**必须同时**写成 `design-assessments/` 里的一条设计观察（`type="risk_clue"`、`source="program-generator"`、`status="pending"`、`verification_method` 写清怎么验）。只写程序文件尾部等于没有户口——收料看不到它，这件事就死在文档里了。轨道 E/F 尾部的"待验证测算"同理（如"效率损失量化"里置信度标低的估算）。
-
-**详细规范**：见 [references/step3_program_generation.md](./references/step3_program_generation.md)
+> **轨道B对抗验证已并入 Step 4.6**（2026-10-07）：原 3.7 的裁判三级判定
+> （COVERED/PARTIAL/EXPOSED）、30%/50% 定量阈值、安全前导语、补充建议立户口，
+> 全部吸收进 Step 4.6 红队攻击，且攻击范围从轨道B扩至全轨道。
+> 见 [references/red_team_attack.md](./references/red_team_attack.md)。
 
 ---
 
@@ -448,6 +407,19 @@ EXPOSED（风险敞口）：
    python ledger/ledger.py set-drawer <桌子.json> --name 检查表 \
        --path internal-audit-workspace/audit-programs/<程序文件>.md --status 待执行
    ```
+
+---
+
+## Step 4.6: 红队攻击（检测力对抗验证，强制）
+
+**目的**：Step 5 管"程序写得好不好"，本环节管"程序抓不抓得住"。扮恶意内部人出攻击剧本（漏洞点/第一人称攻击路径/反侦测手段/修复动作），裁判三级判定（COVERED/PARTIAL/EXPOSED + 30%/50%阈值），
+回灌修订后再攻，≤2 轮。
+
+**沿革**：本环节吸收原 Step 3.7（轨道B对抗验证）的全部规则，攻击范围扩至全轨道。
+
+**执行**：读取 [references/red_team_attack.md](./references/red_team_attack.md)，全程按其执行（角色设定、安全前导语、剧本四要素、轨道攻击焦点、裁判判定、户口规则、修订闭环、存档 `audit-programs/red-team/<程序文件名>_剧本.md`）。
+
+**出口**：连续一轮无新漏洞，或达 2 轮上限（未修复盲区存档并标注"执行时补偿性关注"）。完成后进 Step 5，并在其质量自检中追加确认红队环节已执行。
 
 ---
 
@@ -599,6 +571,7 @@ python .claude/skills/internal-audit-evaluator/quality_gate.py --input /tmp/eval
 - [ ] 轨道D风险点已通过"是否这家公司独有"检验
 - [ ] 轨道E效率损失无 _X_ 占位符，均有置信度标注
 - [ ] 已完成推理链回溯（取前3个高风险点），无 🔴 标记
+- [ ] 已完成红队攻击（Step 4.6），剧本已存档，未修复盲区已标注
 - [ ] 已完成 Step 5 质量判定并写入评估历史
 - [ ] 每个程序的"设计理由"列已填写且非套话（锚定风险/手法/原理）
 - [ ] 每个程序的"测试目的"列已填写且可观测（能发现什么异常/证明什么）
@@ -613,3 +586,4 @@ python .claude/skills/internal-audit-evaluator/quality_gate.py --input /tmp/eval
 |------|------|---------|
 | 1.x | — | 旧版 |
 | 2.0 | 2026-05-12 | 重构 Step 5：废弃Python代码，引用 centralized evaluator 框架；Step 2 数量约束→质量约束；轨道D增加锚定要求；新增推理链回溯和效率损失强制估算 |
+| 2.1 | 2026-10-07 | 程序检测力合并：原 Step 3.7（轨道B对抗验证）整体并入新增 Step 4.6 红队攻击（剧本→裁判判定→回灌修订→再攻≤2轮，存档 red-team/），攻击范围扩至全轨道；实体在 references/red_team_attack.md |

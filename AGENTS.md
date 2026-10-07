@@ -11,9 +11,9 @@
 |--------|------|---------|-------------|
 | document-organizer | 分析制度文件，提取控制点和风险点 | level_0 | `skills/internal-audit/document-organizer/SKILL.md` |
 | audit-interview-designer | 基于设计观察生成访谈问卷并回填结果 | level_0 | `skills/internal-audit/audit-interview-designer/SKILL.md` |
-| program-generator | 基于审计目的和风险生成审计程序 | level_0 | `skills/internal-audit/internal-audit-program-generator/SKILL.md` |
+| program-generator | 基于审计目的和风险生成审计程序；Step 4.6 红队攻击（剧本→回灌修订→再攻≤2轮） | level_0 | `skills/internal-audit/internal-audit-program-generator/SKILL.md` |
 | execution-assistant | 执行程序、分析证据、生成 finding | level_0 | `skills/internal-audit/audit-execution-assistant/SKILL.md` |
-| finding-debate | 对 finding 进行业务审视和攻防演练 | level_1 | `skills/internal-audit/audit-finding-debate/SKILL.md` |
+| finding-debate | 对 finding 进行业务审视和攻防演练；v1.2 加被审计人画像（情境驱动扮演/渐进升级/制度条文反咬）与实战援助（驳论预判/逐轮点评/回复分析） | level_1 | `skills/internal-audit/audit-finding-debate/SKILL.md` |
 | report-generator | 汇总 finding 生成结构化审计报告 | level_0 | `skills/internal-audit/internal-audit-report-generator/SKILL.md` |
 | validate-finding | finding 格式+根因+证据等级校验 | level_0 | `skills/internal-audit/_shared/scripts/validate-finding.py` |
 | data-executor | LLM 生成的 pandas 代码沙箱执行（大文件分析） | level_0 | `skills/internal-audit/_shared/scripts/data_executor.py` |

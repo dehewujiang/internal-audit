@@ -25,7 +25,8 @@ description: |
 
 ## 触发场景
 
-**触发词**："讨论审计发现"、"对finding进行业务审视"、"审计发现辩论"、"讨论FIND-XXX"、"这个finding站得住脚吗"、"准备审计沟通会"
+**触发词**："讨论审计发现"、"对finding进行业务审视"、"审计发现辩论"、"讨论FIND-XXX"、"这个finding站得住脚吗"、"准备审计沟通会"、
+"贴原话"（真实沟通会进行中，进入实战援助模式，见 references/live_coaching.md 第三节）
 
 ## 工作流程
 
@@ -47,6 +48,14 @@ C) 【完整流程】先评估，再攻防演练
 2. 输出专家评估报告（含维度评分、综合建议、风险提示）
 3. 用户可选择保存评估结果回写finding JSON 的 `business_validation` 字段
 
+### Step 1.5：被审计人画像（模式B/C）
+
+画像在 Step 2 选完角色后立即填写（可跳过取缺省）。执行细节：
+读取 `references/auditee_profile.md`——四个硬项+四个情境变量决定扮演强度、
+狡辩路径与渐进升级（被连续追问3轮不退→自动升一档）；被审计人可引用
+policy-analyses 里的制度条文反咬。三个援场能力（驳论预判/逐轮点评/
+回复分析）的 prompt 骨架在 `references/live_coaching.md`。
+
 ### Step 2：攻防演练 - 角色选择（模式B/C）
 
 **难度选择**：
@@ -59,6 +68,7 @@ C) 【完整流程】先评估，再攻防演练
 **角色选择**：
 - 读取 `references/debate_roles/INDEX.md` 查看角色简介（按需加载）
 - 用户选择角色后，读取对应 `references/debate_roles/role_xxx.md`（按需加载）
+- 选完角色 → 立即填被审计人画像（Step 1.5，`references/auditee_profile.md`）
 - 进入多轮对话（用户1句 → AI扮演角色回应1句）
 
 ### Step 3：多轮对话对抗
@@ -193,3 +203,4 @@ debates/DB-{finding_id}-{session_seq}_transcript.md
 |------|------|---------|
 | 1.0 | 2026-04-27 | 初始版本 |
 | 1.1 | 2026-05-12 | 精简版：角色卡按需加载，保留关键few-shot示例 |
+| 1.2 | 2026-10-07 | 新增被审计人画像（情境驱动扮演+渐进升级+制度条文反咬，references/auditee_profile.md）与三个援场能力（驳论预判/逐轮点评/回复分析，references/live_coaching.md） |
