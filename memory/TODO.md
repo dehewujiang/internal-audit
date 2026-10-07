@@ -6,6 +6,7 @@
 ## 待办
 
 ### 🔴 高优先
+- **R09 真人完整跑一遍**（跨session欠账+2026-10-07新增）：4 次 SKILL 改动 + 2 个新环节（Step 4.6 红队攻击、debate 画像/实战援助）都要真人行为验证。验证点：①红队剧本是否落到具体程序行 ②debate 是否先问画像再开演。commit 标注 `已人工回归: [项目] [评级]`
 - **闸机接 `--ir`**（2026-09-10 发现）：`audit_gate.py` 调用 validate-program 时**从不传 `--ir`**，导致"覆盖率 / 判定标准 / 数据来源"三类阻断**从未生效**（而 `DATAFLOW.md:41` 与 program-generator `SKILL.md:426` 都写着应传）。属"加严"，与已完成的"松绑"（ADR-031）分开排期。两个副作用要先处理：`program_ir_parser` 导入失败 → exit 2 会误拦；`ir_parse` 解析失败只算 warn 会误放
 - **部署到双项目**：三个版本的建设成果均未上现场——架构加固（08-11-3）、新桌子 ledger（09-04-5）、闸机修复（09-10-2）。用户按 `update-project.ps1` 执行；广东长华 / 武汉长华 VERSION.lock 仍停在老版
 - **R09 人工抽查**：4 次 SKILL 改动（报告 Step 2b / 执行写桌子 / 问话 / 看制度 / 吵架）的钩子欠账。用户手工完整跑一遍报告后，commit 标注 `已人工回归: [项目] [评级]`（清单见 `tests/prompt_snapshots/test_prompt_regression.md`）
@@ -37,6 +38,7 @@
 
 ## 已完成（2026-10-07）
 - ✅ **桌子v2.0 全量落地**（`42c4b92`+`31751db`+`0fd49b8`+`17b4f5b`，已推远端）：schema_v2.json（账本+底稿两层，ingested取消，每行带source）+ 冲压车间试点 + MIGRATION.md + 4个SKILL.md改直接写桌（add-line --room/--ref/--status）+ ledger.py加来源字段 + query_data_sources.py认桌子（load_table_findings，老项目兼容）+ 文档同步（DATAFLOW.md/CLAUDE-project.md/AGENTS.md）+ CI（GitHub Actions 8测试+JSON校验）。测试全绿
+- ✅ **检测力升级**（`decec7a`）：原Step 3.7并入Step 4.6红队攻击（全轨道，剧本→裁判→修订→再攻≤2轮，实体red_team_attack.md）+ debate画像/实战援助（auditee_profile.md+live_coaching.md）+ 快照adversarial_validation.snap改指向 + test_ledger_fixes.py随迁。8测试全过+回归GREEN+快照闸机过
 - ⬜ **快照同步欠账**：cceer_chain.snap / root_cause_challenge.snap 待补（4个SKILL.md改了，snap没跟上）
 - ⬜ **文档同步钩子**：用户问"为什么漏了"，确认没钩子管"改完代码→检查AGENTS.md"，建议设一个
 

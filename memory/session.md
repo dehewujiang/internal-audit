@@ -1,38 +1,29 @@
 # 最近一次工作记录
 
 ## 完成了什么
-本次 session（2026-10-07）：**桌子v2.0 全量落地——从"复印件"改成"数据库"**，外加CI自动测试。全程master直做（前半段worktree开发，后半段文档/CI直接改），用户每个"继续/开始"都是明确点头。
+本次 session（2026-10-07，第二个任务）：**检测力升级——红队攻击 + debate 实战援助**（commit `decec7a`）。学习来源：D:\10_project\audit_workbench 的红队剧本 prompt 与 comm-drill 实现。
 
-### 清单（提交号）
-1. 桌子v2.0核心（`42c4b92`，9文件400行）：schema_v2.json（账本+底稿两层，ingested取消，每行带source）+ 冲压车间_v2.json试点 + MIGRATION.md搬家说明书 + 4个SKILL.md改直接写桌 + ledger.py加--room/--ref/--status + query_data_sources.py认桌子（load_table_findings）
-2. 存量整理（`31751db`，10文件820行）：闸机IR测试+新桌子设计稿+参考文件（之前session留下的）
-3. 文档同步（`0fd49b8`，3文件18行）：DATAFLOW.md主图/CLAUDE-project.md架构备注/AGENTS.md工具清单
-4. CI自动测试（`17b4f5b`，2文件81行）：.github/workflows/ci.yml + test_ledger_fixes.py跟上v2.0架构
+### 清单
+1. **program-generator**：原 Step 3.7（轨道B对抗验证）整节并入新增 **Step 4.6 红队攻击**——攻击范围从轨道B扩至全轨道，新增回灌修订闭环（剧本→裁判→修订→再攻≤2轮）+ 存档 `red-team/`；原 3.7 的裁判三级判定/30%50%阈值/安全前导语/户口规则/adversarial_test 全部保留迁移。实体在 `references/red_team_attack.md`（新文件），主 SKILL.md 615→589 行（净减）
+2. **finding-debate**：新增被审计人画像（`references/auditee_profile.md`：四硬项+四情境变量、3轮不退渐进升级、制度条文反咬）+ 三个援场能力（`references/live_coaching.md`：驳论预判/逐轮点评/回复分析实战援助）。13 张角色卡未动
+3. 快照同步：`adversarial_validation.snap` 改指向 red_team_attack.md，README.md 快照清单同步
+4. 测试随迁：`test_ledger_fixes.py` 户口测试改查新位置（发现原 SKILL.md 3.7 删除导致 1 红→含 8c 检查两文件→转绿）
+5. AGENTS.md 工具能力描述同步（红队攻击/实战援助一行字）
 
-### 验证
-- 8个测试全绿（test_ledger_fixes 4条红→改测试检查add-line而非sweep→转绿）
-- ledger.py实操测试：source字段写入/老命令兼容/空workspace不报错
-- query_data_sources.py实操测试：load_table_findings/query_findings/search全通过
-- 回归基线2 GREEN，快照检查过
-- 已推远端（origin/master在`17b4f5b`）
+### 验证（全[运行确认]）
+- 8 个测试文件全过；快照一致性检查通过；确定性回归 GREEN=2 RED=0；引链无缺失
+- 已人工回归标注：脚本级全过，LLM 行为待真人复查
 
-## 为什么这样做
-用户说"把桌子改成数据库"——大活，走preflight交考卷→worktree开发→试点→改写法→改查询→文档同步→CI。核心决策（ADR待补）：桌子=账本（记结论），底稿=备查（记过程）；老项目不搬家，只改查询命令。
+### 关键决策（用户拍板）
+- **方案A**：3.7 并入 4.6 而非并存——检测力检查在流程图上占一个格子，符合"多校验器并一门卫"方向。发现过程：pre-commit 快照闸机拦截→查出 SKILL.md 里早有 3.7 同思想实现→我此前漏看，经闸机兜住
+- **辩题裁决**（更早）：13 角色卡保留（行业狡辩剧本库是核心资产），嫁接 workbench 的画像参数；不是二选一
+- 三步走方案里"程序落格"一步作废——重读代码发现抽屉+户口机制 v2.0 已做，不该重复提议
 
 ## 遇到问题
-- 三个deep工模型坏掉→停掉自己干（SKILL.md改动+ledger.py改动都是自己做的）
-- load_table_findings空单号列表取值崩溃（`[0]`越界）→改为`ref_ids[0] if ref_ids else`兜底
-- test_ledger_fixes.py检查"必须有sweep"→v2.0故意去掉sweep→测试跟着架构改
-- 快照同步欠账（cceer_chain.snap/root_cause_challenge.snap）：本次没碰到所以不拦，下次改技能说明书要补
+- 第一次删 3.7 的 Python 脚本边界算错（del lines[start:end] 负数=-278 没删掉），第二次用 index/rindex 按 marker 精确切才干净
+- Edit 时混入杂语词（segurança），grep 抓到后清除
+- pre-commit 快照闸机拦提交 → 这是闸机在设计上的正确工作（源+snap同改），照规程同步后放行
 
 ## 未完成事项
-- 快照同步欠账（2个snap待补）
-- 快照钩子/文档同步钩子：用户问"为什么漏了文档同步检查"，确认没钩子管这个，建议设一个但没设
-- 项目级`_recon.py`清理（worktree里建的临时脚本，已删但值得留意）
-- history遗留照旧：闸机接--ir、部署双项目、R09、N8
-
-## 下一步建议
-1. 补快照同步（改了4个SKILL.md，2个snap要跟着更新）
-2. 设文档同步钩子（提交改了SKILL.md/ledger/时提醒检查AGENTS.md）
-3. 拿个真实项目走一遍v2.0端到端，验证"直接写桌"在实战里好不好用
-4. 考虑把worktree开发流程固化（用户已认可"开房"模式）
+- **R09 真人完整跑一遍**（跨 session 欠账+本次新增 2 环节）：下次实际出程序/沟通会时验证——①红队剧本是否落到具体程序行 ②debate 是否先问画像再开演
+- **收工时 memory 三件套更新**：本次第一轮收工漏了（用户点名批评）——收工协议必须含session.md改写+TODO.md增删，见 feedback.md 新条目
