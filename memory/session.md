@@ -1,35 +1,38 @@
 # 最近一次工作记录
 
 ## 完成了什么
-本次 session（2026-09-15）：七方向五拨**全部做完并提交**，外加预算补登记。用户每个"动手"都是一次明确点头，分拨 checkpoint + 事前红测试 + 旧套件回归，全程 master 直做（纯文档/中小改动，未开 worktree）。
+本次 session（2026-10-07）：**桌子v2.0 全量落地——从"复印件"改成"数据库"**，外加CI自动测试。全程master直做（前半段worktree开发，后半段文档/CI直接改），用户每个"继续/开始"都是明确点头。
 
-### 五拨清单（提交号）
-1. 收料三嗓子（`74c1a3f`，4文件14行）：加菜/问话/执行三处加收上桌步骤，统一播报口径。提交被快照闸机拦过一次——补两份快照变更行后放行。
-2. 账本回写+三修（`bf48dc7`，9文件501行）：作废章识别/收料下架回写/证据柜合流/变更记账/消化对号。新测试7组先红后绿。
-3. 查询接线（`2b2c253`，5文件433行）：认新索引S/X/-C + table/evidence/status + summary带桌上数 + search加--in。
-4. 追溯沟通卡（`919c8f6`，7文件424行）：lineage八段 + brief四段 + 人话触发词。
-5. 汇报包（`d5fac13`，6文件516行）：S进检查单 + 作废一览 + 进度表 + Word版。
-6. 预算补登记（`c3ed047`，3行）：INPUT-BUDGET 附表加桌子/查询/汇报三行。
+### 清单（提交号）
+1. 桌子v2.0核心（`42c4b92`，9文件400行）：schema_v2.json（账本+底稿两层，ingested取消，每行带source）+ 冲压车间_v2.json试点 + MIGRATION.md搬家说明书 + 4个SKILL.md改直接写桌 + ledger.py加--room/--ref/--status + query_data_sources.py认桌子（load_table_findings）
+2. 存量整理（`31751db`，10文件820行）：闸机IR测试+新桌子设计稿+参考文件（之前session留下的）
+3. 文档同步（`0fd49b8`，3文件18行）：DATAFLOW.md主图/CLAUDE-project.md架构备注/AGENTS.md工具清单
+4. CI自动测试（`17b4f5b`，2文件81行）：.github/workflows/ci.yml + test_ledger_fixes.py跟上v2.0架构
 
 ### 验证
-- 每拨新测试先红后绿（batch2:7组/batch3:7组/batch4:4组/batch5:4组）
-- 旧套件（test_ledger_fixes）与回归基线（2 GREEN）每拨后全绿
-- R09 人工抽查规模均未触发（无 schema 升级、无 SKILL 重写）；快照闸机同步 3 次，无 SKIP 开关使用
+- 8个测试全绿（test_ledger_fixes 4条红→改测试检查add-line而非sweep→转绿）
+- ledger.py实操测试：source字段写入/老命令兼容/空workspace不报错
+- query_data_sources.py实操测试：load_table_findings/query_findings/search全通过
+- 回归基线2 GREEN，快照检查过
+- 已推远端（origin/master在`17b4f5b`）
 
 ## 为什么这样做
-见 ADR-035（七方向一揽子 + 分五拨）。补充：汇报包进度表列暂按默认9列（用户未给领导列，TODO 留了待调口子）。
+用户说"把桌子改成数据库"——大活，走preflight交考卷→worktree开发→试点→改写法→改查询→文档同步→CI。核心决策（ADR待补）：桌子=账本（记结论），底稿=备查（记过程）；老项目不搬家，只改查询命令。
 
 ## 遇到问题
-- 用户嫌播报太碎（"为什么总是停下来"）——改为只在拨间汇报，拨内闷头干
-- program_generator 回退路径测试：S 章节 previously 不进 Excel，已修
-- 测试断言小坑两处（覆盖率基线理解错、trace 断言命中报错文案），修测试非修实现
-- 快照变更行差点吃掉上一拨历史一行——发现后补回（changelog 不许改写历史）
+- 三个deep工模型坏掉→停掉自己干（SKILL.md改动+ledger.py改动都是自己做的）
+- load_table_findings空单号列表取值崩溃（`[0]`越界）→改为`ref_ids[0] if ref_ids else`兜底
+- test_ledger_fixes.py检查"必须有sweep"→v2.0故意去掉sweep→测试跟着架构改
+- 快照同步欠账（cceer_chain.snap/root_cause_challenge.snap）：本次没碰到所以不拦，下次改技能说明书要补
 
 ## 未完成事项
-- 推远端（主干超前线上30+提交）、删小隔间 new-table（内容已全在 master）、进度表列等领导拍板
-- history 遗留照旧：闸机接 `--ir`、部署双项目、R09、N8（见 TODO）
+- 快照同步欠账（2个snap待补）
+- 快照钩子/文档同步钩子：用户问"为什么漏了文档同步检查"，确认没钩子管这个，建议设一个但没设
+- 项目级`_recon.py`清理（worktree里建的临时脚本，已删但值得留意）
+- history遗留照旧：闸机接--ir、部署双项目、R09、N8
 
 ## 下一步建议
-1. 拿个真实新项目（或沙箱假项目）走一遍端到端，当第一拨的人工回归
-2. 问领导进度表列，调 progress_report.py 表头
-3. 推远端 + 清小隔间（二选一，用户点头再动）
+1. 补快照同步（改了4个SKILL.md，2个snap要跟着更新）
+2. 设文档同步钩子（提交改了SKILL.md/ledger/时提醒检查AGENTS.md）
+3. 拿个真实项目走一遍v2.0端到端，验证"直接写桌"在实战里好不好用
+4. 考虑把worktree开发流程固化（用户已认可"开房"模式）

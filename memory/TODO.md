@@ -35,6 +35,11 @@
 ## 阻塞
 - 无
 
+## 已完成（2026-10-07）
+- ✅ **桌子v2.0 全量落地**（`42c4b92`+`31751db`+`0fd49b8`+`17b4f5b`，已推远端）：schema_v2.json（账本+底稿两层，ingested取消，每行带source）+ 冲压车间试点 + MIGRATION.md + 4个SKILL.md改直接写桌（add-line --room/--ref/--status）+ ledger.py加来源字段 + query_data_sources.py认桌子（load_table_findings，老项目兼容）+ 文档同步（DATAFLOW.md/CLAUDE-project.md/AGENTS.md）+ CI（GitHub Actions 8测试+JSON校验）。测试全绿
+- ⬜ **快照同步欠账**：cceer_chain.snap / root_cause_challenge.snap 待补（4个SKILL.md改了，snap没跟上）
+- ⬜ **文档同步钩子**：用户问"为什么漏了"，确认没钩子管"改完代码→检查AGENTS.md"，建议设一个
+
 ## 已完成（2026-09-15）
 - ✅ **七方向五拨全部做完并提交**（方案底稿 `~/.claude/plans/eventual-mapping-twilight.md` 全绿）：第一拨收料三嗓子（`74c1a3f`）→ 第二拨账本回写+三修（`bf48dc7`，新测7组）→ 第三拨查询接线（`2b2c253`，新测7组）→ 第四拨追溯沟通卡（`919c8f6`，新测4组）→ 第五拨汇报包（`d5fac13`，新测4组）→ 预算补登记（`c3ed047`）。每拨事前红+旧套件回归全绿；R09抽查规模未触发；快照闸机同步3次。遗留：推远端、删小隔间、进度表列等领导拍板
 
