@@ -189,6 +189,7 @@ Blocked tools suggest `--force` only when the user explicitly approves a cross-p
 - `audit_state.artifacts` tracks **freshness** of each phase's output — a soft reminder, NOT a gate. Values: `fresh` | `stale`. phase_gate does NOT read freshness; each Skill checks it at Step 1.
 - `internal-audit-workspace/` subdirectories map to phases: `policy-analyses/` (P1), `design-assessments/` (P1), `interview-materials/` (P1.5), `audit-programs/` (P2-3), `findings/` (P4), `reports/` (P5), `evidence/` (P4).
   - **Evidence v2.0**: `evidence/_files/` = centralized shared storage (one copy, multi-program reference). `evidence/_evidence_catalog.json` = auto-generated evidence slot catalog (Phase 2) with `file: null` slots filled during Phase 3 via `evidence_catalog.py`.
+- **Table v2.0 (桌子=数据库, 2026-10-07)**: `audit-table/*.json` is now the **source of truth** for facts (findings, control gaps, risk points, design observations). Skills write directly to the table via `ledger.py add-line --room/--ref/--status`; `sweep` is legacy-only (old projects). Working papers (底稿) store analysis process separately. Queries read both old `findings/*.json` (backward compat) and the table (new mode). See `ledger/schema_v2.json` for the format.
 - Finding files are named `F-YYYY-NNN.json`, NOT `FIND-*.json`.
 - Audit program index (`audit-programs/*_program_index.json`) links step_id → related_controls → policy-analyses. `queries.py trace A7.2` and `queries.py trace CP-HR-006` consume it.
 

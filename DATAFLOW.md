@@ -67,22 +67,27 @@
          └──────────────────────────────────────────────┘
 ```
 
-## 信号池流向（2026-09-11 打通）
+## 信号池流向（2026-09-11 打通，2026-10-07 改为直接写桌）
 
-各房间查出来的东西以前各躺各的，只有问题的"结论"才会进报告。现在统一汇到一张桌子上：
+各房间查出来的东西以前各躺各的，后来统一收上桌（sweep抄一遍）。现在改成**直接写桌**——查出东西当场就写，不再有抄写步骤：
 
 ```
-看制度 policy-analyses（控制缺口/风险点/冲突）
-设计观察 design-assessments（看制度＋问话）
-待查项   findings/*.json 的 key_uncertainties
-证据缺失 add-gap（宪法#9，三方向）        ┐
-举报线索 current-audit.json                 ├→ ledger.py sweep → 桌子 audit-table/*.json
-制度空白 current-audit.json.signals ←──────┘   （按各自状态字段自动分格）
-宪法#10 check_mandatory_coverage.py ───────┘
+看制度 policy-analyses（控制缺口/风险点/冲突）──┐
+设计观察 design-assessments（看制度＋问话）─────┤
+待查项   findings/*.json 的 key_uncertainties───┤
+证据缺失 add-gap（宪法#9，三方向）───────────────┤
+举报线索 current-audit.json─────────────────────┤→ 直接写桌子 audit-table/*.json
+制度空白 current-audit.json.signals ←───────────┤   add-line --room <房间> --ref <编号> --status <状态>
+宪法#10 check_mandatory_coverage.py ────────────┘   （每条事实自带来源标记）
                                                     │
-                              门卫 check.py：池里有、桌上没有 → 点名（信号池不再只写不读）
+                              门卫 check.py：三格有字/证据来源/舞弊硬度
                               报告前 audit_table.py：单缺位/鬼号/红格无单号 → 拦下
 ```
+
+**v2.0 核心变化**（详见 `ledger/schema_v2.json`）：
+- 桌子是**账本**（记结论，唯一原件），底稿是**备查**（记过程，自动生成）
+- 不再写本子再抄（sweep 只留给老项目搬家用）
+- 每条事实自带来源（room/ref/status），`ingested` 抄写本子取消
 
 分格规则、谁不上桌、怎么改规则，见 `ledger/ledger.schema.json` 的「落格规则」一栏。
 

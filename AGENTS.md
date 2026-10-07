@@ -23,7 +23,7 @@
 | evidence-catalog | 证据清单管理（生成槽位/扫描文件/匹配建议/状态汇总） | level_0 | `skills/internal-audit/_shared/scripts/evidence_catalog.py` |
 | validate-catalog | 证据清单结构校验（槽位必填/唯一性/计数一致性，R05） | level_0 | `skills/internal-audit/_shared/scripts/validate-catalog.py` |
 | validate-index | finding 索引交叉校验（目录vs索引遗漏/幽灵/闭合，R06） | level_0 | `skills/internal-audit/_shared/scripts/validate-index.py` |
-| ledger-keeper | 新桌子管家：开桌/写格/贴证据/对单号/老账搬家（只管写） | level_0 | `skills/internal-audit/ledger/ledger.py` |
+| ledger-keeper | 新桌子管家：开桌/写格/贴证据/对单号/老账搬家（只管写）。v2.0 支持直接写桌带来源标记（`--room/--ref/--status`） | level_0 | `skills/internal-audit/ledger/ledger.py` |
 | ledger-gate | 新桌子日常门卫：只读桌子查大事+高风险硬度 | level_0 | `skills/internal-audit/ledger/check.py` |
 | ledger-checklist | 新桌子打勾纸：六句话看板，只看不拦 | level_0 | `skills/internal-audit/ledger/checklist.py` |
 | ledger-audit | 报告前桌子闸机：单缺位/鬼号/红格无单号拦下 | level_0 | `skills/internal-audit/ledger/audit_table.py` |
@@ -34,6 +34,7 @@
 - `audit-topics/about-me.md` — 公司背景
 - `audit-topics/my-config.md` — 系统配置
 - `constitution.md` — 中央大脑运行宪法（项目目录中的 constitution.md 指向此全局定义或为副本）
+- `internal-audit-workspace/audit-table/*.json` — 审计桌子（v2.0 事实数据库：账本记结论，底稿记过程）
 - `internal-audit-workspace/evidence/_evidence_catalog.json` — 证据清单（v2.0 集中存储，记录证据-程序映射和收集状态）
 - `internal-audit-workspace/evidence/_files/` — 共享证据集中存放目录（v2.0）
 
