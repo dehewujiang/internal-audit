@@ -1,0 +1,16 @@
+{
+  "schema_version": "0.1",
+  "table": "比如冲压车间",
+  "left": [
+    {"slot": "确定的毛病", "example": "领料没签字"},
+    {"slot": "怀疑偷骗", "red": true, "example": "废料少2吨，被卖了？"},
+    {"slot": "说不清的信号", "example": "丢3张单子，三种可能都写上"}
+  ],
+  "right": [
+    {"evidence": "领料单7张（3张缺）", "from": "班长", "when": "哪天"},
+    {"evidence": "称重照片", "from": "小王现场拍", "when": "哪天"},
+    {"evidence": "废料堆照片", "from": "小王现场拍", "when": "哪天"}
+  ],
+  "drawers": ["问话表", "检查表", "报告表"],
+  "checklist": ["证据够了吗", "制度看全了吗", "红格看了吗"]
+}

@@ -51,6 +51,7 @@ ACTIONS = {
         ],
         "postcheck": {
             "script": "validate-program.py",
+            "args": ["--ir"],
             "message": "审计程序格式校验未通过"
         }
     },

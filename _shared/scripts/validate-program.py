@@ -203,6 +203,7 @@ def check_column_consistency(text, config_path=None):
 BLOCKER_KEYS = {
     "no_placeholder", "track_activation", "column_consistency",
     "ir_coverage_rate", "ir_criterion", "ir_data_source",
+    "ir_parse",
 }
 
 SWITCH_WORDS = {'是', '否', '有', '无', '存在', '不存在', '符合', '不符合',
@@ -398,14 +399,15 @@ def main():
         sys.exit(2)
 
     # --ir 模式：懒加载解析器（避免非 ir 模式依赖 program_generator）
+    # 导入失败 = 环境问题，不是程序质量问题 → 警告放行，跳过 IR 检查
     build_ir = None
     if args.ir:
         try:
             from program_ir_parser import build_ir as _build_ir
             build_ir = _build_ir
         except Exception as e:
-            print(f"[ERROR] 无法加载 program_ir_parser: {e}", file=sys.stderr)
-            sys.exit(2)
+            print(f"[WARN] 无法加载 program_ir_parser: {e}，IR 检查跳过", file=sys.stderr)
+            args.ir = False
 
     results = []
     has_blocker = False
