@@ -275,10 +275,11 @@ OCR 会自动检测并标记以下需要人工核对的内容：
 7. **双目录输出**（批量分析时）：
    - `policy-analyses/`：完整分析报告（JSON + Markdown）
    - `design-assessments/`：设计观察（D-XXX 编号，供 Phase 4 验证升级）
-8. **写桌子**（桌子在 `internal-audit-workspace/audit-table/*.json`，建项目时已开好；找不到就停下报告，不要跳过——宪法#12）：分析结果落进 `policy-analyses/` 和 `design-assessments/` 之后，跑一次收料，控制缺口 / 风险点 / 制度冲突 / 设计观察会自动按各自的状态分格上桌：
-   `python ledger/ledger.py sweep <桌子.json> --workspace <项目根目录>`
-   先看会加什么再决定，加 `--dry-run`。收料只添不盖，人写的字一个不碰。
-   （不跑 sweep 也行，但控制缺口和风险点就只躺在 `policy-analyses/` 里，桌上什么都看不见。）
+8. **写桌子**（桌子在 `internal-audit-workspace/audit-table/*.json`，建项目时已开好；找不到就停下报告，不要跳过——宪法#12）：分析结论**直接写桌子**，不再写本子再抄——
+   - 控制缺口 `已确认` / 制度冲突 → `python ledger/ledger.py add-line <桌子.json> --slot 确定的毛病 --text <结论> --room 看制度 --ref <编号> --status <状态>`
+   - 控制缺口 `待确认` / 风险点 / 设计观察 `pending` → `python ledger/ledger.py add-line <桌子.json> --slot 说不清的信号 --text <结论> --room 看制度 --ref <编号> --status <状态>`
+   - 分析过程（为什么这么判断、看的是制度哪一条）写底稿：`working-papers/<制度名>_分析.md`
+   - 不再需要 `sweep`。桌子是账本（记结论），底稿是备查（记过程）。
 
 ---
 

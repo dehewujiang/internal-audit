@@ -151,33 +151,31 @@ Step 4: 填充模板 → 生成带"已执行程序清单"的报告
 用户：生成存货管理审计报告
 
 Step 0: 读取 about-me.md（获取公司背景）
-Step 1: 读取 design-assessments/*.json 中 `status="pending"` 的设计观察（字段限 `{id, title, type, severity, description, source}`；如 JSON 不可用则回退读取同目录 *.md 摘要）
+Step 1: 读取桌子 `internal-audit-workspace/audit-table/*.json` 中"说不清的信号"格里的设计观察
         → 提取设计观察（design observations）
         → 注意：这些是未经实地验证的假设，不是审计发现
-Step 2: 先读取 findings/index.json 列清单（{finding_id, origin, risk_level, title}），再逐份读取选中 finding 全文（审计发现）
-         → 按 origin 分类：design（经证实的设计缺陷）vs execution（执行类问题）
-         → 按 risk_level 分类
+Step 2: 读取桌子 `internal-audit-workspace/audit-table/*.json`，从"确定的毛病"和"怀疑偷骗"格提取审计发现
+         → 按来源分类：看制度（design）vs 执行取证（execution）
+         → 按风险等级分类
          → 计算 {{FINDINGS_ORIGIN_DESIGN}} 和 {{FINDINGS_ORIGIN_EXECUTION}}
          → design类发现 → 填充第4.1章"设计类发现"
          → execution类发现 → 填充第4.2章"执行类发现"
 Step 2b: 跑桌子核对（报告前闸机：桌子在 `internal-audit-workspace/audit-table/*.json`，建项目时已开好；找不到就停下报告，不要跳过——宪法#12）
-         → 先收一次料，把各房间查到但还没上桌的东西补齐（含信号池里的制度空白）：
-           `python ledger/ledger.py sweep <桌子.json> --workspace <项目根目录>`
-         → 再把报告表入口填进抽屉：
+         → 把报告表入口填进抽屉：
            `python ledger/ledger.py set-drawer <桌子.json> --name 报告表 --path internal-audit-workspace/reports/<报告.md> --status 已定稿`
          → 然后跑报告前闸机 `python ledger/audit_table.py --table <桌子.json> --workspace <项目根目录>`
-         → 退出码0才往下写；退出码2按输出补齐（单缺位 → `ledger.py sweep`；鬼号/红格没对单号 → `ledger.py link-finding`），补完重跑
+         → 退出码0才往下写；退出码2按输出补齐（单缺位 → `ledger.py add-line`；鬼号/红格没对单号 → `ledger.py link-finding`），补完重跑
 Step 3: 读取 audit-programs/ 中最新一份审计程序文档（已执行程序，提取程序清单作背景）
         → 提取程序清单作为背景
 Step 4: 选择报告模板
 Step 5: 生成报告，结构如下：
         1. 审计背景与范围
         2. 已执行程序清单
-        3. 制度设计评估（来自 design-assessments/）
+        3. 制度设计评估（来自桌子·说不清的信号格）
            3.1 设计观察（未经实地验证的假设）
            3.2 制度冲突
            3.3 制度缺失
-        4. 审计发现（来自 findings/，已经实地验证）
+        4. 审计发现（来自桌子·确定的毛病/怀疑偷骗格，已经实地验证）
            4.1 设计类发现（origin="design"，制度设计缺陷经证实导致问题）
            4.2 执行类发现（origin="execution"，制度有规定但未执行）
            4.3 发现详情
@@ -252,9 +250,9 @@ Step 7: 保存到 reports/
 
 | 内容来源 | 存储位置 | 性质 | 报告章节 |
 |---------|---------|------|---------|
-| 设计观察（未验证） | design-assessments/ | 假设 | 第3章"制度设计评估" |
-| 设计类发现（已验证） | findings/ (origin="design") | 结论 | 第4.1章"设计类发现" |
-| 执行类发现 | findings/ (origin="execution") | 结论 | 第4.2章"执行类发现" |
+| 设计观察（未验证） | 桌子·说不清的信号格 | 假设 | 第3章"制度设计评估" |
+| 设计类发现（已验证） | 桌子·确定的毛病格（来源=看制度） | 结论 | 第4.1章"设计类发现" |
+| 执行类发现 | 桌子·确定的毛病/怀疑偷骗格（来源=执行取证） | 结论 | 第4.2章"执行类发现" |
 
 ---
 

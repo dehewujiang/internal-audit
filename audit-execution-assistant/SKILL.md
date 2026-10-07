@@ -649,13 +649,14 @@ Step 3h: 业务现实性检验（可选）
 **自动扫描规则**：每次更新前，扫描 `findings/` 下所有 JSON 文件，确保 index.json 与实际情况一致。
 
 **写桌子**（桌子在 `internal-audit-workspace/audit-table/*.json`，建项目时已开好；找不到就停下报告，不要跳过——宪法#12）：
-finding 落定后一条命令上桌，进格、对单号、贴证据一次做完（舞弊/高风险自动进"怀疑偷骗"格）——
-```
-python ledger/ledger.py sweep <桌子.json> --workspace <项目根目录> --finding F-xxx
-```
-不想让它自己判断时，也可以手工分三步：`add-line` 进格、`link-finding` 对单号、`add-evidence` 贴证据（每条证据都要写清谁给的、啥时候给的）。
+结论**直接写桌子**，不再写本子再抄（舞弊/高风险写"怀疑偷骗"格）——
+- 非舞弊问题单 → `python ledger/ledger.py add-line <桌子.json> --slot 确定的毛病 --text <结论> --room 执行取证 --ref F-xxx --status 已确认`
+- 舞弊问题单 → `python ledger/ledger.py add-line <桌子.json> --slot 怀疑偷骗 --text <结论> --room 执行取证 --ref F-xxx --status 已确认`
+- 证据 → `python ledger/ledger.py add-evidence <桌子.json> --file <文件名> --from <谁给的> --when <啥时候> --room 执行取证 --ref F-xxx`
+- 对单号 → `python ledger/ledger.py link-finding <桌子.json> --slot <格> --finding F-xxx`
+- 分析过程（证据链、推理）写底稿：`working-papers/F-xxx.md`
+- 不再需要 `sweep`。桌子是账本（记结论），底稿是备查（记过程）。
 （`import` 只用于**老项目整桌搬家**，日常不用——桌子已存在时它按设计拒绝。）
-收完把报的三个数（新增几条、挪格几条、补证据几条）告诉用户。
 
 **证据缺失必须记账（宪法#9）**：证据完整性校验不通过时，**禁止**停在"证据不足，等待补充"——
 必须把"证据为什么不存在"本身当成一件要查的事，写进信号格，三个方向一个不能少：

@@ -122,6 +122,36 @@ def load_audit_tables() -> list:
     return out
 
 
+def load_table_findings() -> list:
+    """从桌子的 left[] 格子里提取事实，转成 finding 兼容格式（v2.0 新模式）。"""
+    results = []
+    for fpath, table in load_audit_tables():
+        table_name = table.get("table", fpath.stem)
+        for i, entry in enumerate(table.get("left", [])):
+            text = entry.get("text", "").strip()
+            if not text:
+                continue
+            src = entry.get("source", {}) or {}
+            room = src.get("room", "")
+            risk = "高" if entry.get("red") else "中"
+            if entry.get("slot") == "说不清的信号":
+                risk = "低"
+            ref_ids = entry.get("ref_finding_ids") or []
+            fid = ref_ids[0] if ref_ids else f"T-{fpath.stem}-{i+1}"
+            results.append({
+                "finding_id": fid,
+                "finding_title": text[:80],
+                "risk_classification": {"risk_level": risk},
+                "origin": room or "桌子",
+                "status": src.get("status", ""),
+                "table_slot": entry.get("slot", ""),
+                "table_name": table_name,
+                "source_ref": src.get("ref", ""),
+                "_from_table": True,
+            })
+    return results
+
+
 def load_evidence_catalog() -> dict:
     """读 evidence/_evidence_catalog.json。没有 → 空结构。"""
     path = get_evidence_catalog_path()
@@ -355,65 +385,89 @@ class SingleProjectSource:
 
     def query_findings(self, risk=None, status=None, keyword=None, year=None, by_origin=None):
         """Return list of finding dicts matching all applied filters (AND logic)."""
-        index = load_index()
-        if not index:
-            return []
-
-        filters = [
-            ("by_risk", risk),
-            ("by_status", status),
-            ("by_keyword", keyword),
-            ("by_origin", by_origin),
-        ]
-
-        matched_ids = None
-        for idx_key, value in filters:
-            if value:
-                ids = set(index.get(idx_key, {}).get(value, []))
-                matched_ids = ids if matched_ids is None else matched_ids & ids
-
-        if year:
-            yids = set(index.get("by_year", {}).get(str(year), {}).get("ids", []))
-            matched_ids = yids if matched_ids is None else matched_ids & yids
-
-        # No filters → all findings
-        if matched_ids is None:
-            matched_ids = set()
-            for year_data in index.get("by_year", {}).values():
-                matched_ids.update(year_data.get("ids", []))
-
         results = []
-        for fid in sorted(matched_ids):
-            finding = load_finding(fid)
-            if finding:
-                finding["_project"] = ""
-                results.append(finding)
+
+        # 老项目：从 findings/index.json + F-*.json 读
+        index = load_index()
+        if index:
+            filters = [
+                ("by_risk", risk),
+                ("by_status", status),
+                ("by_keyword", keyword),
+                ("by_origin", by_origin),
+            ]
+            matched_ids = None
+            for idx_key, value in filters:
+                if value:
+                    ids = set(index.get(idx_key, {}).get(value, []))
+                    matched_ids = ids if matched_ids is None else matched_ids & ids
+
+            if year:
+                yids = set(index.get("by_year", {}).get(str(year), {}).get("ids", []))
+                matched_ids = yids if matched_ids is None else matched_ids & yids
+
+            # No filters → all findings
+            if matched_ids is None:
+                matched_ids = set()
+                for year_data in index.get("by_year", {}).values():
+                    matched_ids.update(year_data.get("ids", []))
+
+            for fid in sorted(matched_ids):
+                finding = load_finding(fid)
+                if finding:
+                    finding["_project"] = ""
+                    results.append(finding)
+
+        # 新模式：从桌子 left[] 读（v2.0，直接写桌子的项目）
+        for tf in load_table_findings():
+            if risk and tf.get("risk_classification", {}).get("risk_level") != risk:
+                continue
+            if status and tf.get("status") != status:
+                continue
+            if keyword and keyword not in json.dumps(tf, ensure_ascii=False):
+                continue
+            if by_origin and tf.get("origin") != by_origin:
+                continue
+            tf["_project"] = ""
+            results.append(tf)
+
         return results
 
     def search(self, term):
         """Full-text search across all findings. Returns list of match dicts."""
-        findings_dir = get_findings_dir()
-        if not findings_dir.exists():
-            return []
-
         results = []
-        for fpath in sorted(findings_dir.glob("F-*.json")):
-            try:
-                with open(fpath, "r", encoding="utf-8") as f:
-                    data = json.load(f)
-            except json.JSONDecodeError:
-                continue
 
-            matches = search_in_json(data, term)
+        # 老项目：搜 findings/F-*.json
+        findings_dir = get_findings_dir()
+        if findings_dir.exists():
+            for fpath in sorted(findings_dir.glob("F-*.json")):
+                try:
+                    with open(fpath, "r", encoding="utf-8") as f:
+                        data = json.load(f)
+                except json.JSONDecodeError:
+                    continue
+                matches = search_in_json(data, term)
+                if matches:
+                    fid = data.get("finding_id", fpath.stem)
+                    title = data.get("finding_title", data.get("title", ""))
+                    rc = data.get("risk_classification", {})
+                    risk = rc.get("risk_level", data.get("risk_level", "-"))
+                    results.append({
+                        "finding_id": fid, "title": title, "risk": risk,
+                        "matches": matches, "_project": "",
+                    })
+
+        # 新模式：搜桌子 left[]（v2.0）
+        for tf in load_table_findings():
+            matches = search_in_json(tf, term)
             if matches:
-                fid = data.get("finding_id", fpath.stem)
-                title = data.get("finding_title", data.get("title", ""))
-                rc = data.get("risk_classification", {})
-                risk = rc.get("risk_level", data.get("risk_level", "-"))
                 results.append({
-                    "finding_id": fid, "title": title, "risk": risk,
+                    "finding_id": tf.get("finding_id", ""),
+                    "title": tf.get("finding_title", ""),
+                    "risk": tf.get("risk_classification", {}).get("risk_level", "-"),
                     "matches": matches, "_project": "",
                 })
+
         return results
 
     def summary(self):

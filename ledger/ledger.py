@@ -148,15 +148,31 @@ def cmd_create(args) -> None:
     print(f"开好桌子：{args.table}")
 
 
+def _build_source(args) -> dict | None:
+    """造来源标记：--room 传了才记，没传不加字段（兼容老命令）。"""
+    room = getattr(args, "room", None)
+    if not room:
+        return None
+    src = {"room": room}
+    if getattr(args, "ref", None):
+        src["ref"] = args.ref
+    if getattr(args, "status", None):
+        src["status"] = args.status
+    return src
+
+
 def cmd_set_slot(args) -> None:
     """小李写左边：一次只写一格，格名必须对。"""
     if args.slot not in LEFT_SLOTS:
         raise SystemExit(f"没这格：{args.slot}，只能是 {LEFT_SLOTS}")
     path = Path(args.file)
     data = load(path)
+    src = _build_source(args)
     for x in data["left"]:
         if x["slot"] == args.slot:
             x["text"] = args.text
+            if src:
+                x["source"] = src
     save(path, data)
     print(f"写好：{args.slot}")
 
@@ -616,12 +632,16 @@ def cmd_add_evidence(args) -> None:
         raise SystemExit("证据必须写清谁给的(--from)、啥时候给的(--when)")
     path = Path(args.file)
     data = load(path)
-    data["right"].append({
+    src = _build_source(args)
+    row = {
         "slot_id": args.slot_id,
         "file": args.file_,
         "from": args.from_,
         "when": args.when,
-    })
+    }
+    if src:
+        row["source"] = src
+    data["right"].append(row)
     save(path, data)
     print(f"贴好证据：{args.file_}")
 
@@ -632,9 +652,12 @@ def cmd_add_line(args) -> None:
         raise SystemExit(f"没这格：{args.slot}，只能是 {LEFT_SLOTS}")
     path = Path(args.file)
     data = load(path)
+    src = _build_source(args)
     for x in data["left"]:
         if x["slot"] == args.slot:
             x["text"] = f"{x['text']}；{args.text}" if x["text"] else args.text
+            if src:
+                x["source"] = src
     save(path, data)
     print(f"添好：{args.slot}")
 
@@ -694,6 +717,9 @@ def main() -> None:
     c.add_argument("file")
     c.add_argument("--slot", required=True, choices=LEFT_SLOTS)
     c.add_argument("--text", required=True)
+    c.add_argument("--room", default=None, help="来源房间（看制度/问话/执行取证/吵架/信号池）")
+    c.add_argument("--ref", default=None, help="来源编号（如 CF-001、DA-001、F-2026-004）")
+    c.add_argument("--status", default=None, help="来源状态")
     c.set_defaults(fn=cmd_set_slot)
 
     c = sub.add_parser("add-evidence", help="右边贴一条证据")
@@ -702,12 +728,17 @@ def main() -> None:
     c.add_argument("--from", dest="from_", required=True)
     c.add_argument("--when", required=True)
     c.add_argument("--slot-id", default=None)
+    c.add_argument("--room", default=None, help="来源房间")
+    c.add_argument("--ref", default=None, help="来源编号")
     c.set_defaults(fn=cmd_add_evidence)
 
     c = sub.add_parser("add-line", help="往格子里追加一句")
     c.add_argument("file")
     c.add_argument("--slot", required=True, choices=LEFT_SLOTS)
     c.add_argument("--text", required=True)
+    c.add_argument("--room", default=None, help="来源房间（看制度/问话/执行取证/吵架/信号池）")
+    c.add_argument("--ref", default=None, help="来源编号（如 CF-001、DA-001、F-2026-004）")
+    c.add_argument("--status", default=None, help="来源状态")
     c.set_defaults(fn=cmd_add_line)
 
     c = sub.add_parser("link-finding", help="左边一格对上问题单号")
