@@ -1,8 +1,13 @@
 {
-  "version": "2026-10-08-7",
-  "git_commit": "2119927",
-  "updated_at": "2026-10-08T20:01:37+08:00",
+  "version": "2026-10-09-1",
+  "git_commit": "9a10b5e",
+  "updated_at": "2026-10-09T07:58:05+08:00",
   "changes": [
+    {
+      "type": "feat",
+      "file": "ledger.py+check.py+audit_table.py+SKILL×3",
+      "summary": "答卷收尾+收料删除：--json追SHEET答卷行(人话码不动)+三处SKILL先过闸再上桌+sweep/import及427行收料代码删除+旧测试迁移"
+    },
     {
       "type": "feat",
       "file": "ledger.py+phase_gate.py+constitution",

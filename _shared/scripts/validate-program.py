@@ -306,7 +306,7 @@ def _norm_ref(raw):
 def _collect_ledger_ctx(workspace):
     """从项目账上收两样东西：任务编号集合 + 户口编号集合。
 
-    户口 = 制度分析三类编号（CG/RP/CF/D，沿用 sweep _known_anchors 口径）
+    户口 = 制度分析三类编号（CG/RP/CF/D，沿用落格规则户口口径）
     + 桌上左边行的来源编号 + 任务编号。找不到账（旧版程序/路径不对）
     返回 None，对账跳过不误拦。
     """

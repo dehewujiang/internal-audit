@@ -275,11 +275,11 @@ OCR 会自动检测并标记以下需要人工核对的内容：
 7. **双目录输出**（批量分析时）：
    - `policy-analyses/`：完整分析报告（JSON + Markdown）
    - `design-assessments/`：设计观察（D-XXX 编号，供 Phase 4 验证升级）
-8. **写桌子**（桌子在 `internal-audit-workspace/audit-table/*.json`，建项目时已开好；找不到就停下报告，不要跳过——宪法#12）：分析结论**直接写桌子**，不再写本子再抄——
+8. **写桌子**（桌子在 `internal-audit-workspace/audit-table/*.json`，建项目时已开好；找不到就停下报告，不要跳过——宪法#12）：分析结论**直接写桌子**，不再写本子再抄——顺序铁律：**先过 Step 5 质量评估再上桌**（拦下就改完再写，不带病上桌）——
    - 控制缺口 `已确认` / 制度冲突 → `python ledger/ledger.py add-line <桌子.json> --slot 确定的毛病 --text <结论> --room 看制度 --ref <编号> --status <状态>`
    - 控制缺口 `待确认` / 风险点 / 设计观察 `pending` → `python ledger/ledger.py add-line <桌子.json> --slot 说不清的信号 --text <结论> --room 看制度 --ref <编号> --status <状态>`
    - 分析过程（为什么这么判断、看的是制度哪一条）写底稿：`working-papers/<制度名>_分析.md`
-   - 不再需要 `sweep`。桌子是账本（记结论），底稿是备查（记过程）。
+   - 收料已删除（A6），结论直写上桌。桌子是账本（记结论），底稿是备查（记过程）。
 
 ---
 

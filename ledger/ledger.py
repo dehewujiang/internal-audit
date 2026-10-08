@@ -13,16 +13,13 @@ ledger.py — 新桌子的管家（只管"往桌上写"，不管"查"和"拍照"
   1. 左边三格固定，只能写不能加格、不能改名
   2. 右边每条证据必须写"谁给的、啥时候给的"，缺一个就不让贴
   3. 每次只改桌上的一处，不碰其他格
-  4. 收料（sweep）只添不盖：人写的字一个字不动；机器只认自己上次写的那几条
-     （记在 ingested 里），所以同一条反复收不会变两行，状态变了只从这格挪到那格；
-     盖了"作废"章的行下架（只动本子里的机器行，原纸不动）；收完回写账本
-     （sweep_history + 大事记，只追加）
+  4. 直接写桌：各房间结论直写上桌，不再经收料中转；
+     新假设先落任务板（待查），查实转事实行（A6 收料/搬家已删除）
 
 用法:
     python ledger.py create 桌子.json --table "冲压车间废料多了"
     python ledger.py set-slot 桌子.json --slot 确定的毛病 --text "领料没签字"
     python ledger.py add-evidence 桌子.json --file "领料单7张" --from 班长 --when 审计当天
-    python ledger.py sweep 桌子.json --workspace D:\某个审计项目
     python ledger.py add-gap 桌子.json --finding F-2026-003 --missing "绩效评分原始记录"
     python ledger.py add-task 桌子.json --title "钢筋回扣疑似内外勾结" --room 检查单 --ref R-010
     python ledger.py close-task 桌子.json --id T-001 --verdict 已结 --finding F-2026-010
@@ -30,7 +27,6 @@ ledger.py — 新桌子的管家（只管"往桌上写"，不管"查"和"拍照"
 """
 
 import argparse
-import copy
 import json
 import os
 import sys
@@ -71,9 +67,24 @@ def _hard_grades(data: dict, ref: str) -> set:
     return grades
 
 
-def _refuse(code_msg: str) -> None:
-    """写入口拒收：话说在 stdout（LLM 和人都看得见），码用 2（拦下）。"""
+def _sheet_line(args, action: str, message: str, tool: str = "ledger") -> None:
+    """答卷行（A6）：--json 才追一行 SHEET，人话原样不动，退出码不动。"""
+    if getattr(args, "json", False):
+        print("SHEET:" + json.dumps({"tool": tool, "action": action,
+                                     "message": message}, ensure_ascii=False))
+
+
+def _say(args, action: str, human: str) -> None:
+    """成功行：人话照打，--json 再追答卷。"""
+    print(human)
+    _sheet_line(args, action, human)
+
+
+def _refuse(code_msg: str, args=None) -> None:
+    """写入口拒收：话说在 stdout（LLM 和人都看得见），码用 2（拦下）。
+    --json 时追答卷 action=block。"""
     print(code_msg)
+    _sheet_line(args, "block", code_msg)
     raise SystemExit(2)
 
 
@@ -179,7 +190,7 @@ def cmd_create(args) -> None:
     if path.exists():
         raise SystemExit(f"桌子已存在：{path}，换个名再开")
     save(path, blank_table(args.table), op="开桌")
-    print(f"开好桌子：{args.table}")
+    _say(args, "pass", f"开好桌子：{args.table}")
 
 
 def _build_source(args) -> dict | None:
@@ -208,323 +219,7 @@ def cmd_set_slot(args) -> None:
             if src:
                 x["source"] = src
     save(path, data, op="改字")
-    print(f"写好：{args.slot}")
-
-
-def _read_json(p: Path) -> dict:
-    """读老账本，坏了就报错（不猜）。"""
-    return json.loads(p.read_text(encoding="utf-8-sig"))
-
-
-def _is_fraud(f: dict) -> bool:
-    return "舞弊" in str(f.get("category", ""))
-
-
-def _short(title: str, n: int = 40) -> str:
-    return title if len(title) <= n else title[:n] + "…"
-
-
-def _lines_of(text: str) -> list:
-    """格子里的一行行话（用"；"隔开）。"""
-    return [x for x in (text or "").split("；") if x.strip()]
-
-
-# ══════════════════════════════════════════════════════════════
-# 收料：把各房间查出来的东西，按「落格规则」搬上桌
-# （只读老账，一个字节不改；落格规则见 ledger.schema.json）
-# ══════════════════════════════════════════════════════════════
-def check_workspace(ws: Path) -> None:
-    """项目路径不对就别往下走——否则收出一张空桌，看着成功、其实什么都没收。"""
-    if not (ws / "internal-audit-workspace").is_dir():
-        raise SystemExit(f"项目路径不对：找不到 {ws / 'internal-audit-workspace'}"
-                         f"——检查 --workspace 是否指向项目根目录")
-
-
-def _route_gap(status: str) -> str:
-    """控制缺口去哪个格。跨文件覆盖＝别的制度里有，不算缺失，返回空串＝不上桌。"""
-    if status == "跨文件覆盖":
-        return ""
-    return LEFT_SLOTS[0] if status == "已确认" else LEFT_SLOTS[2]
-
-
-def _audit_state(ws: Path) -> dict:
-    """current-audit.json 的 audit_state。标准位置在 internal-audit-workspace/ 里
-    （project-init 建的就在那）；老项目放在项目根的也认。两处都没有 → 空。"""
-    for p in (ws / "internal-audit-workspace" / "current-audit.json",
-              ws / "current-audit.json"):
-        if p.exists():
-            return _read_json(p).get("audit_state") or {}
-    return {}
-
-
-def _looks_fraud(item: dict) -> bool:
-    """是不是舞弊嫌疑。先看明确写的分类，没写才看字眼——宁可多进红格，不可漏（宪法#2）。"""
-    if "舞弊" in f"{item.get('category', '')}{item.get('type', '')}{item.get('kind', '')}":
-        return True
-    blob = " ".join(str(item.get(k, "")) for k in
-                    ("summary", "detail", "content", "title", "description"))
-    return any(w in blob for w in FRAUD_WORDS)
-
-
-def scan_policy(ws: Path) -> list:
-    """看制度查出来的三样：控制缺口（CG）、风险点（RP）、制度冲突（CF）。"""
-    GRADE = {"high": "高", "medium": "中", "low": "低"}
-    out = []
-    d = ws / "internal-audit-workspace" / "policy-analyses"
-    if not d.is_dir():
-        return out
-    for p in sorted(d.glob("*.json")):
-        a = _read_json(p)
-        doc = str(a.get("doc_name") or p.stem)
-        for g in a.get("control_gaps") or []:
-            # 编号字段两个名字都认：文档声明 id，真实批量产出用 gap_id——2026-09-14 广东长华实撞
-            gid = str(g.get("id") or g.get("gap_id") or "").strip()
-            slot = _route_gap(str(g.get("verification_status") or ""))
-            if not gid or not slot:
-                continue
-            what = g.get("expected_control") or g.get("description") or g.get("actual") or ""
-            out.append({"id": f"{p.name}:{gid}", "slot": slot,
-                        "text": f"{gid} 控制缺口（{doc}）：{_short(str(what), 60)}"
-                                f"（{g.get('verification_status')}）"})
-        for r in a.get("risk_points") or []:
-            rid = str(r.get("risk_id") or r.get("rp_id") or r.get("id") or "").strip()
-            if not rid:
-                continue
-            sev = str(r.get("severity") or r.get("risk_level") or "未标")
-            sev = GRADE.get(sev.lower(), sev)
-            desc = r.get("risk_description") or r.get("description") or ""
-            out.append({"id": f"{p.name}:{rid}", "slot": LEFT_SLOTS[2],
-                        "text": f"{rid} 风险点（{sev}，{doc}）：{_short(str(desc), 60)}"})
-        for c in a.get("conflicts") or []:
-            cid = str(c.get("id") or c.get("conflict_id") or "").strip()
-            if not cid:
-                continue
-            # 冲突没有"状态字段"——两份制度对不上，本身就是读出来的事实，不是待验的猜想
-            out.append({"id": f"{p.name}:{cid}", "slot": LEFT_SLOTS[0],
-                        "text": f"{cid} 制度冲突（{doc}）：{_short(str(c.get('description') or ''), 60)}"})
-    return out
-
-
-def scan_design(ws: Path) -> list:
-    """设计观察（待现场验证的假设）。JSON 优先，没有 JSON 才读 DA-*.md——
-    两份是同一批东西的两种写法，都读会让一件事在桌上占两行。
-    current-audit.json 标了 design_observations_consumed=true（观察已消化进审计程序），
-    就不再挂回桌面——消化了的东西再上桌，会把已经变成问题单的事摆两行。"""
-    out = []
-    d = ws / "internal-audit-workspace" / "design-assessments"
-    if not d.is_dir():
-        return out
-    if _audit_state(ws).get("design_observations_consumed") is True:
-        return out
-    jsons = sorted(d.glob("*.json"))
-    if jsons:
-        for p in jsons:
-            for o in _read_json(p).get("design_observations") or []:
-                oid = str(o.get("id") or "").strip()
-                # 只有 pending 是"还没验证的假设"；verified 已变成问题单自己上桌，rejected 不成立
-                if not oid or str(o.get("status") or "") != "pending":
-                    continue
-                tag = "访谈" if o.get("source") == "interview" else "看制度"
-                what = o.get("title") or o.get("description") or ""
-                out.append({"id": f"{p.name}:{oid}", "slot": LEFT_SLOTS[2],
-                            "text": f"{oid} {_short(str(what), 60)}（{tag}，待现场验证）"})
-        return out
-    for md in sorted(d.glob("DA-*.md")):
-        head = md.read_text(encoding="utf-8-sig").splitlines()
-        title = head[0].lstrip("# ").strip() if head else md.stem
-        out.append({"id": md.name, "slot": LEFT_SLOTS[2], "text": f"{title}（待现场验证）"})
-    return out
-
-
-def scan_state(ws: Path) -> list:
-    """信号池（宪法#10 制度空白）＋ 举报线索——两样都住在 current-audit.json 里。"""
-    out = []
-    st = _audit_state(ws)
-    for s in st.get("signals") or []:
-        if not isinstance(s, dict):
-            continue
-        name = s.get("module") or s.get("type") or "信号"
-        out.append({"id": f"current-audit.json:MB-{name}", "slot": LEFT_SLOTS[2],
-                    "text": f"制度空白：{_short(str(s.get('detail') or name), 60)}"})
-    for i, w in enumerate(st.get("whistleblower_pending") or [], 1):
-        if not isinstance(w, dict):
-            w = {"summary": str(w)}
-        wid = str(w.get("id") or f"WB-{i:03d}")
-        what = w.get("summary") or w.get("detail") or w.get("content") or w.get("title") or ""
-        out.append({"id": f"current-audit.json:{wid}",
-                    "slot": LEFT_SLOTS[1] if _looks_fraud(w) else LEFT_SLOTS[2],
-                    "text": f"{wid} 举报线索：{_short(str(what), 60)}"})
-    return out
-
-
-def scan_findings(ws: Path, only: str = None) -> tuple:
-    """问题单（F-）＋待查项。返回（要上桌的条目, 要贴的证据）。"""
-    fdir = ws / "internal-audit-workspace" / "findings"
-    paths = [fdir / f"{only}.json"] if only else sorted(fdir.glob("F-*.json"))
-    if only and not paths[0].exists():
-        raise SystemExit(f"老账里没这张单：{paths[0].name}")
-    items, rows = [], []
-    for p in paths:
-        f = _read_json(p)
-        fid = str(f.get("finding_id") or p.stem)
-        line = f"{fid} {_short(str(f.get('title', '')))}"
-        if _is_fraud(f):
-            items.append({"id": f"F:{fid}", "slot": LEFT_SLOTS[1], "text": line, "ref": fid})
-        elif str(f.get("status", "")) == "待补充":
-            items.append({"id": f"F:{fid}", "slot": LEFT_SLOTS[2], "text": f"{line}（待补充）"})
-        else:
-            items.append({"id": f"F:{fid}", "slot": LEFT_SLOTS[0], "text": line, "ref": fid})
-        for e in f.get("evidence") or []:
-            rows.append({
-                "slot_id": None,
-                "file": f"{fid}：{e.get('name', '未命名')}",
-                "from": e.get("source") or "未注明",
-                "when": e.get("obtained_date") or "未注明",
-            })
-        for j, u in enumerate((f.get("audit_team_notes") or {}).get("key_uncertainties") or []):
-            items.append({"id": f"F:{fid}:待查{j}", "slot": LEFT_SLOTS[2],
-                          "text": f"{fid}待查：{_short(str(u))}"})
-    return items, rows
-
-
-def _known_anchors(ws: Path) -> set:
-    """制度分析／设计观察里已有的编号集合——判断程序文件里的风险"有没有户口"用。
-    编号是去重的唯一凭据：找得到＝同一件事已经在桌上，找不到＝推演出的新假设。"""
-    ids = set()
-    for p in (ws / "internal-audit-workspace" / "policy-analyses").glob("*.json"):
-        a = _read_json(p)
-        for g in a.get("control_gaps") or []:
-            ids.add(str(g.get("gap_id") or g.get("id") or "").strip().upper())
-        for r in a.get("risk_points") or []:
-            ids.add(str(r.get("rp_id") or r.get("risk_id") or r.get("id") or "").strip().upper())
-        for c in a.get("conflicts") or []:
-            ids.add(str(c.get("conflict_id") or c.get("id") or "").strip().upper())
-    for p in (ws / "internal-audit-workspace" / "design-assessments").glob("*.json"):
-        for o in _read_json(p).get("design_observations") or []:
-            ids.add(str(o.get("id") or "").strip().upper())
-    ids.discard("")
-    return ids
-
-
-def _load_ir_parser():
-    """审计程序的解析器在 _shared/scripts/program_ir_parser.py（validate-program 也在用）。
-    借它的现成解析，不另写一套 markdown 解析——两处共用，修一处两处受益。"""
-    shared = Path(__file__).resolve().parent.parent / "_shared" / "scripts"
-    if str(shared) not in sys.path:
-        sys.path.insert(0, str(shared))
-    try:
-        import program_ir_parser
-        return program_ir_parser
-    except Exception as e:
-        raise SystemExit(f"审计程序解析器用不了（{shared / 'program_ir_parser.py'}）：{e}")
-
-
-def scan_programs(ws: Path) -> list:
-    """审计程序 2.1 风险清单：推演出的假设上桌（信号格）。
-
-    制度类的条目与制度分析同源——**有户口的就不上**，不然同一件事在桌上摆两行。
-    户口＝来源标注里的 CG/RP/CF/D 编号在制度分析里找得到；找不到（或压根没有编号）
-    的按推演处理照上，宁可多几行可删的，不可漏收。
-    程序本体（65 条测试指令）是"要做的事"，不在这里收——归抽屉·检查表。
-    """
-    d = ws / "internal-audit-workspace" / "audit-programs"
-    mds = sorted(d.glob("*.md")) if d.is_dir() else []
-    if not mds:
-        return []
-    parser = _load_ir_parser()
-    known = _known_anchors(ws)
-    out = []
-    for p in mds:
-        for r in parser.build_ir(p).get("risk_register") or []:
-            rid = str(r.get("risk_id") or "").strip()
-            if not rid:
-                continue
-            if r.get("is_deleted"):
-                continue  # 作废行不上桌（原行在程序文件里留着，只是不收）
-            if known & {str(a).strip().upper() for a in r.get("fact_anchors") or []}:
-                continue
-            label = str(r.get("raw_id") or rid).strip()
-            kind = _short(str(r.get("type") or "推演"), 8)
-            out.append({"id": f"{p.name}:{rid}", "slot": LEFT_SLOTS[2],
-                        "text": f"{label} 推演风险（{kind}）：{_short(str(r.get('title') or ''), 60)}"})
-    return out
-
-
-def scan_deleted_program_risks(ws: Path) -> set:
-    """程序文件里盖了"作废"章的风险编号集合（ingested 键格式"文件名:编号"）。
-    只认明确的章，不认"没了"——改名/搬文件造成的对不上，不在这里下架。"""
-    d = ws / "internal-audit-workspace" / "audit-programs"
-    mds = sorted(d.glob("*.md")) if d.is_dir() else []
-    if not mds:
-        return set()
-    try:
-        parser = _load_ir_parser()
-    except SystemExit:
-        return set()
-    dead = set()
-    for p in mds:
-        try:
-            risks = parser.build_ir(p).get("risk_register") or []
-        except Exception:
-            continue
-        for r in risks:
-            if r.get("is_deleted") and str(r.get("risk_id") or "").strip():
-                dead.add(f"{p.name}:{str(r.get('risk_id')).strip()}")
-    return dead
-
-
-def prune_deleted(table: dict, dead_ids: set) -> int:
-    """下架作废行：只动收料本子里记过的机器行，人写的字不动。
-    原纸（程序文件）一个字节不动，留痕不受影响。"""
-    book = table.get("ingested", {})
-    n = 0
-    for key in [k for k in book if k in dead_ids]:
-        old = book.pop(key)
-        if old.get("slot") in LEFT_SLOTS and old.get("text"):
-            _drop_line(table, old["slot"], old["text"], "")
-        n += 1
-    return n
-
-
-def _writeback_sweep(ws: Path, added: int, moved: int, nevd: int, pruned: int) -> bool:
-    """收料回写账本：记"啥时候收、收几条"，大事记加一行。只追加不改旧数。
-    没账本（老项目/纯桌子）就跳过，不崩。"""
-    audit = None
-    for p in (ws / "internal-audit-workspace" / "current-audit.json",
-              ws / "current-audit.json"):
-        if p.exists():
-            audit = p
-            break
-    if audit is None:
-        return False
-    try:
-        data = json.loads(audit.read_text(encoding="utf-8-sig"))
-    except Exception:
-        return False
-    from datetime import datetime
-    st = data.setdefault("audit_state", {})
-    hist = st.setdefault("sweep_history", [])
-    hist.append({
-        "at": datetime.now().strftime("%Y-%m-%d %H:%M"),
-        "added": added, "moved": moved, "evidence": nevd, "pruned": pruned,
-    })
-    trail = st.setdefault("audit_trail", [])
-    trail.append({
-        "timestamp": datetime.now().isoformat(),
-        "event_type": "sweep",
-        "detail": f"收料：新增{added}条、挪格{moved}条、补证据{nevd}条、下架作废{pruned}条",
-    })
-    audit.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
-    return True
-
-
-def scan_workspace(ws: Path) -> tuple:
-    """扫遍所有房间，收成两摞：要上桌的条目、要贴的证据。只看不改。"""
-    items, rows = scan_findings(ws)
-    return (items + scan_policy(ws) + scan_design(ws) + scan_state(ws)
-            + scan_programs(ws)), rows
-
-
+    _say(args, "pass", f"写好：{args.slot}")
 def _slot_cell(table: dict, name: str) -> dict:
     for x in table["left"]:
         if x["slot"] == name:
@@ -535,117 +230,6 @@ def _slot_cell(table: dict, name: str) -> dict:
 def _append_line(table: dict, slot: str, text: str) -> None:
     cell = _slot_cell(table, slot)
     cell["text"] = f"{cell['text']}；{text}" if cell["text"] else text
-
-
-def _drop_line(table: dict, slot: str, text: str, ref: str = "") -> None:
-    cell = _slot_cell(table, slot)
-    cell["text"] = "；".join(x for x in _lines_of(cell["text"]) if x != text)
-    if ref and ref in cell["ref_finding_ids"]:
-        cell["ref_finding_ids"].remove(ref)
-
-
-def apply_items(table: dict, items: list) -> tuple:
-    """把收来的条目并进桌子：新的追加、状态变了的挪格、没变的跳过。
-    返回（新增条数, 挪格条数）。只碰机器自己上次写的行，人写的字不动。"""
-    book = table.setdefault("ingested", {})
-    added = moved = 0
-    for it in items:
-        old = book.get(it["id"])
-        if old and old.get("slot") == it["slot"] and old.get("text") == it["text"]:
-            continue
-        ref = it.get("ref") or ""
-        if old:
-            # 状态变了（"待确认"补全文件后变"已确认"）：先从旧格撤下来再进新格，
-            # 不然同一件事会在两个格子里各挂一条
-            _drop_line(table, old["slot"], old["text"], ref)
-            moved += 1
-        else:
-            added += 1
-        _append_line(table, it["slot"], it["text"])
-        cell = _slot_cell(table, it["slot"])
-        if ref and ref not in cell["ref_finding_ids"]:
-            cell["ref_finding_ids"].append(ref)
-        book[it["id"]] = {"slot": it["slot"], "text": it["text"]}
-    return added, moved
-
-
-def apply_evidence(table: dict, rows: list) -> int:
-    """贴证据：同一份（名、谁给的、啥时候）已在右边就不重复贴。"""
-    have = {(e.get("file"), e.get("from"), e.get("when")) for e in table["right"]}
-    n = 0
-    for e in rows:
-        k = (e.get("file"), e.get("from"), e.get("when"))
-        if k in have:
-            continue
-        table["right"].append(e)
-        have.add(k)
-        n += 1
-    return n
-
-
-def cmd_import(args) -> None:
-    """老账搬家：只读老项目，原样抄进新桌子，老账一个字不动。
-
-    搬的是各房间已经落纸的东西：问题单＋待查项、看制度的控制缺口/风险点/冲突、
-    设计观察、信号池的制度空白、举报线索。搬过的记进 ingested，以后 sweep 不会重复搬。
-    """
-    ws = Path(args.workspace)
-    check_workspace(ws)
-    out = Path(args.file)
-    if out.exists():
-        raise SystemExit(f"桌子已存在：{out}，换个名再搬（日常补漏用 sweep）")
-    items, rows = scan_workspace(ws)
-    if args.finding:
-        items, rows = scan_findings(ws, args.finding)
-    table = blank_table(args.table)
-    added, _ = apply_items(table, items)
-    nevd = apply_evidence(table, rows)
-    save(out, table, op="搬家")
-    counts = "／".join(f"{x['slot']}{len(_lines_of(x['text']))}"
-                      for x in table["left"])
-    print(f"搬好：{added}条上桌（{counts}）／ 证据{nevd}条 ← {ws.name}")
-
-
-def cmd_sweep(args) -> None:
-    """收料：把各房间查出来的东西，按「落格规则」搬上桌。
-
-    只添不盖——人写的字一个字不动。机器只认自己上次写的那几条（记在 ingested），
-    所以反复收不会变两行；状态变了也只是从这格挪到那格。加 --dry-run 只看不写。
-    """
-    ws = Path(args.workspace)
-    check_workspace(ws)
-    path = Path(args.file)
-    data = load(path)
-    items, rows = (scan_findings(ws, args.finding) if args.finding
-                   else scan_workspace(ws))
-    if args.dry_run:
-        trial = copy.deepcopy(data)
-        added, moved = apply_items(trial, items)
-        nevd = apply_evidence(trial, rows)
-        print(f"[试算] 会新增 {added} 条、挪格 {moved} 条、补证据 {nevd} 条（一个字没写）")
-        for k, v in trial["ingested"].items():
-            if k not in data.get("ingested", {}):
-                print(f"  + {v['slot']}｜{_short(v['text'], 70)}")
-        if not args.finding:
-            pruned = prune_deleted(trial, scan_deleted_program_risks(ws))
-            if pruned:
-                print(f"  - 会下架作废 {pruned} 条（原纸留着，只是不摆了）")
-        return
-    added, moved = apply_items(data, items)
-    nevd = apply_evidence(data, rows)
-    pruned = 0
-    if not args.finding:
-        pruned = prune_deleted(data, scan_deleted_program_risks(ws))
-    if not (added or moved or nevd or pruned):
-        print("收料：桌上已是最新，没有新的")
-        return
-    save(path, data, op="收料")
-    _writeback_sweep(ws, added, moved, nevd, pruned)
-    print(f"收料：新增 {added} 条、挪格 {moved} 条、补证据 {nevd} 条")
-    if pruned:
-        print(f"下架作废：{pruned} 条（原纸留着，只是不摆了）")
-
-
 def cmd_add_gap(args) -> None:
     """证据缺失不是终点：宪法#9 要求把"证据为什么不存在"本身当成一件要查的事。
 
@@ -659,7 +243,7 @@ def cmd_add_gap(args) -> None:
                  f"{args.finding} 证据缺失：{args.missing}"
                  f"（三种可能：业务未发生 / 管理缺失未留痕 / 证据被消除，须分别追问）")
     save(path, data, op="记缺口")
-    print(f"已记缺口：{args.finding} 缺「{args.missing}」→ 三种可能都要问")
+    _say(args, "pass", f"已记缺口：{args.finding} 缺「{args.missing}」→ 三种可能都要问")
 
 
 def _now() -> str:
@@ -682,7 +266,7 @@ def cmd_add_task(args) -> None:
     """立任务：新假设先落任务板（待查），查实了才转事实行。
 
     写入口只认三件事：说什么假设(--title)、谁立的(--room)、凭什么编号(--ref)，
-    缺一个就不让立。有户口的（--known-anchor 对上 --ref）不上新任务——
+    缺一个就不让立。有户口的（--known-anchor 给出户口编号）不上新任务——
     户口已有，SKILL 只挂引用（桌上已有行），本次一个字不写，exit 0。
     任务是假设不是结论，红格 A/E 门不管任务。
     """
@@ -693,12 +277,12 @@ def cmd_add_task(args) -> None:
     path = Path(args.file)
     data = load(path)
     tasks = data.setdefault("tasks", [])
-    if args.known_anchor and str(args.known_anchor).strip().upper() == str(args.ref).strip().upper():
-        print(f"跳过：{args.ref} 户口已有，只挂引用不占新行（本次一个字没写）")
+    if (args.known_anchor or "").strip():
+        _say(args, "pass", f"跳过：{args.ref} 户口已有（{args.known_anchor}），只挂引用不占新行（本次一个字没写）")
         return
     for t in tasks:
         if t.get("status") == "待查" and str(t.get("source", {}).get("ref", "")).upper() == str(args.ref).strip().upper():
-            _refuse(f"拒收：{args.ref} 已有待查任务 {t.get('id')}，先查完再立新的（本次一个字没写）")
+            _refuse(f"拒收：{args.ref} 已有待查任务 {t.get('id')}，先查完再立新的（本次一个字没写）", args)
     tid = _next_task_id(data)
     tasks.append({
         "id": tid,
@@ -711,7 +295,7 @@ def cmd_add_task(args) -> None:
         "closed_at": "",
     })
     save(path, data, op="立任务")
-    print(f"立好任务：{tid} {args.title}（待查）")
+    _say(args, "pass", f"立好任务：{tid} {args.title}（待查）")
 
 
 def cmd_close_task(args) -> None:
@@ -731,7 +315,7 @@ def cmd_close_task(args) -> None:
         raise SystemExit(f"任务 {args.id} 已是{task.get('status')}，不能再结")
     if args.verdict == "已结":
         if not (args.finding or (args.fact or "").strip()):
-            _refuse(f"拒收：{args.id} 结了就得有去向（--finding 单号或 --fact 结论），否则等于无声消失（本次一个字没写）")
+            _refuse(f"拒收：{args.id} 结了就得有去向（--finding 单号或 --fact 结论），否则等于无声消失（本次一个字没写）", args)
         if args.finding:
             task.setdefault("ref_finding_ids", []).append(args.finding)
     else:
@@ -741,7 +325,7 @@ def cmd_close_task(args) -> None:
     task["status"] = args.verdict
     task["closed_at"] = _now()
     save(path, data, op="结任务")
-    print(f"结好任务：{args.id} → {args.verdict}")
+    _say(args, "pass", f"结好任务：{args.id} → {args.verdict}")
 
 
 def cmd_add_evidence(args) -> None:
@@ -765,7 +349,7 @@ def cmd_add_evidence(args) -> None:
         row["source"] = src
     data["right"].append(row)
     save(path, data, op="贴证据")
-    print(f"贴好证据：{args.file_}" + (f"（{grade}级）" if grade else ""))
+    _say(args, "pass", f"贴好证据：{args.file_}" + (f"（{grade}级）" if grade else ""))
 
 
 def cmd_add_line(args) -> None:
@@ -782,7 +366,7 @@ def cmd_add_line(args) -> None:
         _refuse(
             f"拒收：{RED_SLOT}是高风险区，先贴 A/E 级硬证据再上桌\n"
             f"（add-evidence --grade A/E --ref {args.ref or '单号'} → 再 add-line；"
-            f"证据不够就降格写“说不清的信号”。本次一个字没写）")
+            f"证据不够就降格写“说不清的信号”。本次一个字没写）", args)
     src = _build_source(args)
     for x in data["left"]:
         if x["slot"] == args.slot:
@@ -790,7 +374,7 @@ def cmd_add_line(args) -> None:
             if src:
                 x["source"] = src
     save(path, data, op="添字")
-    print(f"添好：{args.slot}")
+    _say(args, "pass", f"添好：{args.slot}")
 
 
 def cmd_link(args) -> None:
@@ -803,7 +387,7 @@ def cmd_link(args) -> None:
         if x["slot"] == args.slot and args.finding not in x["ref_finding_ids"]:
             x["ref_finding_ids"].append(args.finding)
     save(path, data, op="对单号")
-    print(f"对好：{args.slot} ↔ {args.finding}")
+    _say(args, "pass", f"对好：{args.slot} ↔ {args.finding}")
 
 
 def cmd_set_drawer(args) -> None:
@@ -817,7 +401,7 @@ def cmd_set_drawer(args) -> None:
             if args.status is not None:
                 d["status"] = args.status
     save(path, data, op="填抽屉")
-    print(f"抽屉填好：{args.name}")
+    _say(args, "pass", f"抽屉填好：{args.name}")
 
 
 def cmd_show(args) -> None:
@@ -841,6 +425,8 @@ def cmd_show(args) -> None:
 
 def main() -> None:
     p = argparse.ArgumentParser(description="新桌子管家：只管往桌上写")
+    p.add_argument("--json", action="store_true",
+                   help="成功/拒收行后追 SHEET 答卷行（人话不动，退出码不动）")
     sub = p.add_subparsers(dest="cmd", required=True)
 
     c = sub.add_parser("create", help="开一张空桌子")
@@ -890,13 +476,6 @@ def main() -> None:
     c.add_argument("--status", default=None)
     c.set_defaults(fn=cmd_set_drawer)
 
-    c = sub.add_parser("sweep", help="收料：把各房间查出来的东西搬上桌")
-    c.add_argument("file")
-    c.add_argument("--workspace", required=True)
-    c.add_argument("--finding", default=None, help="只收这一张单（刚执行完一张时用）")
-    c.add_argument("--dry-run", action="store_true", help="只看会加什么，一个字不写")
-    c.set_defaults(fn=cmd_sweep)
-
     c = sub.add_parser("add-gap", help="记一条证据缺失（宪法#9：缺失即信号）")
     c.add_argument("file")
     c.add_argument("--finding", required=True)
@@ -908,7 +487,7 @@ def main() -> None:
     c.add_argument("--title", required=True, help="假设一句话")
     c.add_argument("--room", required=True, help="谁立的（如 检查单）")
     c.add_argument("--ref", required=True, help="立任务的编号（如 R-010）")
-    c.add_argument("--known-anchor", default=None, help="户口编号：对上 ref 则只挂引用不占新行")
+    c.add_argument("--known-anchor", default=None, help="户口编号：给了就不占新行，只挂引用")
     c.set_defaults(fn=cmd_add_task)
 
     c = sub.add_parser("close-task", help="结任务：已结须带结论去向，作废须带理由")
@@ -920,14 +499,7 @@ def main() -> None:
     c.add_argument("--reason", default=None, help="作废理由")
     c.set_defaults(fn=cmd_close_task)
 
-    c = sub.add_parser("import", help="老账搬家：抄进新桌子")
-    c.add_argument("file")
-    c.add_argument("--workspace", required=True)
-    c.add_argument("--table", required=True)
-    c.add_argument("--finding", default=None)
-    c.set_defaults(fn=cmd_import)
-
-    c = sub.add_parser("snaps", help="看照片")
+    c = sub.add_parser("snaps", help="看照片（只读旧存档）")
     c.add_argument("file")
     c.set_defaults(fn=cmd_snaps)
 

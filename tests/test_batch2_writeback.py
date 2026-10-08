@@ -5,8 +5,9 @@
           ledger/ledger.py、create_evidence_dirs.py、phase_gate.py
 [OUTPUT]: 断言式测试输出（✅/❌）+ 汇总；exit 0=全过 / 1=有失败
 [POS]:    tests/ 下的专项测试，锁死第二拨（账本回写+三修）五件事：
-          作废标记识别 / 收料下架作废行 / 收料回写账本 / 证据柜合流保纸条 /
-          程序变更记账 / 消化对号保险。每条都能被"撤销改动"验红。
+          作废标记识别 / 任务作废（A6 收料删除后改道）/ 落盘记流水 /
+          证据柜合流保纸条 / 程序变更记账 / 消化对号保险。
+          每条都能被"撤销改动"验红。
 [PROTOCOL]: 变更时更新此头部, 然后检查同级 CLAUDE.md
 """
 
@@ -115,40 +116,10 @@ def test_validate_skips_deleted():
 
 
 # ══════════════════════════════════════════════════════════════
-# 3. 收料下架作废行（只动机器的行，人写的字不动）
+# 3. 作废走任务（任务作废，人写的字不动）
 # ══════════════════════════════════════════════════════════════
 def test_sweep_prunes_deleted():
-    print("\n[3] 收料：作废行下桌，人写的字不动")
-    md_live = MD_TMPL.replace("【已删除-原因：地磅已换新】", "")
-    ws = _ws_with_program(md_live)
-    t = ws / "桌子.json"
-
-    def run(*a):
-        return subprocess.run([sys.executable, str(LEDGER / "ledger.py")] + [str(x) for x in a],
-                              capture_output=True, text=True, encoding="utf-8", errors="replace")
-    run("create", t, "--table", "废料")
-    run("sweep", t, "--workspace", ws)
-    run("add-line", t, "--slot", "说不清的信号", "--text", "人工补一句")
-    before = json.loads(t.read_text(encoding="utf-8-sig"))
-    check("先摆上桌：R02 在", any("R02" in x.get("text", "") for x in before["left"]),
-          "预置条件")
-    # 标作废后再收
-    (ws / "internal-audit-workspace" / "audit-programs" / "废料管理审计程序_v1.0.md").write_text(
-        MD_TMPL, encoding="utf-8")
-    r = run("sweep", t, "--workspace", ws)
-    after = json.loads(t.read_text(encoding="utf-8-sig"))
-    texts = [x.get("text", "") for x in after["left"]]
-    check("作废的 R02 下桌", not any("R02" in x for x in texts), r.stdout.strip())
-    check("收料本子清掉 R02", not any("R-2" in k or ":R02" in k for k in after["ingested"]))
-    check("R01 还在", any("R01" in x for x in texts))
-    check("人工那句还在", any("人工补一句" in x for x in texts))
-
-
-# ══════════════════════════════════════════════════════════════
-# 4. 收料回写账本（没账本也不崩）
-# ══════════════════════════════════════════════════════════════
-def test_sweep_writeback():
-    print("\n[4] 收料回写账本")
+    print("[3] 作废走任务：任务作废，人写的字不动")
     ws = _ws_with_program(MD_TMPL)
     t = ws / "桌子.json"
 
@@ -156,23 +127,35 @@ def test_sweep_writeback():
         return subprocess.run([sys.executable, str(LEDGER / "ledger.py")] + [str(x) for x in a],
                               capture_output=True, text=True, encoding="utf-8", errors="replace")
     run("create", t, "--table", "废料")
-    r = run("sweep", t, "--workspace", ws)
-    audit = json.loads((ws / "internal-audit-workspace" / "current-audit.json").read_text(encoding="utf-8-sig"))
-    hist = audit["audit_state"].get("sweep_history", [])
-    trail = audit["audit_state"].get("audit_trail", [])
-    check("sweep_history 记一笔", len(hist) == 1, r.stdout.strip())
-    check("大事记记一笔", any(e.get("event_type") == "sweep" for e in trail))
-    # 没账本的项目不崩
-    ws2 = _ws_with_program(MD_TMPL, with_audit=False)
-    t2 = ws2 / "桌子.json"
-    run("create", t2, "--table", "废料")
-    r2 = run("sweep", t2, "--workspace", ws2)
-    check("没账本也 exit 0", r2.returncode == 0, r2.stderr.strip()[:100])
+    run("add-task", t, "--title", "地磅年久失修", "--room", "检查单", "--ref", "R-002")
+    run("add-line", t, "--slot", "说不清的信号", "--text", "人工补一句")
+    before = json.loads(t.read_text(encoding="utf-8-sig"))
+    check("先摆上桌：R-002 在任务板",
+          any("R-002" in str(x.get("source", {}).get("ref", "")) for x in before["tasks"]),
+          "预置条件")
+    # 程序里盖作废章 → 任务作废
+    r = run("close-task", t, "--id", "T-001", "--verdict", "作废", "--reason", "地磅已换新")
+    after = json.loads(t.read_text(encoding="utf-8-sig"))
+    check("作废成功", r.returncode == 0, r.stdout.strip()[:80])
+    check("任务状态变作废", after["tasks"][0]["status"] == "作废")
+    check("人工那句还在", any("人工补一句" in x.get("text", "") for x in after["left"]))
 
+def test_sweep_writeback():
+    print("[4] 落盘记流水")
+    ws = _ws_with_program(MD_TMPL)
+    t = ws / "桌子.json"
 
-# ══════════════════════════════════════════════════════════════
-# 5. 证据柜重做不擦旧纸条，作废的不再占槽
-# ══════════════════════════════════════════════════════════════
+    def run(*a):
+        return subprocess.run([sys.executable, str(LEDGER / "ledger.py")] + [str(x) for x in a],
+                              capture_output=True, text=True, encoding="utf-8", errors="replace")
+    run("create", t, "--table", "废料")
+    r = run("add-task", t, "--title", "假设", "--room", "检查单", "--ref", "R-010")
+    h = t.parent / (t.stem + ".history.jsonl")
+    rows = h.read_text(encoding="utf-8").splitlines() if h.exists() else []
+    check("流水记两笔（开桌+立任务）", len(rows) == 2, r.stdout.strip()[:80])
+    check("行行合法 JSON 且带 op",
+          all(__import__("json").loads(x).get("op") for x in rows))
+
 def test_catalog_merge():
     print("\n[5] 证据柜：合流旧纸条 + 作废的不占槽")
     ced = _load("create_evidence_dirs_b2", SHARED / "create_evidence_dirs.py")

@@ -188,7 +188,7 @@ Step 5: 生成报告，结构如下：
             6.1 制度完善建议（针对设计类发现和设计观察）
             6.2 执行改进建议（针对执行类发现）
 Step 6: 调用 internal-audit-evaluator 附加质量评估
-Step 7: 保存到 reports/
+Step 7: 保存到 reports/（顺序铁律：**先过 Step 6 和 validate-report 再定稿**，拦下就改完再存，不带病出报告）
 ```
 
 ### 综合结论强制规则（CRITICAL）

@@ -32,6 +32,7 @@ def main() -> int:
     ap = argparse.ArgumentParser(description="报告前查桌子")
     ap.add_argument("--table", required=True)
     ap.add_argument("--workspace", required=True)
+    ap.add_argument("--json", action="store_true", help="末尾追 SHEET 答卷行（人话不动，退出码不动）")
     args = ap.parse_args()
     data = json.loads(Path(args.table).read_text(encoding="utf-8-sig"))
     fdir = Path(args.workspace) / "internal-audit-workspace" / "findings"
@@ -39,7 +40,7 @@ def main() -> int:
     refs = set(sum([x.get("ref_finding_ids", []) for x in data.get("left", [])], []))
     blocks = []
     for fid in sorted(files - refs):
-        blocks.append(f"单缺位：{fid}在桌上没位子，先收料（ledger.py sweep）")
+        blocks.append(f"单缺位：{fid}在桌上没位子，先上桌（ledger.py add-line）")
     for fid in sorted(refs - files):
         blocks.append(f"鬼号：桌上{fid}在目录里不存在，先对单号（ledger.py link-finding）")
     left = {x.get("slot"): x for x in data.get("left", [])}
@@ -50,8 +51,14 @@ def main() -> int:
         print("拦下（报告先别发）：")
         for b in blocks:
             print(f"  - {b}")
+        if args.json:
+            print("SHEET:" + json.dumps({"tool": "audit_table", "action": "block",
+                                         "message": f"{len(blocks)} 拦下"}, ensure_ascii=False))
         return 2
     print(f"放行：{len(files)}张单全在桌上有位，无鬼号")
+    if args.json:
+        print("SHEET:" + json.dumps({"tool": "audit_table", "action": "pass",
+                                     "message": "全对"}, ensure_ascii=False))
     return 0
 
 

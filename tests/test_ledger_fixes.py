@@ -109,15 +109,15 @@ def test_crash_guard():
 
 
 # ══════════════════════════════════════════════════════════════
-# 断言 3：搬老账时项目路径写错，必须报错，不能静默搬出空桌子
+# 断言 3（A6）：搬家已删除——import 命令不存在，老项目自带副本不受影响
 # ══════════════════════════════════════════════════════════════
 def test_import_bad_workspace():
-    print("\n[3] 搬老账路径校验")
+    print("\n[3] 搬家已删除")
     out = SANDBOX / "空搬.json"
     r = _run("ledger.py", "import", out,
              "--workspace", SANDBOX / "压根不存在的项目", "--table", "空搬")
-    check("路径不存在 → 非 0 退出", r.returncode != 0, f"退出码={r.returncode}")
-    check("路径不存在 → 不产出桌子文件", not out.exists())
+    check("import 已删除 → 非 0 退出", r.returncode != 0, f"退出码={r.returncode}")
+    check("不产出桌子文件", not out.exists())
 
 
 # ══════════════════════════════════════════════════════════════
@@ -347,50 +347,56 @@ def _make_source_project(name):
 
 
 def test_sweep_routing():
-    print("\n[7] 收料：各房间的东西按自带状态自动落格")
-    ws = _make_source_project("收料项目")
+    print("\n[7] 直接写：各房间结论按落格规则直写上桌（收料已删除）")
+    t = SANDBOX / "直写桌.json"
+    _run("ledger.py", "create", t, "--table", "废料管理")
 
-    by_import = SANDBOX / "整搬桌.json"
-    r = _run("ledger.py", "import", by_import, "--workspace", ws, "--table", "废料管理")
-    check("整搬能跑（退出码 0）", r.returncode == 0, f"退出码={r.returncode}")
+    def w(*a):
+        r = _run("ledger.py", *a)
+        assert r.returncode == 0, (a, r.stderr)
+        return r
 
-    by_sweep = SANDBOX / "收料桌.json"
-    _run("ledger.py", "create", by_sweep, "--table", "废料管理")
-    r = _run("ledger.py", "sweep", by_sweep, "--workspace", ws)
-    check("收料能跑（退出码 0）", r.returncode == 0, f"退出码={r.returncode}")
+    w("add-line", t, "--slot", "确定的毛病", "--text", "CG-001 过磅双人复核缺失",
+      "--room", "看制度", "--ref", "CG-001", "--status", "已确认")
+    w("add-line", t, "--slot", "说不清的信号", "--text", "CG-002 对账待确认",
+      "--room", "看制度", "--ref", "CG-002", "--status", "待确认")
+    w("add-line", t, "--slot", "确定的毛病", "--text", "CF-001 条款打架",
+      "--room", "看制度", "--ref", "CF-001", "--status", "冲突")
+    w("add-line", t, "--slot", "说不清的信号", "--text", "RK-001 单人值守",
+      "--room", "看制度", "--ref", "RK-001", "--status", "高")
+    w("add-line", t, "--slot", "说不清的信号", "--text", "D-001 过磅房单人值守",
+      "--room", "看制度", "--ref", "D-001", "--status", "pending")
+    w("add-line", t, "--slot", "说不清的信号",
+      "--text", "制度空白：废料处置", "--room", "信号池", "--ref", "MB-废料处置")
+    w("add-evidence", t, "--file", "地磅记录", "--from", "系统导出",
+      "--when", "2026-08-10", "--grade", "A", "--room", "执行取证", "--ref", "F-2026-002")
+    w("add-line", t, "--slot", "怀疑偷骗", "--text", "WB-001 举报采购员收受回扣",
+      "--room", "执行取证", "--ref", "F-2026-002", "--status", "已确认")
+    w("add-line", t, "--slot", "说不清的信号", "--text", "WB-002 加班费算法看不懂",
+      "--room", "执行取证", "--ref", "WB-002", "--status", "待查")
+    w("link-finding", t, "--slot", "怀疑偷骗", "--finding", "F-2026-002")
 
-    d = json.loads(by_sweep.read_text(encoding="utf-8-sig"))
+    d = json.loads(t.read_text(encoding="utf-8-sig"))
     cells = {x["slot"]: x["text"] for x in d["left"]}
     sure, red, sig = cells["确定的毛病"], cells["怀疑偷骗"], cells["说不清的信号"]
     everything = sure + red + sig
 
     check("控制缺口·已确认 → 确定的毛病", "CG-001" in sure)
     check("控制缺口·待确认 → 说不清的信号", "CG-002" in sig)
-    check("控制缺口·跨文件覆盖 → 不上桌", "CG-003" not in everything)
+    check("跨文件覆盖 nothing auto-added（CG-003 不在桌上）", "CG-003" not in everything)
     check("制度冲突 → 确定的毛病", "CF-001" in sure)
     check("风险点 → 说不清的信号", "RK-001" in sig)
     check("设计观察·pending → 说不清的信号", "D-001" in sig)
-    check("设计观察·verified/rejected → 不上桌",
+    check("verified/rejected 无命令可收（D-002/D-003 不在桌上）",
           "D-002" not in everything and "D-003" not in everything)
     check("宪法#10 制度空白 → 说不清的信号", "制度空白" in sig and "废料处置" in sig)
-    check("涉舞弊举报 → 红格", "WB-001" in red)
+    check("涉舞弊举报 → 红格（有 A/E 才进得去）", "WB-001" in red)
     check("不涉舞弊举报 → 说不清的信号", "WB-002" in sig)
-    check("非舞弊问题单 → 确定的毛病＋自动对单号",
-          "F-2026-001" in sure and "F-2026-001" in d["left"][0]["ref_finding_ids"])
-    check("舞弊问题单 → 红格＋自动对单号",
-          "F-2026-002" in red and "F-2026-002" in d["left"][1]["ref_finding_ids"])
-    check("右边贴上问题单的证据", any("领料单" in e.get("file", "") for e in d["right"]))
+    check("红格对上单号", "F-2026-002" in d["left"][1]["ref_finding_ids"])
+    check("右边贴上证据", any("地磅记录" in e.get("file", "") for e in d["right"]))
 
-    check("整搬与收料结果一致",
-          table_text(by_import) == table_text(by_sweep))
-
-    # 只收一张单：不动别的
-    one = SANDBOX / "单张桌.json"
-    _run("ledger.py", "create", one, "--table", "单张")
-    _run("ledger.py", "sweep", one, "--workspace", ws, "--finding", "F-2026-002")
-    d1 = json.loads(one.read_text(encoding="utf-8-sig"))
-    t1 = "；".join(x["text"] for x in d1["left"])
-    check("--finding 只收那一张单", "F-2026-002" in t1 and "F-2026-001" not in t1)
+    # 守恒：桌上只有手写的，一个不多一个不少
+    check("无收料命令", _run("ledger.py", "sweep", t, "--workspace", ".").returncode != 0)
 
     # 建项目时开第一张桌：那时 audit-table/ 目录还不存在，也得能开出来
     fresh = SANDBOX / "新项目" / "internal-audit-workspace" / "audit-table"
@@ -403,169 +409,93 @@ def test_sweep_routing():
 # 断言 8（C2）：收料只添不盖——反复收不重复，状态变了只挪格
 # ══════════════════════════════════════════════════════════════
 def test_real_fieldnames():
-    print("\n[8b] 真实产物字段名兜底：广东长华撞出来的两条")
+    print("[8b] 真实产物字段名兜底：广东长华撞出来的三套（对账门认）")
     ws = SANDBOX / "真实字段项目"
     wsx = ws / "internal-audit-workspace"
-    for sub in ("policy-analyses", "design-assessments"):
+    for sub in ("policy-analyses", "audit-table", "audit-programs"):
         (wsx / sub).mkdir(parents=True, exist_ok=True)
 
-    # ① 字段名兜底：真实 document-organizer 产出用 gap_id/rp_id/conflict_id，
-    #    沙箱测试当初照抄代码字段名（id/risk_id），等于自己考自己——2026-09-14 实撞
+    # 真实 document-organizer 产出用 gap_id/rp_id/conflict_id（2026-09-14 实撞）
     (wsx / "policy-analyses" / "HR_分析.json").write_text(json.dumps({
-        "schema_version": "1.0",
-        "analysis_date": "2026-07-17", "company": "某公司", "audit_topic": "人力资源",
-        "documents_analyzed": [{"file": "a.md", "title": "考勤管理制度"}],
+        "schema_version": "1.0.0",
         "control_gaps": [
-            {"gap_id": "CG-HR-001", "document": "考勤制度", "verification_status": "已确认",
-             "description": "考勤数据→薪资计算缺少签收确认机制"},
-            {"gap_id": "CG-HR-002", "document": "考勤制度", "verification_status": "待确认",
-             "description": "调休假制度合规性待核实"},
+            {"gap_id": "CG-HR-001", "description": "考勤签收缺失",
+             "verification_status": "已确认"},
         ],
         "risk_points": [
-            {"rp_id": "RP-HR-001", "document": "考勤制度", "risk_level": "high",
-             "description": "综合管理科五权合一"},
+            {"rp_id": "RP-HR-001", "risk_level": "high", "description": "五权合一"},
         ],
         "conflicts": [
-            {"conflict_id": "CF-HR-001", "documents": "两份制度",
-             "description": "全勤奖条款打架"},
+            {"conflict_id": "CF-HR-001", "description": "全勤奖条款打架"},
         ],
     }, ensure_ascii=False), encoding="utf-8")
-
-    # ② 已消化的设计观察不再挂回桌面：current-audit.json 标了 consumed
-    (wsx / "design-assessments" / "HR_观察.json").write_text(json.dumps({
-        "schema_version": "1.0.0",
-        "design_observations": [
-            {"id": "D-001", "title": "产假天数低于法定", "status": "pending",
-             "source": "document-organizer"},
-            {"id": "D-002", "title": "已消化的观察", "status": "verified",
-             "source": "interview"},
-        ],
-    }, ensure_ascii=False), encoding="utf-8")
-    (wsx / "current-audit.json").write_text(json.dumps({
-        "audit_state": {"design_observations_consumed": True},
+    (wsx / "audit-table" / "T.json").write_text(json.dumps({
+        "schema_version": "1.3", "table": "T", "left": [], "right": [],
+        "drawers": [], "checklist": [], "ingested": {}, "tasks": [],
     }, ensure_ascii=False), encoding="utf-8")
 
-    t = SANDBOX / "真实字段桌.json"
-    _run("ledger.py", "create", t, "--table", "人力资源")
-    r = _run("ledger.py", "sweep", t, "--workspace", ws)
-    check("真实字段项目收料能跑（退出码 0）", r.returncode == 0, f"退出码={r.returncode}")
-    d = json.loads(t.read_text(encoding="utf-8-sig"))
-    cells = {x["slot"]: x["text"] for x in d["left"]}
-    sure, sig = cells["确定的毛病"], cells["说不清的信号"]
-
-    # ① 列名兜底
-    check("gap_id 编号也能上桌（已确认→确定格）", "CG-HR-001" in sure)
-    check("gap_id 待确认→信号格", "CG-HR-002" in sig)
-    check("rp_id 风险点→信号格", "RP-HR-001" in sig)
-    check("conflict_id 冲突→确定格", "CF-HR-001" in sure)
-    check("风险点等级 high 译成中文", "高" in sig)
-
-    # ② 消化口径
-    check("已消化（consumed）→ 设计观察一律不上桌", "D-001" not in sig and "D-002" not in sig)
-
+    # 程序引用三套编号，对账门应放行
+    (wsx / "audit-programs" / "P.md").write_text(
+        "# P审计程序\n### 2.1 风险识别清单\n"
+        "| 风险编号 | 风险名称 | 风险描述 | 来源标注 |\n"
+        "|---|---|---|---|\n"
+        "| R01 | 缺口 | 描述 | 【制度类】CG-HR-001 |\n"
+        "| R02 | 风险点 | 描述 | 【制度类】RP-HR-001 |\n"
+        "| R03 | 冲突 | 描述 | 【制度类】CF-HR-001 |\n",
+        encoding="utf-8")
+    vp = str(Path(LEDGER).parent / "_shared" / "scripts" / "validate-program.py")
+    r = subprocess.run(
+        [sys.executable, vp, str(wsx / "audit-programs" / "P.md"),
+         "--ir", "--json", "--workspace", str(ws)],
+        capture_output=True, text=True, encoding="utf-8", errors="replace")
+    try:
+        checks = json.loads(r.stdout)[0]["checks"]
+        rec = checks.get("ir_ledger_reconcile", {})
+    except Exception:
+        rec = {}
+    check("三套编号对账放行", rec.get("passed") is True, str(rec)[:160])
 
 def test_program_risks():
-    print("\n[8c] 程序风险清单：推演的上桌，制度类的有户口就不上（去重）")
-    ws = SANDBOX / "程序风险项目"
-    wsx = ws / "internal-audit-workspace"
-    for sub in ("policy-analyses", "audit-programs"):
-        (wsx / sub).mkdir(parents=True, exist_ok=True)
-
-    # 制度分析里已有一条控制缺口（这就是"户口"）
-    (wsx / "policy-analyses" / "废料_分析.json").write_text(json.dumps({
-        "schema_version": "1.0.0",
-        "control_gaps": [{"gap_id": "CG-001", "description": "过磅无复核",
-                          "verification_status": "已确认"}],
-    }, ensure_ascii=False), encoding="utf-8")
-
-    # 程序文件的风险清单：两条纯推演 + 三条制度类（户口命中/户口查无/衍生）
-    (wsx / "audit-programs" / "废料审计程序_v1.0.md").write_text("""# 废料审计程序
-
-## 二、情境分析
-
-### 2.1 风险识别清单
-
-| 风险编号 | 风险名称 | 风险描述 | 来源标注 |
-|------|------|------|------|
-| R01 | 单人值守偷卖废料 | 值班员独自过磅，无人复核 | 【经验类】 |
-| R02 | 地磅数据被改 | 地磅软件无操作日志 | 【系统类-推演】 |
-| R19 | 过磅无复核 | 与制度分析同一件事 | 【制度类-设计缺陷：CG-001（废料管理制度）】 |
-| R20 | 台账未登记 | 指向一条制度分析里根本没有的缺口 | 【制度类-设计缺陷：CG-999（废料管理制度）】 |
-| R21 | 值班交接无留痕 | 由已有缺口衍生出的新问题 | 【制度类-设计缺陷：CG-001衍生（废料管理制度）】 |
-
-## 三、测试程序（轨道A：控制有效性测试）
-
-<!-- track A -->
-| 风险编号 | 风险名称 | 控制有效性测试程序 | 取数来源 |
-|------|------|------|------|
-| R01 | 单人值守偷卖废料 | 现场观察过磅流程 | 现场 |
-""", encoding="utf-8")
-
+    print("[8c] 程序风险：推演立任务，户口只挂引用不上行")
     t = SANDBOX / "程序风险桌.json"
     _run("ledger.py", "create", t, "--table", "废料管理")
-    r = _run("ledger.py", "sweep", t, "--workspace", ws)
-    check("带程序文件的项目收料能跑（退出码 0）", r.returncode == 0, f"退出码={r.returncode}")
+    r1 = _run("ledger.py", "add-task", t, "--title", "单人值守偷卖废料",
+              "--room", "检查单", "--ref", "R-001")
+    check("推演 R-001 立任务", r1.returncode == 0)
+    r2 = _run("ledger.py", "add-task", t, "--title", "地磅数据被改",
+              "--room", "检查单", "--ref", "R-002")
+    check("推演 R-002 立任务", r2.returncode == 0)
+    r3 = _run("ledger.py", "add-task", t, "--title", "过磅无复核",
+              "--room", "检查单", "--ref", "R-019", "--known-anchor", "CG-001")
     d = json.loads(t.read_text(encoding="utf-8-sig"))
-    cells = {x["slot"]: x["text"] for x in d["left"]}
-    sig = cells["说不清的信号"]
-    everything = cells["确定的毛病"] + cells["怀疑偷骗"] + sig
-
-    check("推演风险（经验类）→ 上桌，落信号格", "R01" in sig)
-    check("推演风险（系统类）→ 上桌，落信号格", "R02" in sig)
-    check("制度类·户口命中 → 不上桌（制度分析已收）", "R19" not in everything)
-    check("制度类·户口查无 → 仍上桌（宁可多收不可漏）", "R20" in sig)
-    check("制度类·衍生款 → 严处理，不上桌", "R21" not in everything)
-    check("被跳过的衍生条正文也没漏进桌上", "值班交接" not in everything)
-
-    # 守恒：程序风险净上桌 = 推演 2 条 + 户口查无 1 条 = 3（不是 0，也不是 5）
-    risk_lines = [l for x in d["left"] for l in x["text"].split("；")
-                  if l.startswith(("R01", "R02", "R19", "R20", "R21"))]
-    check("守恒：只有 3 条程序风险上桌（2 推演 + 1 户口查无）",
-          len(risk_lines) == 3, f"实际 {len(risk_lines)}：{risk_lines}")
-
-    # 反复收不重复（R 条目也走 ingested 记账）
-    before = table_text(t)
-    _run("ledger.py", "sweep", t, "--workspace", ws)
-    check("再收一次 → 一个字没变", table_text(t) == before)
-
+    tasks = d.get("tasks", [])
+    check("户口 R-019 只挂引用不上新行", r3.returncode == 0 and len(tasks) == 2,
+          "tasks=" + str(len(tasks)))
+    everything = "".join(x["text"] for x in d["left"])
+    check("任务不占事实行", "R-001" not in everything and "R-002" not in everything)
+    check("守恒：2 任务 0 事实行", len(tasks) == 2)
 
 def test_sweep_idempotent():
-    print("\n[8] 收料：反复收不重复；状态变了只挪格不两挂")
-    ws = _make_source_project("幂等项目")
+    print("[8] 写入口守恒：拒收零写入，人写的字谁也碰不掉")
     t = SANDBOX / "幂等桌.json"
     _run("ledger.py", "create", t, "--table", "幂等")
-    _run("ledger.py", "sweep", t, "--workspace", ws)
-    before = table_text(t)
-
-    r = _run("ledger.py", "sweep", t, "--workspace", ws)
-    check("第二次收料 → 一个字没变", table_text(t) == before, r.stdout.strip()[:40])
-
+    _run("ledger.py", "add-task", t, "--title", "假设", "--room", "检查单", "--ref", "R-010")
     _run("ledger.py", "add-line", t, "--slot", "说不清的信号", "--text", "人工补一句")
-    _run("ledger.py", "sweep", t, "--workspace", ws)
+    before = table_text(t)
+    h = t.parent / (t.stem + ".history.jsonl")
+    h_before = h.read_text(encoding="utf-8") if h.exists() else ""
+
+    r = _run("ledger.py", "add-task", t, "--title", "换个说法",
+             "--room", "检查单", "--ref", "R-010")
+    check("重复 ref 拒收", r.returncode == 2)
+    check("拒收后一个字没变", table_text(t) == before)
+    h_after = h.read_text(encoding="utf-8") if h.exists() else ""
+    check("拒收不记流水", h_after == h_before)
+
     d = json.loads(t.read_text(encoding="utf-8-sig"))
     sig = next(x for x in d["left"] if x["slot"] == "说不清的信号")["text"]
-    check("人写的字收料碰不掉", "人工补一句" in sig)
+    check("人写的字谁也碰不掉", "人工补一句" in sig)
 
-    p = ws / "internal-audit-workspace" / "policy-analyses" / "废料制度_分析.json"
-    a = json.loads(p.read_text(encoding="utf-8-sig"))
-    for g in a["control_gaps"]:
-        if g["id"] == "CG-002":
-            g["verification_status"] = "已确认"
-    p.write_text(json.dumps(a, ensure_ascii=False), encoding="utf-8")
-    _run("ledger.py", "sweep", t, "--workspace", ws)
-    d = json.loads(t.read_text(encoding="utf-8-sig"))
-    cells = {x["slot"]: x["text"] for x in d["left"]}
-    check("状态变了 → 挪到确定的毛病", "CG-002" in cells["确定的毛病"])
-    check("状态变了 → 信号格里不留旧行", "CG-002" not in cells["说不清的信号"])
-
-    before_dry = table_text(t)
-    r = _run("ledger.py", "sweep", t, "--workspace", ws, "--dry-run")
-    check("--dry-run 只看不写", table_text(t) == before_dry and "试算" in r.stdout)
-
-
-# ══════════════════════════════════════════════════════════════
-# 断言 9（C3）：信号池不再是黑洞——池里有、桌上没有，门卫要点名
-# ══════════════════════════════════════════════════════════════
 def test_pool_consumed():
     print("\n[9] 信号池被真正消费：池里有、桌上没有 → 门卫点名")
     ws = _make_source_project("信号池项目")
@@ -578,9 +508,10 @@ def test_pool_consumed():
     r = _run("check.py", t, "--workspace", ws)
     check("没收料 → 门卫点名信号池", "信号池" in r.stdout, f"退出码={r.returncode}")
 
-    _run("ledger.py", "sweep", t, "--workspace", ws)
+    _run("ledger.py", "add-line", t, "--slot", "说不清的信号",
+          "--text", "制度空白：废料处置缺制度", "--room", "信号池", "--ref", "MB-废料处置")
     r = _run("check.py", t, "--workspace", ws)
-    check("收料后 → 不再提信号池", "信号池" not in r.stdout, f"退出码={r.returncode}")
+    check("上桌后 → 不再提信号池", "信号池" not in r.stdout, f"退出码={r.returncode}")
 
 
 # ══════════════════════════════════════════════════════════════

@@ -166,13 +166,13 @@ python audit-interview-designer/script/interview_generator.py \
 | **风险线索** | 涉及控制缺失、执行偏差、系统问题 | `design-assessments/[主题]_设计观察.json` | 按访谈JSON格式追加到 design_observations[] |
 | **证据/记录** | 涉及已获取的文件、数据、照片 | `evidence/[主题]/` | 记录证据清单，提示用户存放文件 |
 
-**写桌子**（桌子在 `internal-audit-workspace/audit-table/*.json`，建项目时已开好；找不到就停下报告，不要跳过——宪法#12）：分流完**直接写桌子**，只添不盖——
+**写桌子**（桌子在 `internal-audit-workspace/audit-table/*.json`，建项目时已开好；找不到就停下报告，不要跳过——宪法#12）：分流完**直接写桌子**，只添不盖——顺序铁律：**先过访谈校验（validate-interview）再上桌**（拦下就改完再写，不带病上桌）——
 风险线索直接写桌子，不再写本子再抄：
 `python ledger/ledger.py add-line <桌子.json> --slot 说不清的信号 --text <线索> --room 问话 --ref <编号> --status pending`；
 证据/记录跑 `python ledger/ledger.py add-evidence <桌子.json> --file <文件名> --from <受访人> --when <访谈日期> --room 问话`；
 问话表本身也生好了的话，把入口填进抽屉：
 `python ledger/ledger.py set-drawer <桌子.json> --name 问话表 --path internal-audit-workspace/interview-materials/<问卷.xlsx> --status 已收回`。
-不再需要 `sweep`。桌子是账本（记结论），底稿是备查（记过程）。
+收料已删除（A6），结论直写上桌。桌子是账本（记结论），底稿是备查（记过程）。
 
 #### 风险线索：访谈JSON格式
 

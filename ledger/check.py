@@ -92,7 +92,7 @@ def check_pool(workspace: Path, data: dict, warns: list) -> None:
 
     宪法#10 的制度空白是写进 current-audit.json 的 audit_state.signals 的。这个池子
     以前只有人往里写、没有任何东西读它——写进去就沉底，等于黑洞。桌子读它：池里有、
-    桌上没影，就是还没收料。这里按名字找，不按内部编号找——编号是桌子的家事，
+    桌上没影，就是还没上桌。这里按名字找，不按内部编号找——编号是桌子的家事，
     门卫不该跟着一起变。
     """
     p = workspace / "current-audit.json"
@@ -110,13 +110,14 @@ def check_pool(workspace: Path, data: dict, warns: list) -> None:
         name = str(s.get("module") or s.get("type") or "信号")
         if name not in blob:
             warns.append(f"信号池里的「{s.get('type', '信号')}：{name}」还没上桌"
-                         f"（跑 ledger.py sweep）")
+                         f"（手动 add-line 上桌，收料已取消）")
 
 
 def main() -> int:
     ap = argparse.ArgumentParser(description="门卫只读桌子")
     ap.add_argument("file")
     ap.add_argument("--workspace", default=None, help="项目根目录，加了才查第5、6件事")
+    ap.add_argument("--json", action="store_true", help="末尾追 SHEET 答卷行（人话不动，退出码不动）")
     args = ap.parse_args()
     path = Path(args.file)
     data = json.loads(path.read_text(encoding="utf-8-sig"))
@@ -158,13 +159,22 @@ def main() -> int:
         print("拦下：")
         for b in blocks:
             print(f"  - {b}")
+        if args.json:
+            print("SHEET:" + json.dumps({"tool": "check", "action": "block",
+                                         "message": f"{len(blocks)} 拦下"}, ensure_ascii=False))
         return 2
     if warns:
         print("放行（有提醒）：")
         for w in warns:
             print(f"  - {w}")
+        if args.json:
+            print("SHEET:" + json.dumps({"tool": "check", "action": "warn",
+                                         "message": f"{len(warns)} 提醒"}, ensure_ascii=False))
         return 1
     print("放行：全对")
+    if args.json:
+        print("SHEET:" + json.dumps({"tool": "check", "action": "pass",
+                                     "message": "全对"}, ensure_ascii=False))
     return 0
 
 
