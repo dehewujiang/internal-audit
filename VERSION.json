@@ -1,7 +1,7 @@
 {
-  "version": "2026-10-08-2",
-  "git_commit": "9f0f4e1",
-  "updated_at": "2026-10-08T16:38:54+08:00",
+  "version": "2026-10-08-3",
+  "git_commit": "437ca3c",
+  "updated_at": "2026-10-08T16:47:41+08:00",
   "changes": [
     {
       "type": "chore",
@@ -382,6 +382,21 @@
       "type": "docs",
       "file": "ledger/schema_v2.json+ledger.schema.json+ledger/README.md",
       "summary": "right[]加grade字段,写入口硬度门三处同改"
+    },
+    {
+      "type": "feat",
+      "file": "_shared/scripts/phase_gate.py",
+      "summary": "新增next子命令(能干/还缺/工具人话看板,只报不拦）"
+    },
+    {
+      "type": "test",
+      "file": "tests/fixtures/redesign/test_b3_next.py",
+      "summary": "新增B3事前红测试(下一步三段+只报不拦+未知不拦）,红转绿"
+    },
+    {
+      "type": "docs",
+      "file": "CLAUDE-project.md+OPS.md",
+      "summary": "命令表加next一行,用户手册进度查询改指next"
     }
   ]
 }

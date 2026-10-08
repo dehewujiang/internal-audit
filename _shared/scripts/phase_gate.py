@@ -38,6 +38,135 @@ PHASES = [
     "phase_4_report",
 ]
 
+# ── next 命令：本阶段能干什么（人话看板，只报不拦） ──
+PHASE_CN = {
+    "phase_0_init": ("定主题", [
+        "告诉 AI 你要审计什么主题（主题向导帮你登记）",
+        "建工作区：python _shared/scripts/project_init.py",
+    ]),
+    "phase_1_document_analysis": ("看制度", [
+        "把制度文件（Word/PDF/扫描件）放进 documents/ 文件夹",
+        "跑制度分析（document-organizer），输出控制点+风险点",
+        "查制度完整性：python _shared/scripts/check_mandatory_coverage.py --topic <主题>",
+    ]),
+    "phase_1_5_interview": ("问话", [
+        "告诉 AI 你想访谈谁（岗位+姓名）",
+        "拿访谈提纲去问，把记录拿回来回填",
+        "有新线索时说“更新审计程序”（增量补充，不推翻）",
+    ]),
+    "phase_2_program_generation": ("列检查单", [
+        "生成审计程序（program-generator，一次给全 6 轨道）",
+        "红队攻击在 Step 4.6 自动跑，不用你动手",
+        "自检：python _shared/scripts/validate-program.py <程序文件>",
+    ]),
+    "phase_3_execution": ("现场取证", [
+        "按审计程序去现场收集证据",
+        "先贴证据再上桌：add-evidence --grade 照实标（A-E）→ add-line 上桌",
+        "自查门卫：python ledger/check.py <桌子.json> --workspace <项目根>",
+    ]),
+    "phase_4_report": ("写报告", [
+        "先选报告类型（标准/专项/舞弊/跟踪）",
+        "汇总 finding 生成报告（report-generator）",
+        "报告前过桌子闸机：python ledger/audit_table.py --table <桌子.json>",
+    ]),
+}
+
+
+def _table_rows(ws: Path) -> int:
+    """桌上 left[] 事实行数。读不出 → 0（看板不崩）。"""
+    ddir = ws / "audit-table"
+    if not ddir.exists():
+        return 0
+    try:
+        sys.path.insert(0, str(Path(__file__).resolve().parent))
+        from query_data_sources import load_table_findings as _ltf
+        return len(_ltf(ws))
+    except Exception:
+        return 0
+
+
+def _count_files(ws: Path, *parts: str, pattern: str = "*") -> int:
+    d = ws.joinpath(*parts)
+    if not d.exists():
+        return 0
+    try:
+        return sum(1 for p in d.glob(pattern) if p.is_file())
+    except Exception:
+        return 0
+
+
+def _evidence_progress(ws: Path) -> tuple:
+    """证据柜（已收槽，总槽）。读不出 → (0, 0)。"""
+    p = ws / "evidence" / "_evidence_catalog.json"
+    try:
+        items = json.loads(p.read_text(encoding="utf-8-sig")).get("items", [])
+    except Exception:
+        return 0, 0
+    return sum(1 for it in items if isinstance(it, dict) and it.get("file")), len(items)
+
+
+def cmd_next(args) -> None:
+    """下一步：现在能干什么、还缺什么、能用什么工具。人话看板，只报不拦，永远 exit 0。"""
+    ws = find_workspace()
+    audit_path = ws / "current-audit.json"
+    if not audit_path.exists():
+        print("还没建账：在项目文件夹里说“开始新审计项目”，先定主题。")
+        print("能用工具：project_init.py")
+        sys.exit(0)
+    try:
+        data = json.loads(audit_path.read_text(encoding="utf-8-sig"))
+    except Exception:
+        print(f"账本读不出来（{audit_path}），先修好它再看下一步。")
+        sys.exit(0)
+    current = data.get("status", "unknown")
+
+    if current not in PHASES:
+        print(f"你在：未知阶段（{current}）")
+        print("能干：看看 current-audit.json 的 status 是不是写错了，对着六阶段改：")
+        print("  初始化 → 看制度 → 问话 → 列检查单 → 现场取证 → 写报告")
+        sys.exit(0)
+
+    idx = PHASES.index(current)
+    cname, actions = PHASE_CN[current]
+
+    n_policy = _count_files(ws, "policy-analyses", pattern="*.json")
+    n_prog = _count_files(ws, "audit-programs")
+    n_report = _count_files(ws, "reports")
+    rows = _table_rows(ws)
+    ev_got, ev_all = _evidence_progress(ws)
+
+    done = []
+    if n_policy:
+        done.append(f"制度分析 {n_policy} 份")
+    if n_prog:
+        done.append(f"审计程序 {n_prog} 份")
+    if rows:
+        done.append(f"桌上有 {rows} 行")
+    if ev_all:
+        done.append(f"证据柜 {ev_all} 槽已收 {ev_got}")
+    if n_report:
+        done.append(f"报告 {n_report} 份")
+
+    print(f"你在：{cname}（第 {idx + 1} 步，共 {len(PHASES)} 步）")
+    print(f"已干完：{' / '.join(done) if done else '刚起步，先干第一件事'}")
+    print("现在能干：")
+    for i, a in enumerate(actions, 1):
+        print(f"  {i}）{a}")
+    try:
+        issues = check_exit_conditions(ws, current, data, args)
+    except Exception:
+        issues = []
+    if issues:
+        print("还缺什么：")
+        for i in issues:
+            print(f"  · {i.get('msg', i)}")
+    else:
+        print("还缺什么：不缺，直跑 check，能进跑 advance")
+    tools = sorted(PHASE_TOOLS.get(current, set()) | {"phase_gate.py", "queries.py"})
+    print(f"能用工具：{' / '.join(tools)}")
+    print("下一步：缺口补齐跑 check，能进下一阶段跑 advance")
+    sys.exit(0)
+
 # ── Tool whitelist per phase ──────────────────────────────
 # Each phase has ONE exclusive validate script + optional aux scripts.
 # Globals (GLOBAL_TOOLS) and evaluators (EVALUATOR_TOOLS) are resolved at check time.
@@ -186,15 +315,7 @@ def check_exit_conditions(ws: Path, current_phase: str, data: dict, args=None) -
             issues.append({"type": "block", "msg": "报告类型未选择。请返回 report-generator 选择报告类型（标准/专项/舞弊/跟踪）。"})
         findings_dir = ws / "findings"
         findings = [f for f in findings_dir.glob("F-*.json")] if findings_dir.exists() else []
-        table_rows = 0
-        audit_tables_dir = ws / "audit-table"
-        if audit_tables_dir.exists():
-            try:
-                sys.path.insert(0, str(Path(__file__).resolve().parent))
-                from query_data_sources import load_table_findings as _ltf
-                table_rows = len(_ltf(ws))
-            except Exception:
-                table_rows = 0
+        table_rows = _table_rows(ws)
         if len(findings) == 0 and table_rows == 0:
             issues.append({"type": "block", "msg": "无审计发现（findings/ 无 F-*.json 且桌子 left[] 为空，需 >=1 条）"})
 
@@ -673,6 +794,8 @@ def main():
     p_check.add_argument("--skills-dir", default=None, help="技能目录路径 (默认: env INTERNAL_AUDIT_SKILLS_DIR 或 workspace.parent)")
     p_check.add_argument("--force", action="store_true", help="强制通过 prompt_program_update 提示")
 
+    sub.add_parser("next", help="下一步：现在能干什么、还缺什么（人话看板，只报不拦）")
+
     p_advance = sub.add_parser("advance", help="执行阶段切换")
     p_advance.add_argument("--skills-dir", default=None, help="技能目录路径 (默认: env INTERNAL_AUDIT_SKILLS_DIR 或 workspace.parent)")
     p_advance.add_argument("--force", action="store_true", help="强制通过 prompt_program_update 提示")
@@ -704,7 +827,7 @@ def main():
     cmds = {"status": cmd_status, "check": cmd_check, "advance": cmd_advance,
             "rollback": cmd_rollback, "tool-check": cmd_tool_check,
             "log-decision": cmd_log_decision, "log-program-change": cmd_log_program_change,
-            "checklist": cmd_checklist}
+            "checklist": cmd_checklist, "next": cmd_next}
     if args.command in cmds:
         cmds[args.command](args)
     else:

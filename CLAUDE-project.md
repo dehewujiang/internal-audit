@@ -21,6 +21,7 @@ $env:PYTHONIOENCODING="utf-8"
 # Phase gate:
 python _shared/scripts/phase_gate.py status
 python _shared/scripts/phase_gate.py check
+python _shared/scripts/phase_gate.py next      # 下一步：现在能干什么、还缺什么（人话看板，只报不拦）
 python _shared/scripts/phase_gate.py advance
 python _shared/scripts/phase_gate.py rollback --to <phase> --reason "<原因>"
 
