@@ -649,10 +649,10 @@ Step 3h: 业务现实性检验（可选）
 查询/报告/吵架一律读桌子。旧项目冻结归档，不迁移。
 
 **写桌子**（桌子在 `internal-audit-workspace/audit-table/*.json`，建项目时已开好；找不到就停下报告，不要跳过——宪法#12）：
-结论**直接写桌子**，不再写本子再抄（舞弊/高风险写"怀疑偷骗"格）——
+顺序铁律：**先贴证据，再上桌**——红格（怀疑偷骗）无 A/E 级硬证据会被写入口当场拒收（exit 2）：
+- 证据 → `python ledger/ledger.py add-evidence <桌子.json> --file <文件名> --from <谁给的> --when <啥时候> --grade <A/B/C/D/E 照实标> --room 执行取证 --ref F-xxx`
 - 非舞弊问题单 → `python ledger/ledger.py add-line <桌子.json> --slot 确定的毛病 --text <结论> --room 执行取证 --ref F-xxx --status 已确认`
-- 舞弊问题单 → `python ledger/ledger.py add-line <桌子.json> --slot 怀疑偷骗 --text <结论> --room 执行取证 --ref F-xxx --status 已确认`
-- 证据 → `python ledger/ledger.py add-evidence <桌子.json> --file <文件名> --from <谁给的> --when <啥时候> --room 执行取证 --ref F-xxx`
+- 舞弊问题单 → `python ledger/ledger.py add-line <桌子.json> --slot 怀疑偷骗 --text <结论> --room 执行取证 --ref F-xxx --status 已确认`（无 A/E 会被拒收；证据不够就降格写"说不清的信号"）
 - 对单号 → `python ledger/ledger.py link-finding <桌子.json> --slot <格> --finding F-xxx`
 - 分析过程（证据链、推理）写底稿：`working-papers/F-xxx.md`
 - 不再需要 `sweep`。桌子是账本（记结论），底稿是备查（记过程）。

@@ -1,7 +1,7 @@
 {
-  "version": "2026-10-08-1",
-  "git_commit": "0de6b5f",
-  "updated_at": "2026-10-08T16:20:26+08:00",
+  "version": "2026-10-08-2",
+  "git_commit": "9f0f4e1",
+  "updated_at": "2026-10-08T16:38:54+08:00",
   "changes": [
     {
       "type": "chore",
@@ -352,6 +352,36 @@
       "type": "test",
       "file": "tests/fixtures/redesign/",
       "summary": "新增B1事前红测试(查询只认桌子)+沙箱,红转绿"
+    },
+    {
+      "type": "feat",
+      "file": "ledger/ledger.py",
+      "summary": "写入口硬度门(add-line红格无A/E拒收exit2)+add-evidence加--grade"
+    },
+    {
+      "type": "feat",
+      "file": "ledger/check.py",
+      "summary": "check_grades改读桌子grade(按source.ref对单),两档不变,删文件回退;舞弊按字眼判"
+    },
+    {
+      "type": "test",
+      "file": "tests/test_ledger_fixes.py",
+      "summary": "test_high_risk_grades改桌子fixture;_make_table/pool夹具走新顺序"
+    },
+    {
+      "type": "test",
+      "file": "tests/fixtures/redesign/test_b2_write_gate.py",
+      "summary": "新增B2事前红测试(红格拒收/门卫两档读桌子),红转绿"
+    },
+    {
+      "type": "feat",
+      "file": "audit-execution-assistant/SKILL.md",
+      "summary": "写桌子节顺序改先贴证据再上桌(+--grade照实标)"
+    },
+    {
+      "type": "docs",
+      "file": "ledger/schema_v2.json+ledger.schema.json+ledger/README.md",
+      "summary": "right[]加grade字段,写入口硬度门三处同改"
     }
   ]
 }

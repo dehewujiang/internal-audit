@@ -47,6 +47,31 @@ CHECKLIST = ["证据够了吗", "制度看全了吗", "红格看了吗"]
 #   涉及舞弊 → 红格；没状态字段、或状态说不清的 → 信号格
 FRAUD_WORDS = ("舞弊", "贪", "侵占", "回扣", "受贿", "私分", "挪用", "串通", "虚假报")
 
+# 写入口硬度门：红格（怀疑偷骗）只认 A/E 级硬证据（宪法#3）
+HARD_GRADES = {"A", "E"}
+RED_SLOT = "怀疑偷骗"
+
+
+def _hard_grades(data: dict, ref: str) -> set:
+    """桌上已有的硬证据等级。有单号只认对上号的；空单号查全桌。"""
+    grades = set()
+    for e in data.get("right", []):
+        g = str(e.get("grade", "")).upper()
+        if g not in HARD_GRADES:
+            continue
+        if ref:
+            if ((e.get("source") or {}).get("ref") or "") == ref:
+                grades.add(g)
+        else:
+            grades.add(g)
+    return grades
+
+
+def _refuse(code_msg: str) -> None:
+    """写入口拒收：话说在 stdout（LLM 和人都看得见），码用 2（拦下）。"""
+    print(code_msg)
+    raise SystemExit(2)
+
 
 def blank_table(name: str) -> dict:
     """空桌子：三格占好，证据为空，抽屉三个入口空着等填，收料本子空着。"""
@@ -627,9 +652,12 @@ def cmd_add_gap(args) -> None:
     save(path, data)
     print(f"已记缺口：{args.finding} 缺「{args.missing}」→ 三种可能都要问")
 def cmd_add_evidence(args) -> None:
-    """小王贴右边：谁给的、啥时候给的，缺一个不让贴。"""
+    """小王贴右边：谁给的、啥时候给的，缺一个不让贴。等级照实标（A-E），红格认 A/E。"""
     if not args.from_ or not args.when:
         raise SystemExit("证据必须写清谁给的(--from)、啥时候给的(--when)")
+    grade = (args.grade or "").upper()
+    if grade and grade not in ("A", "B", "C", "D", "E"):
+        raise SystemExit(f"等级只能是 A/B/C/D/E，收到：{args.grade}")
     path = Path(args.file)
     data = load(path)
     src = _build_source(args)
@@ -638,20 +666,30 @@ def cmd_add_evidence(args) -> None:
         "file": args.file_,
         "from": args.from_,
         "when": args.when,
+        "grade": grade,
     }
     if src:
         row["source"] = src
     data["right"].append(row)
     save(path, data)
-    print(f"贴好证据：{args.file_}")
+    print(f"贴好证据：{args.file_}" + (f"（{grade}级）" if grade else ""))
 
 
 def cmd_add_line(args) -> None:
-    """添字：往格子里追加一句，不盖旧字（多家写同一格用这个）。"""
+    """添字：往格子里追加一句，不盖旧字（多家写同一格用这个）。
+
+    写入口硬度门（只拦新增红格）：怀疑偷骗格上桌时，桌上必须已有 A/E 级硬证据，
+    否则 exit 2 拒收（本次一个字不写）。改字（set-slot）不管，事后门卫照扫。
+    """
     if args.slot not in LEFT_SLOTS:
         raise SystemExit(f"没这格：{args.slot}，只能是 {LEFT_SLOTS}")
     path = Path(args.file)
     data = load(path)
+    if args.slot == RED_SLOT and not _hard_grades(data, args.ref or ""):
+        _refuse(
+            f"拒收：{RED_SLOT}是高风险区，先贴 A/E 级硬证据再上桌\n"
+            f"（add-evidence --grade A/E --ref {args.ref or '单号'} → 再 add-line；"
+            f"证据不够就降格写“说不清的信号”。本次一个字没写）")
     src = _build_source(args)
     for x in data["left"]:
         if x["slot"] == args.slot:
@@ -730,6 +768,7 @@ def main() -> None:
     c.add_argument("--slot-id", default=None)
     c.add_argument("--room", default=None, help="来源房间")
     c.add_argument("--ref", default=None, help="来源编号")
+    c.add_argument("--grade", default=None, help="证据等级 A/B/C/D/E（红格只认 A/E）")
     c.set_defaults(fn=cmd_add_evidence)
 
     c = sub.add_parser("add-line", help="往格子里追加一句")

@@ -136,10 +136,18 @@ def _make_workspace(name, category, grades):
 
 
 def _make_table(name, slot, refs):
-    """造一张三格都填满、并把 refs 对到指定格子的桌子。"""
+    """造一张三格都填满、并把 refs 对到指定格子的桌子。
+
+    新顺序（2026-10 写入口收权）：红格先贴 A 级证据再上桌，否则门拒收。
+    """
     t = SANDBOX / name
     _run("ledger.py", "create", t, "--table", "B1 测试")
     for s in ("确定的毛病", "怀疑偷骗", "说不清的信号"):
+        if s == "怀疑偷骗" and s == slot and refs:
+            for fid in refs:
+                _run("ledger.py", "add-evidence", t, "--file", "系统导出",
+                     "--from", "系统", "--when", "2026-08-10", "--grade", "A",
+                     "--room", "执行取证", "--ref", fid)
         _run("ledger.py", "add-line", t, "--slot", s, "--text", "占位")
     for fid in refs:
         _run("ledger.py", "link-finding", t, "--slot", slot, "--finding", fid)
@@ -147,22 +155,39 @@ def _make_table(name, slot, refs):
 
 
 def test_high_risk_grades():
-    print("\n[4] 高风险硬证据：舞弊拦死，非舞弊只提醒")
-    # 非舞弊高风险 + 只有 C：对在"确定的毛病"格 → 只提醒，不卡报告
-    ws = _make_workspace("项目非舞弊", "合规问题", ["C"])
-    r = _run("check.py", _make_table("非舞弊桌.json", "确定的毛病", ["F-B1"]), "--workspace", ws)
+    print("\n[4] 高风险硬证据：舞弊拦死，非舞弊只提醒（只认桌子，2026-10 写入口收权）")
+    # 红格=高风险区：文字含舞弊字眼 → 舞弊档；其余红格行 → 非舞弊档
+    def _grade_table(name, red_text, grade):
+        t = SANDBOX / name
+        _run("ledger.py", "create", t, "--table", "B1 测试")
+        _run("ledger.py", "add-line", t, "--slot", "确定的毛病", "--text", "占位")
+        _run("ledger.py", "add-line", t, "--slot", "说不清的信号", "--text", "占位")
+        _run("ledger.py", "add-evidence", t, "--file", "称重单", "--from", "地磅员",
+             "--when", "2026-08-10", "--grade", grade,
+             "--room", "执行取证", "--ref", "F-B1")
+        # 红格行用 set-slot 摆进去（只拦新增不拦改字）
+        _run("ledger.py", "set-slot", t, "--slot", "怀疑偷骗", "--text", red_text,
+             "--room", "执行取证", "--ref", "F-B1", "--status", "已确认")
+        _run("ledger.py", "link-finding", t, "--slot", "怀疑偷骗", "--finding", "F-B1")
+        return t
+
+    ws = SANDBOX / "硬度项目"
+    ws.mkdir(exist_ok=True)
+    # 非舞弊红格行 + 只有 C：只提醒，不卡报告
+    r = _run("check.py", _grade_table("非舞弊桌.json", "夜班少2吨原因待查", "C"),
+             "--workspace", ws)
     check("非舞弊高风险缺硬证据 → 只提醒（退出码 1）", r.returncode == 1, f"退出码={r.returncode}")
     check("提醒里点名了这张单子和'硬证据'", "F-B1" in r.stdout and "硬证据" in r.stdout)
 
-    # 舞弊高风险 + 只有 C：对在红格 → 拦下
-    ws2 = _make_workspace("项目舞弊", "舞弊风险", ["C"])
-    r = _run("check.py", _make_table("舞弊桌.json", "怀疑偷骗", ["F-B1"]), "--workspace", ws2)
+    # 舞弊红格行 + 只有 C：拦下
+    r = _run("check.py", _grade_table("舞弊桌.json", "夜班少2吨疑似舞弊卖出", "C"),
+             "--workspace", ws)
     check("舞弊高风险缺硬证据 → 拦下（退出码 2）", r.returncode == 2, f"退出码={r.returncode}")
     check("拦下理由点名了这张单子", "F-B1" in r.stdout)
 
-    # 舞弊高风险 + 有 A 级 → 放行
-    ws3 = _make_workspace("项目有硬证据", "舞弊风险", ["A", "C"])
-    r = _run("check.py", _make_table("有硬证据桌.json", "怀疑偷骗", ["F-B1"]), "--workspace", ws3)
+    # 舞弊红格行 + 有 A 级 → 放行
+    r = _run("check.py", _grade_table("有硬证据桌.json", "夜班少2吨疑似舞弊卖出", "A"),
+             "--workspace", ws)
     check("高风险有 A 级证据 → 放行（退出码 0）", r.returncode == 0, f"退出码={r.returncode}")
 
 
@@ -544,8 +569,9 @@ def test_pool_consumed():
     ws = _make_source_project("信号池项目")
     t = SANDBOX / "池桌.json"
     _run("ledger.py", "create", t, "--table", "池")
-    for s in ("确定的毛病", "怀疑偷骗", "说不清的信号"):
+    for s in ("确定的毛病", "说不清的信号"):
         _run("ledger.py", "add-line", t, "--slot", s, "--text", "占位")
+    _run("ledger.py", "set-slot", t, "--slot", "怀疑偷骗", "--text", "占位")
 
     r = _run("check.py", t, "--workspace", ws)
     check("没收料 → 门卫点名信号池", "信号池" in r.stdout, f"退出码={r.returncode}")

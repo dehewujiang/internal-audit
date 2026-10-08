@@ -2,7 +2,7 @@
   "schema_version": "1.2",
   "table": "string: 这张桌子查什么事",
   "left": "固定3格: 确定的毛病 / 怀疑偷骗(标红) / 说不清的信号, 每格 {slot, red, text, ref_finding_ids[]}",
-  "right": "证据列表, 每条 {slot_id(证据柜槽位号,可空), file, from, when}",
+  "right": "证据列表, 每条 {slot_id(证据柜槽位号,可空), file, from, when, grade(证据等级A/B/C/D/E,照实标;红格只认A/E)}",
   "drawers": "三张表的入口(只记在哪、什么状态, 不装内容), 每张 {name, path(相对项目根,可空), status(自由文本,可空)}",
   "checklist": ["证据够了吗", "制度看全了吗", "红格看了吗"],
   "ingested": "收料本子(机器保管)。键=来源内部编号(如 policy-analyses/x.json:CG-001), 值={slot, text}——记着这条是谁收上来的、现在挂在哪个格。只认本子上记过的那几条: 同一条反复收不会变两行, 状态变了先从旧格撤下再进新格。人用 add-line/set-slot 写的字不进本子, 收料一根手指都不碰",
