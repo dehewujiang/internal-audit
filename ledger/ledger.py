@@ -158,17 +158,16 @@ def cmd_snaps(args) -> None:
 
 
 def cmd_rollback(args) -> None:
-    """回头：整张桌子回到某张照片（回之前先给现在拍一张，不丢）。"""
-    path = Path(args.file)
-    snap = snaps_dir(path) / args.to
-    if not snap.exists():
-        raise SystemExit(f"没这张照片：{args.to}")
-    target = snap.read_bytes()  # 先把目标读进内存：save() 拍照时会淘汰最早一张，
-                                # 而"回到最早那张"时目标正是被淘汰的那张
-    data = load(path)
-    save(path, data)  # 再给现在拍照
-    path.write_bytes(target)
-    print(f"回到：{args.to}")
+    """回头已取消（A4）：账只增不减，不盖文件。
+
+    照片（.snaps）保留只增不减，紧急恢复走用户手动拷文件。
+    日常改道：新线索 add-task 插任务，结论有误 close-task 标作废另起行。
+    本次一个字不写，直接拒收。
+    """
+    _refuse(
+        "拒收：回头已取消，账只增不减（本次一个字没写）\n"
+        "（新线索 add-task 插任务往前走；结论有误 close-task --verdict 作废 + 理由；"
+        "紧急恢复请手动拷 .snaps 照片文件）")
 
 
 def cmd_create(args) -> None:
@@ -928,9 +927,9 @@ def main() -> None:
     c.add_argument("file")
     c.set_defaults(fn=cmd_snaps)
 
-    c = sub.add_parser("rollback", help="回到某张照片")
+    c = sub.add_parser("rollback", help="已取消：只拒收并指引（加--to 也照拒）")
     c.add_argument("file")
-    c.add_argument("--to", required=True)
+    c.add_argument("--to", required=False, default=None)
     c.set_defaults(fn=cmd_rollback)
 
     c = sub.add_parser("show", help="看桌子现状")

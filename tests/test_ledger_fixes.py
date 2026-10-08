@@ -14,7 +14,8 @@
      工具坏了看起来和"放行"一样
   3. cmd_import 不检查项目路径，路径写错时静默搬出一张空桌子（打印 0 确定，但不报错）
 
-三条断言缺一不可，且每条都能被"撤销改动"验红。
+2026-10-08 A4 回退消失（ADR-042）：rollback 改拒收，断言 1 改为新口径——
+拒收 exit 2、文件不动、照片照封顶。三条断言缺一不可，且每条都能被"撤销改动"验红。
 """
 
 import json
@@ -60,10 +61,10 @@ def table_text(path: Path) -> str:
 
 
 # ══════════════════════════════════════════════════════════════
-# 断言 1：后悔药在照片攒满 20 张时，回到最早那张不能崩，且整件事可逆
+# 断言 1（A4 新口径）：回头已取消——rollback 只拒收，文件不动，照片照封顶
 # ══════════════════════════════════════════════════════════════
 def test_rollback_full():
-    print("\n[1] 后悔药边界：照片攒满 20 张后回滚到最早那张")
+    print("\n[1] 回头取消：照片攒满 20 张后 rollback 只拒收")
     t = SANDBOX / "回滚测试.json"
     _run("ledger.py", "create", t, "--table", "回滚测试")
     for i in range(1, 22):                       # 21 次写入 → 照片封顶 20 张
@@ -74,17 +75,16 @@ def test_rollback_full():
     check("照片按上限留 20 张", len(snaps) == 20, f"实际 {len(snaps)} 张")
 
     earliest = snaps[0]
-    earliest_content = table_text(earliest)
     before_rollback = table_text(t)
 
     r = _run("ledger.py", "rollback", t, "--to", earliest.name)
-    check("回滚到最早那张不崩（退出码 0）", r.returncode == 0,
+    check("回头已取消 → exit 2 拒收", r.returncode == 2,
           f"退出码={r.returncode}" + (f" | {r.stderr.strip().splitlines()[-1]}" if r.stderr.strip() else ""))
-    check("真的回到了最早那张的内容", table_text(t) == earliest_content)
+    check("拒收后桌文件一字不动", table_text(t) == before_rollback)
 
-    # 守恒：回滚是一次可逆操作——回滚前的状态必须还能找回来
+    # 守恒：拒收是一次零写入操作——拒收前的照片一张不少
     after = {table_text(p) for p in snaps_dir.glob("snap_*.json")}
-    check("回滚前的状态仍可恢复（无不可逆丢失）", before_rollback in after)
+    check("照片一张不少（只增不减）", len(after) == 20, f"实际 {len(after)} 张")
 
 
 # ══════════════════════════════════════════════════════════════

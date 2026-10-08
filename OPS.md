@@ -87,7 +87,7 @@ claude
 
 ### 跑一半发现制度文件少放了
 
-对 AI 说："回退到 Phase 1，我补了一份制度文件"。系统会回到 Phase 1，补分析完，再往前走。
+对 AI 说："补了一份制度文件"。不用回退——新线索插任务往前走，补分析完，接着干。
 
 ### 被审计方不配合、不给证据
 
@@ -157,9 +157,9 @@ powershell -File D:\Nut\00_my_digital\12_AGI\skills\internal-audit\update-projec
 | `validate --strict 阻断` | 输出的文件格式不对 | 看阻断提示，让 AI 修正 |
 | `找不到 current-audit.json` | 不在审计项目文件夹里 | 确认你 cd 到了对的文件夹 |
 
-### 想回退到上一个阶段
+### 想回到上一个阶段（回退已取消）
 
-对 AI 说"回退到 Phase X"。系统会保存当前状态快照（最近 20 个），不会丢数据。
+不用回退，往前走：对 AI 说补了什么材料，系统插任务接着查。账只增不减，不会丢数据。
 
 ### 系统行为突然变了（junction 模式的审计项目）
 
@@ -252,7 +252,7 @@ powershell -File D:\Nut\00_my_digital\12_AGI\skills\internal-audit\update-projec
 python _shared/scripts/phase_gate.py status      查当前阶段
 python _shared/scripts/phase_gate.py check       能否进下一阶段
 python _shared/scripts/phase_gate.py advance     进入下一阶段
-python _shared/scripts/phase_gate.py rollback --to <阶段> --reason "<原因>"   回退
+（回退已取消：新线索插任务往前走，不倒车）
 ```
 
 ### 数据查询

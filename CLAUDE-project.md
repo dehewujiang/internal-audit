@@ -23,7 +23,7 @@ python _shared/scripts/phase_gate.py status
 python _shared/scripts/phase_gate.py check
 python _shared/scripts/phase_gate.py next      # 下一步：现在能干什么、还缺什么（人话看板，只报不拦）
 python _shared/scripts/phase_gate.py advance
-python _shared/scripts/phase_gate.py rollback --to <phase> --reason "<原因>"
+（回退已取消：`rollback` 只拒收并指引插任务往前走，不改状态）
 
 # Tool domain check — verify tool is allowed in current phase:
 python _shared/scripts/phase_gate.py tool-check <script_name>
@@ -169,7 +169,7 @@ python phase_gate.py tool-check validate-finding.py         # exit 0 = allowed, 
 python phase_gate.py tool-check validate-finding.py --force # override, logs to audit_trail
 ```
 
-Blocked tools suggest `--force` only when the user explicitly approves a cross-phase rollback. The audit_trail record is permanent.
+Blocked tools suggest `--force` only when the user explicitly approves cross-phase use. The audit_trail record is permanent.
 
 ## Workflow discipline
 

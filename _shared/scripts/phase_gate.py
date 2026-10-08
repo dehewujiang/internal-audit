@@ -14,7 +14,7 @@ Usage:
     python phase_gate.py status       # show current phase and exit conditions
     python phase_gate.py check        # check if advance is possible
     python phase_gate.py advance      # execute phase transition
-    python phase_gate.py rollback --to phase_1_document_analysis --reason "补充制度分析"
+    python phase_gate.py rollback     # 已取消：只拒收并指引插任务往前走
     python phase_gate.py tool-check validate-finding.py           # check tool phase permission
     python phase_gate.py tool-check validate-finding.py --force   # override with audit_trail record
     python phase_gate.py checklist --workspace D:\某个审计项目  # 打勾纸：六句话看板，只看不拦（新桌子）
@@ -691,44 +691,17 @@ def cmd_advance(args):
 
 
 def cmd_rollback(args):
-    """Rollback to specified phase"""
-    ws = find_workspace()
-    data = load_audit()
+    """回退已取消（A4）：状态只朝前走，不倒车。
 
-    if not args.to:
-        print(json.dumps({"action": "error", "reason": "必须指定 --to 参数"}, ensure_ascii=False))
-        sys.exit(2)
-
-    if args.to not in PHASES:
-        print(json.dumps({"action": "error", "reason": f"无效阶段: {args.to}"}, ensure_ascii=False))
-        sys.exit(2)
-
-    current = data.get("status", "unknown")
-    target_idx = PHASES.index(args.to)
-    current_idx = PHASES.index(current) if current in PHASES else -1
-
-    if target_idx >= current_idx:
-        print(json.dumps({"action": "error", "reason": f"回退目标 {args.to} 不在当前阶段 {current} 之前"}, ensure_ascii=False))
-        sys.exit(2)
-
-    if not args.reason:
-        print(json.dumps({"action": "error", "reason": "回退必须提供 --reason 说明原因"}, ensure_ascii=False))
-        sys.exit(2)
-
-    snap_path = snapshot_audit_state(data, ws)
-    data["status"] = args.to
-    data["updated_at"] = datetime.now().strftime("%Y-%m-%d")
-    append_audit_trail(data, "phase_rollback", f"{current} -> {args.to}, 原因: {args.reason}")
-    save_audit(data, ws)
-
+    新线索 → ledger.py add-task 插任务往前走；
+    结论有误 → 标作废另起行。本命令一个字不写，直接拒收。
+    """
     print(json.dumps({
-        "action": "rolled_back",
-        "from": current,
-        "to": args.to,
-        "reason": args.reason,
-        "snapshot": snap_path,
+        "action": "refused",
+        "reason": "回退已取消：状态只朝前走。新线索请用 ledger.py add-task 插任务往前走；"
+                  "结论有误请标作废另起行（close-task --verdict 作废）",
     }, ensure_ascii=False, indent=2))
-    sys.exit(0)
+    sys.exit(2)
 
 
 def cmd_log_program_change(args):
@@ -800,9 +773,9 @@ def main():
     p_advance.add_argument("--skills-dir", default=None, help="技能目录路径 (默认: env INTERNAL_AUDIT_SKILLS_DIR 或 workspace.parent)")
     p_advance.add_argument("--force", action="store_true", help="强制通过 prompt_program_update 提示")
 
-    rb = sub.add_parser("rollback", help="回退到指定阶段")
-    rb.add_argument("--to", required=True, choices=PHASES, help="目标阶段")
-    rb.add_argument("--reason", required=True, help="回退原因")
+    rb = sub.add_parser("rollback", help="已取消：回退改插任务往前走（本命令只拒收）")
+    rb.add_argument("--to", required=False, default=None, help="已废弃，保留只为兼容旧调用")
+    rb.add_argument("--reason", required=False, default=None, help="已废弃，保留只为兼容旧调用")
 
     p_tc = sub.add_parser("tool-check", help="检查工具在当前阶段是否可用")
     p_tc.add_argument("tool_name", help="脚本名称 (如 validate-finding.py)")

@@ -1,8 +1,13 @@
 {
-  "version": "2026-10-08-5",
-  "git_commit": "21db725",
-  "updated_at": "2026-10-08T19:41:46+08:00",
+  "version": "2026-10-08-6",
+  "git_commit": "4cf999f",
+  "updated_at": "2026-10-08T19:50:52+08:00",
   "changes": [
+    {
+      "type": "feat",
+      "file": "phase_gate.py+ledger.py+constitution",
+      "summary": "回退消失：两道rollback改拒收指引(状态文件不动)，宪法#8#9改道留痕，OPS/命令表/工具说明同步"
+    },
     {
       "type": "feat",
       "file": "_shared/scripts/validate-program.py",
