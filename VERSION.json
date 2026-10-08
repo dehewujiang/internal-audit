@@ -1,8 +1,13 @@
 {
-  "version": "2026-10-08-3",
-  "git_commit": "437ca3c",
-  "updated_at": "2026-10-08T16:47:41+08:00",
+  "version": "2026-10-08-4",
+  "git_commit": "3ce9970",
+  "updated_at": "2026-10-08T19:23:50+08:00",
   "changes": [
+    {
+      "type": "feat",
+      "file": "ledger/ledger.py+check.py+schema",
+      "summary": "任务板第一步：桌子加tasks(1.3)，add-task立任务(无来源/重复ref/户口命中三档处理)+close-task结任务(已结须带去向/作废须带理由)，门卫加待查提醒"
+    },
     {
       "type": "chore",
       "file": "script",

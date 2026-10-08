@@ -235,6 +235,19 @@ AI 自由推演风险点，按三类标注。**优先质量而非数量，禁止
 
 **事实锚定自检规则**：每输出一个风险点后，立即自检——"我能否指向 about-me.md 或 my-config.md 或制度分析JSON的具体行来支持这个风险的存在？"如果不能，进行标注。
 
+### 2.4 新假设落任务板（桌子在 `internal-audit-workspace/audit-table/*.json`，建项目时已开好；找不到就停下报告，不要跳过——宪法#12）
+
+风险清单定稿后，逐条过一遍，有户口的只挂引用、不占新行：
+
+```bash
+# 无户口的新假设 → 立任务（待查），room 固定用"检查单"
+python ledger/ledger.py add-task <桌子.json> --title "<假设一句话>" --room 检查单 --ref <R编号>
+# 有户口的（fact_anchors 命中 CG/RP/CF/D 编号）→ 带 --known-anchor，桌上不添行
+python ledger/ledger.py add-task <桌子.json> --title "<假设一句话>" --room 检查单 --ref <R编号> --known-anchor <命中的编号>
+```
+
+任务是假设不是结论，查实了由执行关任务转事实行，这里只立不结。
+
 **详细规范**：见 [references/step2_risk_identification.md](./references/step2_risk_identification.md)
 
 ### 2.2 目的自适应风险类别（按需激活）

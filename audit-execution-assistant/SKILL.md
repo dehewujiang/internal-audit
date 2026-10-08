@@ -654,6 +654,10 @@ Step 3h: 业务现实性检验（可选）
 - 非舞弊问题单 → `python ledger/ledger.py add-line <桌子.json> --slot 确定的毛病 --text <结论> --room 执行取证 --ref F-xxx --status 已确认`
 - 舞弊问题单 → `python ledger/ledger.py add-line <桌子.json> --slot 怀疑偷骗 --text <结论> --room 执行取证 --ref F-xxx --status 已确认`（无 A/E 会被拒收；证据不够就降格写"说不清的信号"）
 - 对单号 → `python ledger/ledger.py link-finding <桌子.json> --slot <格> --finding F-xxx`
+- 结论从任务板来 → 先结任务再上桌（顺序：证据→结论→销任务）：
+  查实 → `python ledger/ledger.py close-task <桌子.json> --id <T-xxx> --verdict 已结 --finding F-xxx`；
+  查否 → `python ledger/ledger.py close-task <桌子.json> --id <T-xxx> --verdict 作废 --reason "<哪条证据推翻了>"`。
+  已结不带单号会被拒收（防任务无声消失）；结论文本上桌仍走上面的 `add-line`。
 - 分析过程（证据链、推理）写底稿：`working-papers/F-xxx.md`
 - 不再需要 `sweep`。桌子是账本（记结论），底稿是备查（记过程）。
 （`import` 只用于**老项目整桌搬家**，日常不用——桌子已存在时它按设计拒绝。）

@@ -97,7 +97,7 @@ python ledger/ledger.py add-gap 桌子.json --finding F-2026-003 --missing "绩�
 |------|-------------|-----------|
 | 看制度 | 控制缺口 / 风险点 / 制度冲突 / 设计观察 | `sweep` |
 | 问话 | 风险线索（进设计观察）+ 证据记录 | 写进 `design-assessments/` 后 `sweep`；证据用 `add-evidence` |
-| 检查单 | 程序里的推演风险进信号格（制度类有户口的不上）；程序本体归抽屉·检查表 | `sweep`、`set-drawer` |
+| 检查单 | 新假设先落任务板（待查，有户口的只挂引用不上新行）；程序本体归抽屉·检查表 | `add-task`/`close-task`、`set-drawer` |
 | 执行取证 | 问题单进格、证据上右边；证据拿不到的记缺口 | `sweep --finding F-xxx`、`add-gap` |
 | 吵架 | 改结论 | `set-slot`（改前自动拍照） |
 | 报告 | 只读 | `audit_table.py`（报告前闸机，不写） |

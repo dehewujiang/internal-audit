@@ -24,6 +24,8 @@ ledger.py — 新桌子的管家（只管"往桌上写"，不管"查"和"拍照"
     python ledger.py add-evidence 桌子.json --file "领料单7张" --from 班长 --when 审计当天
     python ledger.py sweep 桌子.json --workspace D:\某个审计项目
     python ledger.py add-gap 桌子.json --finding F-2026-003 --missing "绩效评分原始记录"
+    python ledger.py add-task 桌子.json --title "钢筋回扣疑似内外勾结" --room 检查单 --ref R-010
+    python ledger.py close-task 桌子.json --id T-001 --verdict 已结 --finding F-2026-010
     python ledger.py show 桌子.json
 """
 
@@ -37,8 +39,9 @@ if sys.platform == "win32":
     sys.stdout.reconfigure(encoding="utf-8")
     sys.stderr.reconfigure(encoding="utf-8")
 
-SCHEMA_VERSION = "1.2"
+SCHEMA_VERSION = "1.3"
 LEFT_SLOTS = ["确定的毛病", "怀疑偷骗", "说不清的信号"]
+TASK_STATUSES = ["待查", "已结", "作废"]
 DRAWER_NAMES = ["问话表", "检查表", "报告表"]
 CHECKLIST = ["证据够了吗", "制度看全了吗", "红格看了吗"]
 
@@ -74,7 +77,7 @@ def _refuse(code_msg: str) -> None:
 
 
 def blank_table(name: str) -> dict:
-    """空桌子：三格占好，证据为空，抽屉三个入口空着等填，收料本子空着。"""
+    """空桌子：三格占好，证据为空，抽屉三个入口空着等填，收料本子空着，任务板空着。"""
     return {
         "schema_version": SCHEMA_VERSION,
         "table": name,
@@ -86,6 +89,7 @@ def blank_table(name: str) -> dict:
         "drawers": [{"name": n, "path": "", "status": ""} for n in DRAWER_NAMES],
         "checklist": list(CHECKLIST),
         "ingested": {},
+        "tasks": [],
     }
 
 
@@ -95,12 +99,13 @@ def load(path: Path) -> dict:
     老桌子就地升级，不作废：
       1.0 的抽屉只记了三个表名 → 1.1 起每张还记"在哪、什么状态"
       1.1 没有 ingested      → 1.2 起记"哪几条是机器收上来的"，收料才不会重复
+      1.2 没有 tasks         → 1.3 起账上多一块任务板（一条假设一个任务）
     硬拒绝会把"版本号变了"升级成"以前的桌子全打不开"。
     """
     data = json.loads(path.read_text(encoding="utf-8-sig"))
     ver = data.get("schema_version")
     if ver != SCHEMA_VERSION:
-        if ver not in ("1.0", "1.1"):
+        if ver not in ("1.0", "1.1", "1.2"):
             raise SystemExit(f"桌子版本不对：{ver}，要 {SCHEMA_VERSION}")
         if ver == "1.0":
             data["drawers"] = [
@@ -108,6 +113,7 @@ def load(path: Path) -> dict:
                 for d in data.get("drawers", [])
             ]
         data.setdefault("ingested", {})
+        data.setdefault("tasks", [])
         data["schema_version"] = SCHEMA_VERSION
     names = [x.get("slot") for x in data.get("left", [])]
     if names != LEFT_SLOTS:
@@ -651,6 +657,90 @@ def cmd_add_gap(args) -> None:
                  f"（三种可能：业务未发生 / 管理缺失未留痕 / 证据被消除，须分别追问）")
     save(path, data)
     print(f"已记缺口：{args.finding} 缺「{args.missing}」→ 三种可能都要问")
+
+
+def _now() -> str:
+    from datetime import datetime
+    return datetime.now().strftime("%Y-%m-%d %H:%M")
+
+
+def _next_task_id(data: dict) -> str:
+    """任务编号 T-001 起，已有关的不重用（作废的也占号）。"""
+    n = 0
+    for t in data.get("tasks", []):
+        try:
+            n = max(n, int(str(t.get("id", "T-0")).split("-")[1]))
+        except (IndexError, ValueError):
+            continue
+    return f"T-{n + 1:03d}"
+
+
+def cmd_add_task(args) -> None:
+    """立任务：新假设先落任务板（待查），查实了才转事实行。
+
+    写入口只认三件事：说什么假设(--title)、谁立的(--room)、凭什么编号(--ref)，
+    缺一个就不让立。有户口的（--known-anchor 对上 --ref）不上新任务——
+    户口已有，SKILL 只挂引用（桌上已有行），本次一个字不写，exit 0。
+    任务是假设不是结论，红格 A/E 门不管任务。
+    """
+    if not args.title.strip():
+        raise SystemExit("要说清是什么假设（--title）")
+    if not args.room or not args.ref:
+        raise SystemExit("任务必须写清谁立的(--room)、凭什么编号(--ref)")
+    path = Path(args.file)
+    data = load(path)
+    tasks = data.setdefault("tasks", [])
+    if args.known_anchor and str(args.known_anchor).strip().upper() == str(args.ref).strip().upper():
+        print(f"跳过：{args.ref} 户口已有，只挂引用不占新行（本次一个字没写）")
+        return
+    for t in tasks:
+        if t.get("status") == "待查" and str(t.get("source", {}).get("ref", "")).upper() == str(args.ref).strip().upper():
+            _refuse(f"拒收：{args.ref} 已有待查任务 {t.get('id')}，先查完再立新的（本次一个字没写）")
+    tid = _next_task_id(data)
+    tasks.append({
+        "id": tid,
+        "title": args.title,
+        "status": "待查",
+        "source": {"room": args.room, "ref": args.ref},
+        "fact_anchors": [],
+        "ref_finding_ids": [],
+        "created_at": _now(),
+        "closed_at": "",
+    })
+    save(path, data)
+    print(f"立好任务：{tid} {args.title}（待查）")
+
+
+def cmd_close_task(args) -> None:
+    """结任务：查实转事实行走 add-line（来源 ref 指回任务 id），这里只销任务的账。
+
+    已结必须带结论去向（--finding 单号或 --fact 结论文本其一），不带就 exit 2——
+    任务不能无声消失。作废必须带理由（--reason）。
+    """
+    if args.verdict not in ("已结", "作废"):
+        raise SystemExit("结任务只能是 已结/作废")
+    path = Path(args.file)
+    data = load(path)
+    task = next((t for t in data.get("tasks", []) if t.get("id") == args.id), None)
+    if task is None:
+        raise SystemExit(f"没这个任务：{args.id}")
+    if task.get("status") != "待查":
+        raise SystemExit(f"任务 {args.id} 已是{task.get('status')}，不能再结")
+    if args.verdict == "已结":
+        if not (args.finding or (args.fact or "").strip()):
+            _refuse(f"拒收：{args.id} 结了就得有去向（--finding 单号或 --fact 结论），否则等于无声消失（本次一个字没写）")
+        if args.finding:
+            task.setdefault("ref_finding_ids", []).append(args.finding)
+    else:
+        if not (args.reason or "").strip():
+            raise SystemExit("作废必须说清理由（--reason）")
+        task["close_reason"] = args.reason
+    task["status"] = args.verdict
+    task["closed_at"] = _now()
+    save(path, data)
+    print(f"结好任务：{args.id} → {args.verdict}")
+
+
 def cmd_add_evidence(args) -> None:
     """小王贴右边：谁给的、啥时候给的，缺一个不让贴。等级照实标（A-E），红格认 A/E。"""
     if not args.from_ or not args.when:
@@ -740,6 +830,10 @@ def cmd_show(args) -> None:
     for d in data["drawers"]:
         state = f"（{d['status']}）" if d["status"] else ""
         print(f"    - {d['name']}：{d['path'] or '（还没填入口）'}{state}")
+    open_tasks = [t for t in data.get("tasks", []) if t.get("status") == "待查"]
+    print(f"  任务板：{len(open_tasks)}条待查")
+    for t in open_tasks:
+        print(f"    - {t['id']} {t.get('title', '')}（{(t.get('source') or {}).get('ref', '')}）")
 
 
 def main() -> None:
@@ -805,6 +899,23 @@ def main() -> None:
     c.add_argument("--finding", required=True)
     c.add_argument("--missing", required=True, help="缺的是哪份证据")
     c.set_defaults(fn=cmd_add_gap)
+
+    c = sub.add_parser("add-task", help="立任务：新假设先落任务板（待查）")
+    c.add_argument("file")
+    c.add_argument("--title", required=True, help="假设一句话")
+    c.add_argument("--room", required=True, help="谁立的（如 检查单）")
+    c.add_argument("--ref", required=True, help="立任务的编号（如 R-010）")
+    c.add_argument("--known-anchor", default=None, help="户口编号：对上 ref 则只挂引用不占新行")
+    c.set_defaults(fn=cmd_add_task)
+
+    c = sub.add_parser("close-task", help="结任务：已结须带结论去向，作废须带理由")
+    c.add_argument("file")
+    c.add_argument("--id", required=True, help="任务编号（如 T-001）")
+    c.add_argument("--verdict", required=True, choices=["已结", "作废"])
+    c.add_argument("--finding", default=None, help="结论去向：问题单号")
+    c.add_argument("--fact", default=None, help="结论去向：结论文本（转事实行走 add-line）")
+    c.add_argument("--reason", default=None, help="作废理由")
+    c.set_defaults(fn=cmd_close_task)
 
     c = sub.add_parser("import", help="老账搬家：抄进新桌子")
     c.add_argument("file")

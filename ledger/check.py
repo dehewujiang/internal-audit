@@ -36,8 +36,8 @@ if sys.platform == "win32":
     sys.stdout.reconfigure(encoding="utf-8")
     sys.stderr.reconfigure(encoding="utf-8")
 
-SCHEMA_VERSION = "1.2"
-KNOWN_VERSIONS = ("1.0", "1.1", "1.2")
+SCHEMA_VERSION = "1.3"
+KNOWN_VERSIONS = ("1.0", "1.1", "1.2", "1.3")
 LEFT_SLOTS = ["确定的毛病", "怀疑偷骗", "说不清的信号"]
 DRAWERS = ["问话表", "检查表", "报告表"]
 
@@ -141,6 +141,9 @@ def main() -> int:
     names = [d.get("name") if isinstance(d, dict) else d for d in data.get("drawers", [])]
     if names != DRAWERS:
         warns.append("抽屉的表不全")
+    for t in data.get("tasks", []):
+        if t.get("status") == "待查":
+            warns.append(f"任务板还有待查：{t.get('id')} {t.get('title', '')}，查完记得结任务")
     if args.workspace:
         ws = Path(args.workspace)
         for d in data.get("drawers", []):
