@@ -1,7 +1,7 @@
 {
-  "version": "2026-09-11-1",
-  "git_commit": "5cd9c39",
-  "updated_at": "2026-09-11T16:42:43+08:00",
+  "version": "2026-10-08-1",
+  "git_commit": "0de6b5f",
+  "updated_at": "2026-10-08T16:20:26+08:00",
   "changes": [
     {
       "type": "chore",
@@ -302,6 +302,56 @@
       "type": "feat",
       "file": "ledger",
       "summary": "新桌子补漏（A/B/C三批）——收料sweep接上11个来源按状态自动分格+宪法#10信号池落地+宪法#9证据缺失记账(add-gap)+抽屉改真入口+高风险硬证据扫全桌+崩溃兜底+老桌子兼容升级(1.0/1.1→1.2)"
+    },
+    {
+      "type": "feat",
+      "file": "_shared/scripts/query_data_sources.py",
+      "summary": "关双轨:单项目查询/搜索/汇总只读桌子;跨项目加桌子行+关键词直查;load_audit_tables/load_table_findings加可选ws参数"
+    },
+    {
+      "type": "feat",
+      "file": "_shared/scripts/query_commands.py",
+      "summary": "来龙去脉卡加桌子兜底(按编号/source.ref对单号)"
+    },
+    {
+      "type": "fix",
+      "file": "_shared/scripts/phase_gate.py",
+      "summary": "phase_3出口:桌子left>=1行或有F-*.json即过(新项目不再卡死)"
+    },
+    {
+      "type": "docs",
+      "file": "_shared/scripts/audit_gate.py",
+      "summary": "generate_report precheck描述改桌子口径(纯文字)"
+    },
+    {
+      "type": "del",
+      "file": "_shared/scripts/validate-index.py",
+      "summary": "删除:R06随index停写而消亡,唯一调用方报告SKILL同步删除"
+    },
+    {
+      "type": "feat",
+      "file": "audit-execution-assistant/SKILL.md",
+      "summary": "结论只上桌不再落盘;index停写;上桌后跑门卫查硬度;输出摘要改桌子行数"
+    },
+    {
+      "type": "feat",
+      "file": "internal-audit-report-generator/SKILL.md",
+      "summary": "删R06节并到读桌子;历史对比只认新账不管老项目"
+    },
+    {
+      "type": "feat",
+      "file": "audit-finding-debate/SKILL.md+audit-interview-designer/SKILL.md",
+      "summary": "finding定位/历史发现改读桌子"
+    },
+    {
+      "type": "docs",
+      "file": "AGENTS.md+CLAUDE.md+CLAUDE-project.md+DATAFLOW.md+INPUT-BUDGET.md",
+      "summary": "工具表删validate-index行"
+    },
+    {
+      "type": "test",
+      "file": "tests/fixtures/redesign/",
+      "summary": "新增B1事前红测试(查询只认桌子)+沙箱,红转绿"
     }
   ]
 }

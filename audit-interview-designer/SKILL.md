@@ -38,7 +38,7 @@ description: |
 1. `internal-audit-workspace/policy-analyses/*.json`（只读取 `verification_status="待确认"` 或 `design_effectiveness="无效"` 的项）
 2. `audit-topics/about-me.md`（公司背景）
 3. `.claude/skills/internal-audit-program-generator/references/internal_audit_risk_framework.md`（**核心输入：过往审计经验与风险库**）
-4. `internal-audit-workspace/findings/index.json`（历史发现，如存在）
+4. 桌子 `internal-audit-workspace/audit-table/*.json`（历史发现，只读"确定的毛病/怀疑偷骗"两格；无桌子就跳过）
 5. `references/interview_templates.md`（各领域问题模板库）
 6. 用户指定的审计主题/范围
 

@@ -21,7 +21,7 @@ description: |
 ```
 [审计程序生成器] → 执行审计 → [审计报告生成器] → 交付报告
       ↑_______________________________________________↓
-                     发现记录（findings/*.json）
+                     发现记录（桌子 audit-table/*.json left[]）
 ```
 
 **设计原则**：
@@ -141,7 +141,7 @@ Step 5: 询问保存位置
 
 Step 1: 读取最近生成的审计程序文档（程序生成器输出）
 Step 2: 提取"审计目标、范围、程序"作为报告背景章节
-Step 3: 读取 findings/ 中已生成的发现（由 audit-execution-assistant 在执行过程中生成）
+Step 3: 读取桌上已有的发现（由 audit-execution-assistant 在执行过程中上桌）
 Step 4: 填充模板 → 生成带"已执行程序清单"的报告
 ```
 
@@ -262,11 +262,8 @@ Step 7: 保存到 reports/
 
 ```
 internal-audit-workspace/
-├── findings/
-│   ├── F-2024-001.json      # 具体发现（按年份分类，schema 1.2.0）
-│   ├── F-2024-002.json
-│   └── ...
-└── index.json               # 发现索引（便于检索）
+└── audit-table/
+    └── <主题>.json          # 桌子：left[] 行即发现（唯一原件，不再落盘）
 ```
 
 > ⚠️ 注意：finding 由 `audit-execution-assistant` 在执行审计过程中生成，本技能仅负责读取和汇总。
@@ -362,14 +359,9 @@ internal-audit-workspace/
 
 ### 发现记录
 
-**文件路径**：`internal-audit-workspace/findings/F-YYYY-NNN.json`
+**位置**：桌子 `internal-audit-workspace/audit-table/*.json` 的 left[] 行（唯一原件，不再落盘）。
 
-**命名规则**：`F-{年份}-{三位序号}`
-
-```
-F-2024-001 = 2024年第1号发现
-F-2024-015 = 2024年第15号发现
-```
+**编号规则**：沿用程序风险编号；顺排时用 `F-{年份}-{三位序号}`（如 F-2026-001）。
 
 ### 审计报告
 
@@ -394,16 +386,9 @@ F-2024-015 = 2024年第15号发现
 
 > ⚠️ 注意：逐项记录 finding 请使用 `audit-execution-assistant`（触发词："执行审计过程中记录异常"）。本技能仅负责审计完成后的发现管理和报告生成。
 
-**流程**：
-1. **读取 index 前先过 R06 闸机**：
-   ```bash
-   python _shared/scripts/validate-index.py internal-audit-workspace/findings --strict
-   ```
-   - action=block → index 与目录不一致（遗漏/幽灵条目/计数漂移/闭合不符），先修复 index 再生成报告，**禁止带漂移数据汇总**
-   - action=pass → 继续
-2. 读取 `internal-audit-workspace/findings/index.json`
-3. 列出可用 findings（按风险等级/状态/origin分类）
-4. 支持查询、筛选、统计
+**流程**（只读桌子，不再读 index——旧格式已停写，2026-10 关双轨）：
+1. 用 `python _shared/scripts/queries.py findings` 列出桌上可用 findings（按风险等级/状态/origin分类）
+2. 支持查询、筛选、统计（同上命令加 `--risk/--status/--keyword` 参数）
 
 ### Step 2：生成审计报告
 
@@ -442,7 +427,10 @@ F-2024-015 = 2024年第15号发现
 ② 【风险评级】是否存在系统性 vs 孤立的判断？
 ③ 【TOP3排序】是否按严重程度列出核心问题（每项含影响+紧迫性）？
 ④ 【历史对比】如有历史审计数据，是否存在对比？（如有则检查）
-   → 从 findings/index.json 获取历史数据
+   → 跑 `python _shared/scripts/queries.py compare`；回"无数据可比较"就记
+     "无历史数据"，不算缺失。老项目已冻结归档，不纳入对比
+     （2026-10 用户拍板：不管老项目）。桌子行暂无年份信息，
+     跨年对比待新账积累后定口径。
 ```
 
 **输出格式**：

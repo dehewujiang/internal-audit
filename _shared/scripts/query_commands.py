@@ -21,7 +21,7 @@ from query_data_sources import (
     find_workspace, get_findings_dir, get_design_assessments_dir,
     get_policy_analyses_dir, get_audit_programs_dir, load_program_index,
     load_projects_index, save_projects_index, scan_project,
-    search_in_json, load_audit_tables, load_evidence_catalog,
+    search_in_json, load_audit_tables, load_table_findings, load_evidence_catalog,
     load_current_audit, search_program_steps, search_tables,
 )
 from query_display import (
@@ -307,6 +307,21 @@ def build_lineage_bundle(fid):
     """拼一张单的来龙去脉。数据全是现成的纸，不另起新账；缺纸就空着，不崩。"""
     b = {"finding_id": fid, "found": False}
     finding = load_finding(fid)
+    if not finding:
+        # 桌子兜底：新系统只写桌子，findings/ 里没有——按编号对单号
+        for tf in load_table_findings():
+            if fid and fid in (tf.get("finding_id", ""), tf.get("source_ref", "")):
+                finding = {
+                    "finding_id": tf.get("finding_id", fid),
+                    "finding_title": tf.get("finding_title", ""),
+                    "risk_classification": tf.get("risk_classification", {}),
+                    "status": tf.get("status", "-"),
+                    "origin": tf.get("origin", "-"),
+                    "table_slot": tf.get("table_slot", ""),
+                    "table_name": tf.get("table_name", ""),
+                    "_from_table": True,
+                }
+                break
     if not finding:
         return b
     b["found"] = True

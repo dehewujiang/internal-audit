@@ -186,8 +186,17 @@ def check_exit_conditions(ws: Path, current_phase: str, data: dict, args=None) -
             issues.append({"type": "block", "msg": "报告类型未选择。请返回 report-generator 选择报告类型（标准/专项/舞弊/跟踪）。"})
         findings_dir = ws / "findings"
         findings = [f for f in findings_dir.glob("F-*.json")] if findings_dir.exists() else []
-        if len(findings) == 0:
-            issues.append({"type": "block", "msg": "findings/ 无 F-*.json (需 >=1 个审计发现)"})
+        table_rows = 0
+        audit_tables_dir = ws / "audit-table"
+        if audit_tables_dir.exists():
+            try:
+                sys.path.insert(0, str(Path(__file__).resolve().parent))
+                from query_data_sources import load_table_findings as _ltf
+                table_rows = len(_ltf(ws))
+            except Exception:
+                table_rows = 0
+        if len(findings) == 0 and table_rows == 0:
+            issues.append({"type": "block", "msg": "无审计发现（findings/ 无 F-*.json 且桌子 left[] 为空，需 >=1 条）"})
 
     elif current_phase == "phase_4_report":
         reports_dir = ws / "reports"

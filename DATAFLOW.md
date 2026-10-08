@@ -48,7 +48,7 @@
    证据：_evidence_catalog.json ＋ _files/（v2.0 集中存储，多程序共用）
    工具：data_executor（数据沙箱）· OCR 识别
    产出：findings/*.json ＋ findings/index.json
-   校验：validate-catalog.py（取证前）· validate-finding.py · validate-index.py
+   校验：validate-catalog.py（取证前）· validate-finding.py（草稿内容质检，上桌后门卫复核硬度）
    可选：finding-debate（业务攻防 → 回写 finding）
                     │
             phase_gate check/advance

@@ -72,9 +72,9 @@ Phase 1.5：interview-designer 模式B → design-assessments/（访谈回填，
     ↓
 Phase 4：审计执行阶段，针对每个设计观察设计验证程序
     ↓ 验证通过（实地证据证实设计缺陷确实导致问题）
-findings/ 存储经证实的发现，origin="design"，关联 design_observation_id
+桌子 left[] 存储经证实的发现，origin="design"，关联 design_observation_id
     ↓ 验证不通过（设计虽有缺陷但未造成实际影响）
-标记"设计观察不成立"，保留在design-assessments/中，不进入findings
+标记"设计观察不成立"，保留在design-assessments/中，不上桌
 ```
 
 **NOTE：`design-assessments/` 中的设计观察可能来自两个来源**：
@@ -432,7 +432,7 @@ python _shared/scripts/data_health_check.py ocr <图片路径>
 证据完整性：[充分/部分充分/不足]
 
 是否记录为Finding？
-A) 记录为Finding（自动生成F-YYYY-NNN）
+A) 记录为Finding（上桌，编号沿用程序风险编号或 F-xxx 顺排）
 B) 标记为待确认
 C) 忽略（记录原因）
 ```
@@ -509,12 +509,12 @@ Step 3f: 证据等级强制核验
     → 低等级证据（C/D）支撑高风险 finding → 标记"证据等级偏低"
     → 核验通过后进入 Step 3f-2
     ↓
-Step 3f-2: 最终硬校验（脚本检查 - 完整finding）
-    → 运行: `python _shared/scripts/validate-finding.py <完整finding JSON文件路径>`
+Step 3f-2: 最终硬校验（脚本检查 - 完整finding 初稿）
+    → 运行: `python _shared/scripts/validate-finding.py <完整finding初稿JSON文件路径>`
     → 读取输出：
         action=block → 阻断，根据 blockers 逐项修正后重跑
         action=warn  → 标记 warnings 列表并在生成摘要中告知用户
-        action=pass  → 放行
+        action=pass  → 放行（然后上桌，上桌后跑门卫 `ledger/check.py` 复核高风险硬度）
     ↓
 Step 3g: 输出finding JSON
     → 高风险 finding 必须填写 `decision_rationale.risk_level_reason`（风险定级理由，一句话）
@@ -561,8 +561,8 @@ Step 3h: 业务现实性检验（可选）
 - 不足：[N]个程序
 
 输出文件：
-- findings/F-YYYY-NNN.json（[N]个）
-- findings/index.json（已更新）
+- 桌子新行（audit-table/*.json left[]，[N]条，已过门卫）
+- 底稿 working-papers/（分析过程备查）
 
 下一步：
 - 输入"生成报告" → 进入Phase 5
@@ -627,26 +627,26 @@ Step 3h: 业务现实性检验（可选）
 
 ## 输出格式
 
-### Finding JSON
+### Finding 上桌（唯一出口，不再落盘）
 
-写入 `internal-audit-workspace/findings/F-YYYY-NNN.json`。完整 schema 及字段约束详见 [references/finding_schema.md](./references/finding_schema.md)。
+结论**只写桌子**，不再写入 `findings/F-YYYY-NNN.json`（旧格式已停写，2026-10 关双轨）。
+结论的行文结构仍按 [references/finding_schema.md](./references/finding_schema.md) 组织（标题/状况/原因/影响/建议），只是落点从文件改成桌子行。
 
-**生成时必做**：
-- 按 finding_schema.md 的 JSON 结构输出
+**上桌前必做**：
 - 所有 evidence 条目标记 `reliability_grade`
-- 高风险 finding 必须有 ≥1 个 A级或E级证据
+- 高风险 finding 必须有 ≥1 个 A级或E级证据（上桌后由门卫复核）
 - `storage_path` 从 evidence 目录读取时必填实际路径
+- 分析过程（证据链、推理）写底稿：`working-papers/F-xxx.md`
 
-### index.json 强制更新规则
+**上桌后必做（最终门卫，不可跳过）**：
+- 运行 `python ledger/check.py --workspace <项目根目录>` 查高风险硬度
+- 红格无 A/E 级硬证据 → 当场补证据或降级，不许带着红格往下走
+- 草稿期的 `validate-finding.py` 检查照旧（只查初稿内容质量，不变）
 
-每次生成或修改 finding 后，必须同步更新 `internal-audit-workspace/findings/index.json`。完整格式详见 [references/index_schema.md](./references/index_schema.md)。
+### index.json 停写说明
 
-**硬规则**：
-- 生成了 finding 但不更新 index.json → ❌ 禁止
-- 手动编辑 index.json 与实际 finding 不一致 → ❌ 禁止
-- 跳过 index.json 的生成 → ❌ 禁止
-
-**自动扫描规则**：每次更新前，扫描 `findings/` 下所有 JSON 文件，确保 index.json 与实际情况一致。
+`findings/index.json` 已停写（2026-10 关双轨）：不生成、不更新、不扫描。
+查询/报告/吵架一律读桌子。旧项目冻结归档，不迁移。
 
 **写桌子**（桌子在 `internal-audit-workspace/audit-table/*.json`，建项目时已开好；找不到就停下报告，不要跳过——宪法#12）：
 结论**直接写桌子**，不再写本子再抄（舞弊/高风险写"怀疑偷骗"格）——
@@ -680,12 +680,12 @@ python ledger/ledger.py add-gap <桌子.json> --finding F-xxx --missing "缺的�
 1. 分词后排除停用词（的、是、有、在、了等）
 2. 保留业务术语（废料、审批、盘点、ERP、存货等）
 3. 保留金额相关词（大额、5万元等）
-4. 更新到index.json的by_keyword字段
+4. 关键词记在桌子行文本里（查询直查文本，不再维护 index by_keyword）
 
 ## 依赖工具
 
 - `Read` - 读取审计程序文档
-- `Write` - 写入finding JSON和更新index.json
+- `Write` - 写底稿；结论上桌（`ledger/ledger.py add-line`），不再写 finding JSON 文件
 - `Read` - 读取用户提供的证据文件（Excel/CSV/PDF等）
 - `Read` - 按需读取 references/ 下的参考文档（cceer_standards.md, root_cause_framework.md, intuition_engine.md, finding_optimizer.md）
 

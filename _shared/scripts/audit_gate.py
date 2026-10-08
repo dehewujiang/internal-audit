@@ -57,7 +57,7 @@ ACTIONS = {
     },
     "generate_report": {
         "prechecks": [
-            {"name": "Findings 确认", "desc": "findings/ 目录中有已确认的 finding"},
+            {"name": "Findings 确认", "desc": "桌子 left[] 中有已确认的发现（旧格式 findings/ 已停写，不再看）"},
         ],
         "postcheck": {
             "script": "validate-report.py",

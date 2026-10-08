@@ -107,9 +107,12 @@ def get_current_audit_path() -> Path:
     return find_workspace() / "current-audit.json"
 
 
-def load_audit_tables() -> list:
-    """读 audit-table/*.json，返回 [(path, table), ...]。没有 → 空。"""
-    ddir = get_audit_tables_dir()
+def load_audit_tables(ws=None) -> list:
+    """读 audit-table/*.json，返回 [(path, table), ...]。没有 → 空。
+
+    ws 为空时读当前工作区；跨项目查询可传入指定项目的 workspace。
+    """
+    ddir = (ws / "audit-table") if ws is not None else get_audit_tables_dir()
     if not ddir.exists():
         return []
     out = []
@@ -122,10 +125,10 @@ def load_audit_tables() -> list:
     return out
 
 
-def load_table_findings() -> list:
+def load_table_findings(ws=None) -> list:
     """从桌子的 left[] 格子里提取事实，转成 finding 兼容格式（v2.0 新模式）。"""
     results = []
-    for fpath, table in load_audit_tables():
+    for fpath, table in load_audit_tables(ws):
         table_name = table.get("table", fpath.stem)
         for i, entry in enumerate(table.get("left", [])):
             text = entry.get("text", "").strip()
@@ -384,41 +387,14 @@ class SingleProjectSource:
         return False
 
     def query_findings(self, risk=None, status=None, keyword=None, year=None, by_origin=None):
-        """Return list of finding dicts matching all applied filters (AND logic)."""
+        """Return list of finding dicts matching all applied filters (AND logic).
+
+        只认桌子（audit-table/left[]）。旧格式 findings/F-*.json 已停写，
+        不再读（2026-10 关双轨；老项目冻结归档，不迁移）。
+        """
         results = []
 
-        # 老项目：从 findings/index.json + F-*.json 读
-        index = load_index()
-        if index:
-            filters = [
-                ("by_risk", risk),
-                ("by_status", status),
-                ("by_keyword", keyword),
-                ("by_origin", by_origin),
-            ]
-            matched_ids = None
-            for idx_key, value in filters:
-                if value:
-                    ids = set(index.get(idx_key, {}).get(value, []))
-                    matched_ids = ids if matched_ids is None else matched_ids & ids
-
-            if year:
-                yids = set(index.get("by_year", {}).get(str(year), {}).get("ids", []))
-                matched_ids = yids if matched_ids is None else matched_ids & yids
-
-            # No filters → all findings
-            if matched_ids is None:
-                matched_ids = set()
-                for year_data in index.get("by_year", {}).values():
-                    matched_ids.update(year_data.get("ids", []))
-
-            for fid in sorted(matched_ids):
-                finding = load_finding(fid)
-                if finding:
-                    finding["_project"] = ""
-                    results.append(finding)
-
-        # 新模式：从桌子 left[] 读（v2.0，直接写桌子的项目）
+        # 桌子是唯一来源：从 left[] 读
         for tf in load_table_findings():
             if risk and tf.get("risk_classification", {}).get("risk_level") != risk:
                 continue
@@ -434,30 +410,13 @@ class SingleProjectSource:
         return results
 
     def search(self, term):
-        """Full-text search across all findings. Returns list of match dicts."""
+        """Full-text search across all findings. Returns list of match dicts.
+
+        只搜桌子（audit-table/left[]）。旧格式 findings/F-*.json 已停写，不再搜。
+        """
         results = []
 
-        # 老项目：搜 findings/F-*.json
-        findings_dir = get_findings_dir()
-        if findings_dir.exists():
-            for fpath in sorted(findings_dir.glob("F-*.json")):
-                try:
-                    with open(fpath, "r", encoding="utf-8") as f:
-                        data = json.load(f)
-                except json.JSONDecodeError:
-                    continue
-                matches = search_in_json(data, term)
-                if matches:
-                    fid = data.get("finding_id", fpath.stem)
-                    title = data.get("finding_title", data.get("title", ""))
-                    rc = data.get("risk_classification", {})
-                    risk = rc.get("risk_level", data.get("risk_level", "-"))
-                    results.append({
-                        "finding_id": fid, "title": title, "risk": risk,
-                        "matches": matches, "_project": "",
-                    })
-
-        # 新模式：搜桌子 left[]（v2.0）
+        # 桌子是唯一来源：搜 left[]
         for tf in load_table_findings():
             matches = search_in_json(tf, term)
             if matches:
@@ -471,15 +430,29 @@ class SingleProjectSource:
         return results
 
     def summary(self):
-        """Return summary stats dict."""
-        index = load_index()
-        if not index:
-            return None
+        """Return summary stats dict.
 
-        by_risk = index.get("by_risk", {})
-        by_status = index.get("by_status", {})
-        by_origin = index.get("by_origin", {})
-        by_year = index.get("by_year", {})
+        只从桌子统计（audit-table/left[]）。形状与旧版一致（total/by_risk/
+        by_status/by_origin/by_year），by_year 恒为空——桌子行不带年份
+        （跨年对比待新账积累后定，见 2026-10-08 重设计稿 §6）。
+        """
+        rows = load_table_findings()
+
+        by_risk = {"高": 0, "中": 0, "低": 0}
+        by_status = {}
+        by_origin = {"design": 0, "execution": 0}
+        for tf in rows:
+            risk = (tf.get("risk_classification") or {}).get("risk_level", "-")
+            if risk in by_risk:
+                by_risk[risk] += 1
+            st = tf.get("status") or ""
+            if st:
+                by_status[st] = by_status.get(st, 0) + 1
+            room = tf.get("origin") or ""
+            if room == "看制度":
+                by_origin["design"] += 1
+            elif room == "执行取证":
+                by_origin["execution"] += 1
 
         evals = load_evaluations(days=90)
         eval_avg = None
@@ -487,12 +460,11 @@ class SingleProjectSource:
             eval_avg = sum(e.get("overall_score", 0) for e in evals) / len(evals)
 
         return {
-            "total": index.get("total_findings", 0),
-            "by_risk": {k: len(v) for k, v in by_risk.items()},
-            "by_status": {k: len(v) for k, v in by_status.items() if v},
-            "by_origin": {"design": len(by_origin.get("design", [])),
-                          "execution": len(by_origin.get("execution", []))},
-            "by_year": {y: d["count"] for y, d in sorted(by_year.items())},
+            "total": len(rows),
+            "by_risk": by_risk,
+            "by_status": by_status,
+            "by_origin": by_origin,
+            "by_year": {},
             "eval_count": len(evals),
             "eval_avg": eval_avg,
         }
@@ -538,6 +510,18 @@ class SingleProjectSource:
         }
 
 
+def _project_workspace(pp: Path):
+    """按 scan_project 同口径解析指定项目的工作区目录；找不到返回 None。"""
+    ws = pp / "internal-audit-workspace"
+    if not ws.exists():
+        ws = pp
+        if not (ws / "current-audit.json").exists():
+            ws = pp.parent / "internal-audit-workspace"
+    if not ws.exists():
+        return None
+    return ws
+
+
 class CrossProjectSource:
     """跨项目数据源 — 遍历所有已注册项目的 findings"""
 
@@ -553,22 +537,30 @@ class CrossProjectSource:
         return True
 
     def _iter_all(self):
-        """Yield (project_info, finding_dict) for every finding across all projects."""
+        """Yield (project_info, finding_dict) for every finding across all projects.
+
+        桌子行与旧格式 F-*.json 都吐（老项目冻结但查询不断它们的路；
+        新项目只有桌子行）。桌子行带 ``_from_table=True`` 标记。
+        """
         for proj in self.projects:
             pp = Path(proj["path"])
             findings_dir = pp / "internal-audit-workspace" / "findings"
             if not findings_dir.exists():
                 findings_dir = pp / "findings"
-            if not findings_dir.exists():
-                continue
-            for fpath in sorted(findings_dir.glob("F-*.json")):
-                try:
-                    with open(fpath, "r", encoding="utf-8-sig") as f:
-                        finding = json.load(f)
-                    finding["_project"] = proj.get("topic", "")
-                    yield proj, finding
-                except Exception:
-                    continue
+            if findings_dir.exists():
+                for fpath in sorted(findings_dir.glob("F-*.json")):
+                    try:
+                        with open(fpath, "r", encoding="utf-8-sig") as f:
+                            finding = json.load(f)
+                        finding["_project"] = proj.get("topic", "")
+                        yield proj, finding
+                    except Exception:
+                        continue
+            ws = _project_workspace(pp)
+            if ws is not None:
+                for tf in load_table_findings(ws):
+                    tf["_project"] = proj.get("topic", "")
+                    yield proj, tf
 
     def _load_keyword_ids(self, keyword):
         """Load finding IDs matching keyword from all projects' index.json files."""
@@ -614,7 +606,12 @@ class CrossProjectSource:
             if by_origin and forigin != by_origin:
                 continue
             if kw_ids is not None and fid not in kw_ids:
-                continue
+                if finding.get("_from_table"):
+                    # 桌子行从不进 index：关键词直查文本，查不到才跳过
+                    if keyword not in json.dumps(finding, ensure_ascii=False):
+                        continue
+                else:
+                    continue
 
             results.append(finding)
 

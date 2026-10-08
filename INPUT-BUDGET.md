@@ -31,7 +31,7 @@
 ### 完整性三重保障
 
 1. **设计期真实样本验证子集充分性**：本文档每节必答"子集是否足以支撑判断"；
-2. **校验脚本确定性检查**：产出完整性由校验脚本对完整文件检查（validate-policy-analysis.py / validate-program.py / validate-finding.py / validate-index.py），不依赖 LLM 读了什么；
+2. **校验脚本确定性检查**：产出完整性由校验脚本对完整文件检查（validate-policy-analysis.py / validate-program.py / validate-finding.py），不依赖 LLM 读了什么；
 3. **规则写死可复现**：同一输入 + 同一指令 → 同一读取行为。
 
 ---
