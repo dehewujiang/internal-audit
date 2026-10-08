@@ -6,7 +6,7 @@
 ## 待办
 
 ### 🔴 高优先
-- **R09 真人完整跑一遍**（跨session欠账+2026-10-07新增）：4 次 SKILL 改动 + 2 个新环节（Step 4.6 红队攻击、debate 画像/实战援助）都要真人行为验证。验证点：①红队剧本是否落到具体程序行 ②debate 是否先问画像再开演。commit 标注 `已人工回归: [项目] [评级]`
+- **R09 真人完整跑一遍**（跨session欠账+2026-10-07新增+2026-10-08再新增）：4 次 SKILL 改动（10-07 批）+ 2 个新环节（Step 4.6 红队攻击、debate 画像/实战援助）+ **4 份 SKILL 关双轨改动**（执行只上桌/报告只读桌子/吵架对单号/问话读桌子，commit `94b8f1f`）都要真人行为验证。验证点：①红队剧本是否落到具体程序行 ②debate 是否先问画像再开演 ③**新项目从执行到报告全程无 findings/ 落盘**。commit 标注 `已人工回归: [项目] [评级]`
 - **闸机接 `--ir`**（2026-09-10 发现）：`audit_gate.py` 调用 validate-program 时**从不传 `--ir`**，导致"覆盖率 / 判定标准 / 数据来源"三类阻断**从未生效**（而 `DATAFLOW.md:41` 与 program-generator `SKILL.md:426` 都写着应传）。属"加严"，与已完成的"松绑"（ADR-031）分开排期。两个副作用要先处理：`program_ir_parser` 导入失败 → exit 2 会误拦；`ir_parse` 解析失败只算 warn 会误放
 - **部署到双项目**：三个版本的建设成果均未上现场——架构加固（08-11-3）、新桌子 ledger（09-04-5）、闸机修复（09-10-2）。用户按 `update-project.ps1` 执行；广东长华 / 武汉长华 VERSION.lock 仍停在老版
 - **R09 人工抽查**：4 次 SKILL 改动（报告 Step 2b / 执行写桌子 / 问话 / 看制度 / 吵架）的钩子欠账。用户手工完整跑一遍报告后，commit 标注 `已人工回归: [项目] [评级]`（清单见 `tests/prompt_snapshots/test_prompt_regression.md`）
@@ -35,6 +35,10 @@
 
 ## 阻塞
 - 无
+
+## 已完成（2026-10-08）
+- ✅ **关双轨第一步实施**（`94b8f1f`，一项任务一个提交，checkpoint 合并）：查询只认桌子 + 停写旧格式 + 删 validate-index.py + 4 份 SKILL 并到写桌子 + 快照同步 + B1 事前红测试（红转绿）。用户拍板：A-a（终检用门卫，草稿 validate-finding 保留）、B（历史对比不管老项目）。ADR-037。设计稿纠正三处：validate-catalog 保留 / batch3 测试不用改 / compare_years 不动
+- ✅ **重设计稿定稿**（`d77b00a`）：`新架构设计稿_2026-10-08.md`（一个写入口·一本账·一块任务板，不管老项目版）+ 脚本总数实测更正（31→32，漏数 query_display.py）
 
 ## 已完成（2026-10-07）
 - ✅ **桌子v2.0 全量落地**（`42c4b92`+`31751db`+`0fd49b8`+`17b4f5b`，已推远端）：schema_v2.json（账本+底稿两层，ingested取消，每行带source）+ 冲压车间试点 + MIGRATION.md + 4个SKILL.md改直接写桌（add-line --room/--ref/--status）+ ledger.py加来源字段 + query_data_sources.py认桌子（load_table_findings，老项目兼容）+ 文档同步（DATAFLOW.md/CLAUDE-project.md/AGENTS.md）+ CI（GitHub Actions 8测试+JSON校验）。测试全绿

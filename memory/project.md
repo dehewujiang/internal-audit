@@ -3,18 +3,19 @@
 ## 项目是什么
 AI 驱动的内部审计辅助流水线，帮 Flan（汽车零部件企业审计经理）覆盖从制度分析到报告生成的全过程。
 
-## 当前状态（2026-10-07）
-系统功能完整（12 skill + 四重闸机 + 新桌子 ledger + CI），近期完成**桌子v2.0改数据库**与**检测力升级**：
+## 当前状态（2026-10-08）
+系统功能完整（12 skill + 四重闸机 + 新桌子 ledger + CI），近期完成**桌子v2.0改数据库**与**检测力升级**，今日再落**关双轨第一步**：
 
 - **桌子v2.0**（ADR待补）：桌子从"复印件"改成"数据库"——账本（记结论，唯一原件）+ 底稿（记过程，自动生成）。技能直接写桌（add-line --room/--ref/--status），不再写本子再抄（sweep只留给老项目搬家用）。ingested抄写本子取消，每行自带来源标记。查询认桌子（老项目兼容）
 - **检测力升级**（ADR-036，decec7a）：程序生成必过 **Step 4.6 红队攻击**——恶意内部人出攻击剧本→裁判三级判定→回灌修订→再攻≤2轮，原轨道B对抗验证(3.7)并入。debate 新增被审计人画像（情境驱动扮演）+ 实战援助（贴真实被审方原话→判回避/矛盾/转移话题+追问草稿）
 - **CI自动测试**（2026-10-07）：GitHub Actions 每次提交跑8个测试+JSON校验
+- **关双轨第一步**（ADR-037，`94b8f1f`）：查询只认桌子（单项目/跨项目/汇总/来龙去脉卡），结论只上桌不再落盘（index 停写），`validate-index.py` 删除（校验脚本 8→7），4 份 SKILL 并到写桌子（执行/报告/吵架/问话），上桌后门卫查硬度接终检。历史对比不管老项目。B1 事前红测试红转绿；R09 待新项目真人验证
 - **未上现场**：以上成果均未部署到两个现场项目（见「当前最大风险」）
 
 > 更早的批次（坑2 第一批 / 新桌子 ledger / 架构加固 C1-C7 / 四轮整改）见 `decisions.md` 的 ADR 与 `context.md`——本文件只写"现在是什么样"。
 
 ## 已完成功能
-- 12 个 skill + 2 evaluators + 8 个校验脚本（validate-finding/program/report/policy-analysis/interview/json + validate-catalog/validate-index）+ 4 个辅助脚本（data_executor/audit_gate/check_mandatory_coverage + compare-snapshots）
+- 12 个 skill + 2 evaluators + 7 个校验脚本（validate-finding/program/report/policy-analysis/interview/json + validate-catalog）+ 4 个辅助脚本（data_executor/audit_gate/check_mandatory_coverage + compare-snapshots）
 - 四重闸机体系（流程 / 质量 / 授权 / 调度）
 - ProgramIR 解析器——审计程序 MD → 结构化 IR
 - 审计程序模板含「设计理由」「测试目的」两列（6 轨道 + 增量章节）
