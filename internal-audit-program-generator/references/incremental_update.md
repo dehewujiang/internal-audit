@@ -222,13 +222,15 @@
 
 ---
 
-## 输出后：收上桌（S 加菜写完顺手收，只添不盖）
+## 输出后：新假设落任务板（S 加菜写完顺手立任务）
 
-**写桌子**（桌子在 `internal-audit-workspace/audit-table/*.json`，建项目时已开好；找不到就停下报告，不要跳过——宪法#12）：S 章节落进程序文档后跑一次收料，新风险就会上桌：
-`python ledger/ledger.py sweep <桌子.json> --workspace <项目根目录>`；
+**写桌子**（桌子在 `internal-audit-workspace/audit-table/*.json`，建项目时已开好；找不到就停下报告，不要跳过——宪法#12）：S 章节每条新假设立一个任务（待查），有户口的只挂引用不上新行：
+```bash
+python ledger/ledger.py add-task <桌子.json> --title "<假设一句话>" --room 检查单 --ref <S编号>
+```
 检查表本身也更新了的话，把入口填进抽屉：
 `python ledger/ledger.py set-drawer <桌子.json> --name 检查表 --path internal-audit-workspace/audit-programs/<程序_v1.1.md> --status 已补充`。
-收完把报的三个数（新增几条、挪格几条、补证据几条）告诉用户。
+立完把任务编号告诉用户。不再跑 `sweep`（老路，A6 待删）。
 
 ---
 

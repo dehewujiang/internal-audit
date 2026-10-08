@@ -273,6 +273,13 @@ python ledger/ledger.py add-task <桌子.json> --title "<假设一句话>" --roo
 1. 将 Step 2 识别出的所有 risk_id 列在输出中（格式：`[自检] 待覆盖风险: R01, R02, ...`）
 2. 每生成完一个轨道的程序后，在输出中再次列出该轨道已覆盖的 risk_id
 3. 全部轨道完成后，输出 `[自检] 覆盖完整性确认: N/N 风险均已分配程序`
+4. **先读账再写做法**：读任务板待查任务 + 事实行，风险清单章节逐条写明来源
+   （无户口 `← T-xxx` / 有户口 `← CG-/RP-/CF-/D-xxx`）；测试指令只许给有来源的
+   风险写做法，不许夹带无名风险——对不上账的会被 Step 4.5 对账门拦下：
+
+   ```bash
+   python _shared/scripts/validate-program.py <程序MD文件> --ir --strict --workspace <项目根目录>
+   ```
 
 > 作用：让 LLM 在生成过程中"看见"完整清单，减少上下文信息衰减导致的遗忘。这是防漏的第一重屏障；第二重是 Step 4.5 的脚本拦截，第三重是拦截后的修复闭环。
 
@@ -396,10 +403,11 @@ python ledger/ledger.py add-task <桌子.json> --title "<假设一句话>" --roo
    ```bash
    python _shared/scripts/program_ir_parser.py <程序MD文件> --out internal-audit-workspace/program_ir.json
    ```
-2. 结构化校验（覆盖率 / 判定标准量化 / 数据来源比例）：
+2. 结构化校验（覆盖率 / 判定标准量化 / 数据来源比例 / 账上对账）：
    ```bash
-   python _shared/scripts/validate-program.py <程序MD文件> --ir --strict
+   python _shared/scripts/validate-program.py <程序MD文件> --ir --strict --workspace <项目根目录>
    ```
+   `--workspace` 给了才跑风险清单↔账上对账（孤儿风险 block）；不给则跳过（旧版程序不误拦）。
 3. **激活轨道校验（N15）**：比对 `program_ir.json` 的 `activated_tracks` 与 Step 1.4 目的级联路由的预期轨道：
 
    | 审计目的 | 预期轨道 |

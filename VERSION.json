@@ -1,8 +1,13 @@
 {
-  "version": "2026-10-08-4",
-  "git_commit": "3ce9970",
-  "updated_at": "2026-10-08T19:23:50+08:00",
+  "version": "2026-10-08-5",
+  "git_commit": "21db725",
+  "updated_at": "2026-10-08T19:41:46+08:00",
   "changes": [
+    {
+      "type": "feat",
+      "file": "_shared/scripts/validate-program.py",
+      "summary": "程序视图化：--workspace跑风险清单↔账上对账(孤儿block，有任务/户口放行，无账跳过)，blocking键+ir_ledger_reconcile"
+    },
     {
       "type": "feat",
       "file": "ledger/ledger.py+check.py+schema",

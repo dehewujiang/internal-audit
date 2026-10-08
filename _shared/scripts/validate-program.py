@@ -203,7 +203,7 @@ def check_column_consistency(text, config_path=None):
 BLOCKER_KEYS = {
     "no_placeholder", "track_activation", "column_consistency",
     "ir_coverage_rate", "ir_criterion", "ir_data_source",
-    "ir_parse",
+    "ir_parse", "ir_ledger_reconcile",
 }
 
 SWITCH_WORDS = {'是', '否', '有', '无', '存在', '不存在', '符合', '不符合',
@@ -291,7 +291,95 @@ def check_ir_decision_rationale(ir):
     return True, None
 
 
-def run_ir_checks(ir):
+def _norm_ref(raw):
+    """编号归一化（与 program_ir_parser.normalize_risk_id 同口径）：
+    R01/R-001 → R-1；其余大写原样（如 S01/CG-01）。"""
+    if not raw:
+        return ""
+    s = str(raw).strip().upper()
+    m = re.match(r"^R[K]?-?(\d+)$", s)
+    if m:
+        return f"R-{int(m.group(1))}"
+    return s
+
+
+def _collect_ledger_ctx(workspace):
+    """从项目账上收两样东西：任务编号集合 + 户口编号集合。
+
+    户口 = 制度分析三类编号（CG/RP/CF/D，沿用 sweep _known_anchors 口径）
+    + 桌上左边行的来源编号 + 任务编号。找不到账（旧版程序/路径不对）
+    返回 None，对账跳过不误拦。
+    """
+    ws = Path(workspace)
+    base = ws / "internal-audit-workspace"
+    if not base.is_dir():
+        return None
+    anchors, task_refs = set(), set()
+    for p in sorted((base / "policy-analyses").glob("*.json")) if (base / "policy-analyses").is_dir() else []:
+        try:
+            a = json.loads(p.read_text(encoding="utf-8-sig"))
+        except Exception:
+            continue
+        for g in a.get("control_gaps") or []:
+            anchors.add(str(g.get("gap_id") or g.get("id") or "").strip().upper())
+        for r in a.get("risk_points") or []:
+            anchors.add(str(r.get("rp_id") or r.get("risk_id") or r.get("id") or "").strip().upper())
+        for c in a.get("conflicts") or []:
+            anchors.add(str(c.get("conflict_id") or c.get("id") or "").strip().upper())
+    for p in sorted((base / "design-assessments").glob("*.json")) if (base / "design-assessments").is_dir() else []:
+        try:
+            a = json.loads(p.read_text(encoding="utf-8-sig"))
+        except Exception:
+            continue
+        for o in a.get("design_observations") or []:
+            anchors.add(str(o.get("id") or "").strip().upper())
+    tables = sorted((base / "audit-table").glob("*.json")) if (base / "audit-table").is_dir() else []
+    if not tables:
+        return None
+    for p in tables:
+        try:
+            t = json.loads(p.read_text(encoding="utf-8-sig"))
+        except Exception:
+            continue
+        for x in t.get("left", []):
+            ref = str(((x.get("source") or {}).get("ref")) or "").strip().upper()
+            if ref:
+                anchors.add(ref)
+        for task in t.get("tasks", []):
+            ref = _norm_ref(((task.get("source") or {}).get("ref")) or "")
+            if ref:
+                task_refs.add(ref)
+                anchors.add(ref)
+    anchors.discard("")
+    return {"anchors": anchors, "task_refs": task_refs}
+
+
+def check_ir_ledger_reconcile(ir, ctx):
+    """[IR] 程序风险清单 ↔ 账上对账：每条非作废风险须指回任务或户口，否则 block。
+
+    ctx 为 None（不传 --workspace / 找不到账）→ 跳过不误拦旧版程序。
+    """
+    if ctx is None:
+        return True, "未给项目路径，无账可对，跳过（旧版程序不误拦）"
+    risks = [r for r in ir.get("risk_register", [])
+             if r.get("risk_id") and not r.get("is_deleted")]
+    if not risks:
+        return True, "风险清单为空，无账可对，跳过"
+    orphans = []
+    for r in risks:
+        rid = _norm_ref(r.get("risk_id"))
+        if rid in ctx["task_refs"]:
+            continue
+        if {a.upper() for a in r.get("fact_anchors") or []} & ctx["anchors"]:
+            continue
+        orphans.append(rid)
+    if orphans:
+        return False, (f"{len(orphans)} 条风险账上无家（无任务、无户口）："
+                       f"{', '.join(orphans[:10])}——先 add-task 立任务或补户口再出程序")
+    return True, f"{len(risks)} 条风险全有家（任务/户口），与账一致"
+
+
+def run_ir_checks(ir, ledger_ctx=None):
     """对 ProgramIR 执行全部 IR 结构化检查，返回 {check_name: {passed, message}}。"""
     checks = {}
     for name, fn in [
@@ -307,12 +395,17 @@ def run_ir_checks(ir):
         except Exception as e:
             passed, msg = False, f"检查异常: {e}"
         checks[name] = {"passed": passed, "message": msg}
+    try:
+        passed, msg = check_ir_ledger_reconcile(ir, ledger_ctx)
+    except Exception as e:
+        passed, msg = False, f"检查异常: {e}"
+    checks["ir_ledger_reconcile"] = {"passed": passed, "message": msg}
     return checks
 
 
 # ── 主校验 ──────────────────────────────────────────────
 
-def validate_program(text, filename="", ir=None):
+def validate_program(text, filename="", ir=None, ledger_ctx=None):
     """对审计程序文本执行全部校验。ir 非 None 时追加 IR 结构化检查。"""
     checks = {}
 
@@ -345,7 +438,7 @@ def validate_program(text, filename="", ir=None):
             checks["ir_parse"] = {"passed": False,
                                   "message": f"ProgramIR 解析失败，IR 检查跳过：{ir_error}"}
         else:
-            checks.update(run_ir_checks(ir))
+            checks.update(run_ir_checks(ir, ledger_ctx))
 
     blockers = [k for k, v in checks.items() if not v["passed"] and k in BLOCKER_KEYS]
     warnings = [k for k, v in checks.items() if not v["passed"] and k not in BLOCKER_KEYS]
@@ -378,6 +471,8 @@ def main():
     parser.add_argument("--json", action="store_true", help="输出 JSON 格式")
     parser.add_argument("--ir", action="store_true",
                         help="追加 ProgramIR 结构化校验（覆盖度/判定标准量化/数据来源比例等）")
+    parser.add_argument("--workspace", default=None,
+                        help="项目根目录：给了才跑风险清单↔账上对账（ir_ledger_reconcile）；不给则跳过不误拦")
     parser.add_argument("--strict", action="store_true", help="block时exit 1而非exit 0")
     args = parser.parse_args()
 
@@ -422,7 +517,9 @@ def main():
                 ir = build_ir(Path(fpath))
             except Exception as e:
                 ir = {"_parse_error": str(e)}
-        report = validate_program(text, filename=os.path.basename(fpath), ir=ir)
+        ledger_ctx = _collect_ledger_ctx(args.workspace) if args.workspace else None
+        report = validate_program(text, filename=os.path.basename(fpath), ir=ir,
+                                  ledger_ctx=ledger_ctx)
         results.append(report)
         if report["action"] == "block":
             has_blocker = True
