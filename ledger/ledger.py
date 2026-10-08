@@ -32,6 +32,7 @@ ledger.py — 新桌子的管家（只管"往桌上写"，不管"查"和"拍照"
 import argparse
 import copy
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -128,24 +129,27 @@ def snaps_dir(path: Path) -> Path:
     return d
 
 
-def snapshot(path: Path) -> None:
-    """写之前拍一张，只留20张，多了扔最早的。开新桌不拍（没旧可回）。"""
-    if not path.exists():
-        return
+def history_path(path: Path) -> Path:
+    """流水文件：跟桌子同名同目录，后缀 .history.jsonl，只增不减。"""
+    return path.parent / (path.stem + ".history.jsonl")
+
+
+def save(path: Path, data: dict, op: str = "") -> None:
+    """写桌子：先写临时文件再改名（断电不留半条），再追记流水一行。
+
+    旧照片（.snaps）只读保留，取证用，不再新增——A5 起流水代替拍照。
+    """
     from datetime import datetime
-    d = snaps_dir(path)
-    (d / f"snap_{datetime.now().strftime('%Y%m%d%H%M%S%f')}.json").write_bytes(path.read_bytes())
-    snaps = sorted(d.glob("snap_*.json"))
-    for old in snaps[:-20]:
-        old.unlink()
-
-
-def save(path: Path, data: dict) -> None:
-    """写桌子：先拍照再写。父目录没建就顺手建上——
-    建项目时开第一张桌走的就是这条路，那时 audit-table/ 还不存在。"""
     path.parent.mkdir(parents=True, exist_ok=True)
-    snapshot(path)
-    path.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+    body = json.dumps(data, ensure_ascii=False, indent=2)
+    tmp = path.parent / (path.stem + ".tmp")
+    tmp.write_text(body, encoding="utf-8")
+    os.replace(tmp, path)
+    row = {"at": datetime.now().strftime("%Y-%m-%d %H:%M"),
+           "op": op or "落盘",
+           "table": data.get("table", "")}
+    with history_path(path).open("a", encoding="utf-8") as f:
+        f.write(json.dumps(row, ensure_ascii=False) + "\n")
 
 
 def cmd_snaps(args) -> None:
@@ -174,7 +178,7 @@ def cmd_create(args) -> None:
     path = Path(args.file)
     if path.exists():
         raise SystemExit(f"桌子已存在：{path}，换个名再开")
-    save(path, blank_table(args.table))
+    save(path, blank_table(args.table), op="开桌")
     print(f"开好桌子：{args.table}")
 
 
@@ -203,7 +207,7 @@ def cmd_set_slot(args) -> None:
             x["text"] = args.text
             if src:
                 x["source"] = src
-    save(path, data)
+    save(path, data, op="改字")
     print(f"写好：{args.slot}")
 
 
@@ -596,7 +600,7 @@ def cmd_import(args) -> None:
     table = blank_table(args.table)
     added, _ = apply_items(table, items)
     nevd = apply_evidence(table, rows)
-    save(out, table)
+    save(out, table, op="搬家")
     counts = "／".join(f"{x['slot']}{len(_lines_of(x['text']))}"
                       for x in table["left"])
     print(f"搬好：{added}条上桌（{counts}）／ 证据{nevd}条 ← {ws.name}")
@@ -635,7 +639,7 @@ def cmd_sweep(args) -> None:
     if not (added or moved or nevd or pruned):
         print("收料：桌上已是最新，没有新的")
         return
-    save(path, data)
+    save(path, data, op="收料")
     _writeback_sweep(ws, added, moved, nevd, pruned)
     print(f"收料：新增 {added} 条、挪格 {moved} 条、补证据 {nevd} 条")
     if pruned:
@@ -654,7 +658,7 @@ def cmd_add_gap(args) -> None:
     _append_line(data, LEFT_SLOTS[2],
                  f"{args.finding} 证据缺失：{args.missing}"
                  f"（三种可能：业务未发生 / 管理缺失未留痕 / 证据被消除，须分别追问）")
-    save(path, data)
+    save(path, data, op="记缺口")
     print(f"已记缺口：{args.finding} 缺「{args.missing}」→ 三种可能都要问")
 
 
@@ -706,7 +710,7 @@ def cmd_add_task(args) -> None:
         "created_at": _now(),
         "closed_at": "",
     })
-    save(path, data)
+    save(path, data, op="立任务")
     print(f"立好任务：{tid} {args.title}（待查）")
 
 
@@ -736,7 +740,7 @@ def cmd_close_task(args) -> None:
         task["close_reason"] = args.reason
     task["status"] = args.verdict
     task["closed_at"] = _now()
-    save(path, data)
+    save(path, data, op="结任务")
     print(f"结好任务：{args.id} → {args.verdict}")
 
 
@@ -760,7 +764,7 @@ def cmd_add_evidence(args) -> None:
     if src:
         row["source"] = src
     data["right"].append(row)
-    save(path, data)
+    save(path, data, op="贴证据")
     print(f"贴好证据：{args.file_}" + (f"（{grade}级）" if grade else ""))
 
 
@@ -785,7 +789,7 @@ def cmd_add_line(args) -> None:
             x["text"] = f"{x['text']}；{args.text}" if x["text"] else args.text
             if src:
                 x["source"] = src
-    save(path, data)
+    save(path, data, op="添字")
     print(f"添好：{args.slot}")
 
 
@@ -798,7 +802,7 @@ def cmd_link(args) -> None:
     for x in data["left"]:
         if x["slot"] == args.slot and args.finding not in x["ref_finding_ids"]:
             x["ref_finding_ids"].append(args.finding)
-    save(path, data)
+    save(path, data, op="对单号")
     print(f"对好：{args.slot} ↔ {args.finding}")
 
 
@@ -812,7 +816,7 @@ def cmd_set_drawer(args) -> None:
                 d["path"] = args.path
             if args.status is not None:
                 d["status"] = args.status
-    save(path, data)
+    save(path, data, op="填抽屉")
     print(f"抽屉填好：{args.name}")
 
 

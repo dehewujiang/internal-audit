@@ -1,8 +1,13 @@
 {
-  "version": "2026-10-08-6",
-  "git_commit": "4cf999f",
-  "updated_at": "2026-10-08T19:50:52+08:00",
+  "version": "2026-10-08-7",
+  "git_commit": "2119927",
+  "updated_at": "2026-10-08T20:01:37+08:00",
   "changes": [
+    {
+      "type": "feat",
+      "file": "ledger.py+phase_gate.py+constitution",
+      "summary": "快照换历史表：落盘追流水(.history.jsonl只增不减)+原子改名，拍照函数删除旧目录保留，宪法#8改字"
+    },
     {
       "type": "feat",
       "file": "phase_gate.py+ledger.py+constitution",

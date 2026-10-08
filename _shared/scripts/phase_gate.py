@@ -242,10 +242,13 @@ def load_audit() -> dict:
 
 
 def save_audit(data: dict, ws: Path):
-    """Write back current-audit.json"""
+    """Write back current-audit.json（原子落账：先写临时再改名，断电不留半条）。"""
+    import os
     audit_path = ws / "current-audit.json"
-    with open(audit_path, "w", encoding="utf-8") as f:
+    tmp = ws / "current-audit.tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
+    os.replace(tmp, audit_path)
 
 
 def check_exit_conditions(ws: Path, current_phase: str, data: dict, args=None) -> list:
@@ -443,21 +446,6 @@ def check_consumed_consistency(data: dict, iw: Path) -> list:
              "trigger": "interview"}]
 
 
-def snapshot_audit_state(data: dict, ws: Path):
-    """Save audit_state snapshot (keep last 20)"""
-    snapshots_dir = ws / "snapshots"
-    snapshots_dir.mkdir(exist_ok=True)
-    ts = datetime.now().strftime("%Y%m%d-%H%M%S")
-    phase = data.get("status", "unknown")
-    snap_file = snapshots_dir / f"snap_{ts}_{phase}.json"
-    with open(snap_file, "w", encoding="utf-8") as f:
-        json.dump(data.get("audit_state", {}), f, ensure_ascii=False, indent=2)
-    snaps = sorted(snapshots_dir.glob("snap_*.json"))
-    for old in snaps[:-20]:
-        old.unlink()
-    return str(snap_file)
-
-
 def append_audit_trail(data: dict, event_type: str, detail: str):
     """Append event to audit_trail"""
     state = data.setdefault("audit_state", {})
@@ -510,17 +498,15 @@ def cmd_tool_check(args):
         print(json.dumps(result, ensure_ascii=False, indent=2))
         sys.exit(0)
 
-    # Not allowed — force overrides
+    # Not allowed — force overrides (拍照已取消A5：只记流水，不存快照)
     if getattr(args, "force", False):
         try:
             data = load_audit()
-            snap_path = snapshot_audit_state(data, ws)
             append_audit_trail(data, "tool_force_override",
                                f"强制调用 {tool_name}（当前阶段 {phase} 不允许）")
             save_audit(data, ws)
-            result["snapshot"] = snap_path
         except SystemExit:
-            pass  # no workspace to snapshot — ok
+            pass  # no workspace — ok
         result["allowed"] = True
         result["forced"] = True
         print(json.dumps(result, ensure_ascii=False, indent=2))
@@ -674,7 +660,6 @@ def cmd_advance(args):
             }, ensure_ascii=False, indent=2))
             sys.exit(2)
 
-    snap_path = snapshot_audit_state(data, ws)
     data["status"] = next_phase
     data["updated_at"] = datetime.now().strftime("%Y-%m-%d")
     append_audit_trail(data, "phase_advance", f"{current} -> {next_phase}")
@@ -684,7 +669,6 @@ def cmd_advance(args):
         "action": "advanced",
         "from": current,
         "to": next_phase,
-        "snapshot": snap_path,
         "updated_at": data["updated_at"],
     }, ensure_ascii=False, indent=2))
     sys.exit(0)
@@ -706,10 +690,9 @@ def cmd_rollback(args):
 
 def cmd_log_program_change(args):
     """现场改程序记账：新增进 added、停用进 deferred（并从 pending 摘掉）、替代只记历史。
-    每次都拍照 + 大事记 + 更新历史。缺的格子就地补（老账本不作废）。"""
+    只记流水（大事记+更新历史），不拍照。缺的格子就地补（老账本不作废）。"""
     ws = find_workspace()
     data = load_audit()
-    snap_path = snapshot_audit_state(data, ws)
     st = data.setdefault("audit_state", {})
     progs = st.setdefault("programs", {})
     pid, ptype = args.id, args.type
@@ -735,7 +718,6 @@ def cmd_log_program_change(args):
         "action": "program_change_logged",
         "id": pid,
         "type": ptype,
-        "snapshot": snap_path,
     }, ensure_ascii=False, indent=2))
     sys.exit(0)
 
@@ -744,7 +726,6 @@ def cmd_log_decision(args):
     """记录审计决策到 audit_trail（decision 事件）"""
     ws = find_workspace()
     data = load_audit()
-    snap_path = snapshot_audit_state(data, ws)
     detail = f"{args.scene}:{args.decision}:{args.basis}"
     append_audit_trail(data, "decision", detail)
     save_audit(data, ws)
@@ -752,7 +733,6 @@ def cmd_log_decision(args):
         "action": "decision_logged",
         "event_type": "decision",
         "detail": detail,
-        "snapshot": snap_path,
     }, ensure_ascii=False, indent=2))
     sys.exit(0)
 

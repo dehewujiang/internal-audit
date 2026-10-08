@@ -61,30 +61,32 @@ def table_text(path: Path) -> str:
 
 
 # ══════════════════════════════════════════════════════════════
-# 断言 1（A4 新口径）：回头已取消——rollback 只拒收，文件不动，照片照封顶
+# 断言 1（A5 新口径）：拍照取消——只记流水，rollback 照拒，文件不动
 # ══════════════════════════════════════════════════════════════
 def test_rollback_full():
-    print("\n[1] 回头取消：照片攒满 20 张后 rollback 只拒收")
+    print("\n[1] 拍照取消：21 次写入只记流水，rollback 照拒")
     t = SANDBOX / "回滚测试.json"
     _run("ledger.py", "create", t, "--table", "回滚测试")
-    for i in range(1, 22):                       # 21 次写入 → 照片封顶 20 张
+    for i in range(1, 22):                       # 21 次写入 → 流水 21+1 行
         _run("ledger.py", "add-line", t, "--slot", "说不清的信号", "--text", f"第{i}次")
 
     snaps_dir = SANDBOX / "回滚测试.snaps"
-    snaps = sorted(snaps_dir.glob("snap_*.json"))
-    check("照片按上限留 20 张", len(snaps) == 20, f"实际 {len(snaps)} 张")
+    check("不建照片目录", not snaps_dir.exists())
+    hist = SANDBOX / "回滚测试.history.jsonl"
+    rows = hist.read_text(encoding="utf-8").splitlines() if hist.exists() else []
+    check("流水 22 行全是合法 JSON", len(rows) == 22 and all(
+        json.loads(x).get("op") for x in rows), f"实际 {len(rows)} 行")
 
-    earliest = snaps[0]
     before_rollback = table_text(t)
 
-    r = _run("ledger.py", "rollback", t, "--to", earliest.name)
+    r = _run("ledger.py", "rollback", t, "--to", "snap_假照片.json")
     check("回头已取消 → exit 2 拒收", r.returncode == 2,
           f"退出码={r.returncode}" + (f" | {r.stderr.strip().splitlines()[-1]}" if r.stderr.strip() else ""))
     check("拒收后桌文件一字不动", table_text(t) == before_rollback)
 
-    # 守恒：拒收是一次零写入操作——拒收前的照片一张不少
-    after = {table_text(p) for p in snaps_dir.glob("snap_*.json")}
-    check("照片一张不少（只增不减）", len(after) == 20, f"实际 {len(after)} 张")
+    # 守恒：拒收是一次零写入操作——流水不增不减
+    rows2 = hist.read_text(encoding="utf-8").splitlines()
+    check("拒收不记流水（零写入）", len(rows2) == 22, f"实际 {len(rows2)} 行")
 
 
 # ══════════════════════════════════════════════════════════════

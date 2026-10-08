@@ -213,7 +213,7 @@ def test_log_program_change():
     check("added 进 X-001", "X-001" in st.get("programs", {}).get("added", []))
     check("更新历史记一笔", any(h.get("id") == "X-001" for h in st.get("program_update_history", [])))
     check("大事记记一笔", any(e.get("event_type") == "program_change" for e in st.get("audit_trail", [])))
-    check("拍照留一张", len(list((ws / "internal-audit-workspace" / "snapshots").glob("snap_*.json"))) >= 1)
+    check("不拍新快照（A5 拍照取消）", not (ws / "internal-audit-workspace" / "snapshots").exists())
 
 
 # ══════════════════════════════════════════════════════════════
