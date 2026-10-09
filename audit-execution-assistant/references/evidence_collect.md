@@ -18,13 +18,13 @@ python _shared/scripts/validate-catalog.py evidence/_evidence_catalog.json --str
 ```
 evidence/
 ├── _files/                      ← 所有证据集中存放（只放一份，不按程序分目录）
-└── _evidence_catalog.json       ← 证据清单（Phase 2 Python自动生成）
+└── _evidence_catalog.json       ← 证据清单（Phase 2 账表生成时兼容导出）
 ```
 
 **关键变化（v2.0）**：
 - 所有证据文件只放一份到 `evidence/_files/`，不再复制到每个程序目录，也不按程序建立子目录
-- 引用关系记录在 `_evidence_catalog.json` 的 `source_programs` 字段
-- 证据槽位由 `create_evidence_dirs.py` 从程序 Markdown 的"取证方式"列自动生成
+- 引用关系记录在账上 `evidence_slots` 表的 `source_programs` 字段（兼容导出 `_evidence_catalog.json`）
+- 证据槽位由 `ledger.py init-evidence-slots` 从程序 Markdown 的"取证方式"列自动生成（解析与 validate-program 同源）
 
 **Step 1 执行时的证据状态展示**：
 

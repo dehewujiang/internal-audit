@@ -106,14 +106,14 @@ Phase flow: `phase_0_init → phase_1_document_analysis → phase_1_5_interview 
 | `validate-interview.py` | Validate interview materials |
 | `validate-catalog.py` | Validate _evidence_catalog.json structure (slots/count consistency, R05) |
 | `validate-json.py` | Generic JSON schema validation |
-| `create_evidence_dirs.py` | Auto-create evidence dirs + generate `_evidence_catalog.json` from program markdown (v2.0) |
+| `create_evidence_dirs.py` | ⚠️ 待退役：槽位生成已由 `ledger.py init-evidence-slots` 接管（账上表+兼容导出），本脚本不再被调用 |
 | `evidence_catalog.py` | Evidence catalog CRUD: scan files, suggest matches, update slots, status summary |
 | `project_init.py` | Project safety check before workspace creation |
 | `query_data_sources.py` | Backend data source queries (used by queries.py) |
 | `decisions_schema.py` | JSON schema for decision records |
 | `audit_styles.py` | Audit writing style definitions |
 | `excel_core.py` | Excel read/write core (used by program-generator export) |
-| `ledger/ledger.py` | 新桌子管家：开桌/写格/贴证据/对单号/填抽屉/收料(sweep)/记证据缺口(add-gap)/老账搬家 |
+| `ledger/ledger.py` | 新桌子管家：开桌/写格/贴证据/对单号/填抽屉/收料(sweep)/记证据缺口(add-gap)/老账搬家/证据槽位初始化(init-evidence-slots) |
 | `ledger/check.py` | 新桌子日常门卫：只读桌子查大事+高风险硬度+信号池有没有沉底 |
 | `ledger/checklist.py` | 新桌子打勾纸：六句话看板，只看不拦 |
 | `ledger/audit_table.py` | 报告前桌子闸机：单缺位/鬼号/红格无单号拦下 |

@@ -175,7 +175,7 @@ PHASE_TOOLS = {
     "phase_0_init":                    {"project_init.py"},
     "phase_1_document_analysis":       {"validate-policy-analysis.py", "pdf_ocr_extractor.py"},
     "phase_1_5_interview":            {"validate-interview.py"},
-    "phase_2_program_generation":      {"validate-program.py", "create_evidence_dirs.py"},
+    "phase_2_program_generation":      {"validate-program.py"},
     "phase_3_execution":               {"validate-finding.py", "data_executor.py", "data_health_check.py"},
     "phase_4_report":                  {"validate-report.py"},
 }
