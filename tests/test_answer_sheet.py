@@ -118,7 +118,8 @@ def main():
 
     pol = REG_IN / "policy-analysis_考勤管理规定_A5.json"
     if pol.exists():
-        check_script("制度·回归样本", run_script("validate-policy-analysis.py", pol, "--json"))
+        # 人话模式（闸机 B2 起读人话尾行；--json 保持纯 JSON 供全量解析者）
+        check_script("制度·回归样本", run_script("validate-policy-analysis.py", pol))
     else:
         print("  ⚠️ 跳过制度用例：回归样本不存在")
 
