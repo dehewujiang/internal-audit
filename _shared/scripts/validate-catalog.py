@@ -8,8 +8,8 @@ validate-catalog.py — _evidence_catalog.json 结构校验器（R05）
 [POS]:    _shared/scripts 的证据清单校验工具，被 audit-execution-assistant/SKILL.md
           Step 1 引用（读取 catalog 前调用）；损坏时阻止执行阶段误判证据状态
 
-校验范围（基于 v2.0 实际 schema，字段名以 evidence_catalog.py / create_evidence_dirs.py
-生成的真实 catalog 为准——顶层 project/items/total_slots/filled_slots，槽位
+校验范围（基于 v2.0 实际 schema，字段名以 ledger.py init-evidence-slots
+生成的真实 catalog 为准（旧 create_evidence_dirs.py 已退役）——顶层 project/items/total_slots/filled_slots，槽位
 id/name/source_track/source_programs/file/collected_at）：
 - 结构：JSON 可解析、顶层必填、items 为数组
 - 槽位：id 非空且唯一、name 非空、source_track 非空、source_programs 为数组、

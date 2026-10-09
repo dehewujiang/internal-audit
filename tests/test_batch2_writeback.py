@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 [INPUT]: 依赖 _shared/scripts/program_ir_parser.py、validate-program.py、
-          ledger/ledger.py、create_evidence_dirs.py、phase_gate.py
+          ledger/ledger.py（含 init-evidence-slots）、phase_gate.py
 [OUTPUT]: 断言式测试输出（✅/❌）+ 汇总；exit 0=全过 / 1=有失败
 [POS]:    tests/ 下的专项测试，锁死第二拨（账本回写+三修）五件事：
           作废标记识别 / 任务作废（A6 收料删除后改道）/ 落盘记流水 /
@@ -158,19 +158,33 @@ def test_sweep_writeback():
 
 def test_catalog_merge():
     print("\n[5] 证据柜：合流旧纸条 + 作废的不占槽")
-    ced = _load("create_evidence_dirs_b2", SHARED / "create_evidence_dirs.py")
+    # 2026-10-10：生成方由 create_evidence_dirs.generate_evidence_catalog
+    # 改为 ledger.py init-evidence-slots（账上表+兼容 catalog 双写），断言不变
     d = Path(tempfile.mkdtemp(prefix="b2ev_", dir=str(SANDBOX)))
     md = d / "prog.md"
     md.write_text(MD_TMPL, encoding="utf-8")
     root = d / "evidence"
-    ced.generate_evidence_catalog(str(md), root, "废料")
+    table = d / "桌子.json"
+
+    def run(*a):
+        return subprocess.run([sys.executable, str(LEDGER / "ledger.py")] + [str(x) for x in a],
+                              capture_output=True, text=True, encoding="utf-8", errors="replace")
+    r = run("create", table, "--table", "废料")
+    assert r.returncode == 0, r.stderr[:200]
+    r = run("init-evidence-slots", table, "--program-md", str(md),
+            "--evidence-root", str(root), "--project", "废料")
+    assert r.returncode == 0, (r.stdout + r.stderr)[:300]
     cat1 = json.loads((root / "_evidence_catalog.json").read_text(encoding="utf-8"))
     check("首建 1 槽（A1.2 作废不占槽，只剩称重单）", cat1["total_slots"] == 1, f"实际={cat1['total_slots']}")
+    t1 = json.loads(table.read_text(encoding="utf-8"))
+    check("账上 evidence_slots 同步 1 槽", len(t1.get("evidence_slots", [])) == 1)
     # 贴纸条后重做
     cat1["items"][0]["file"] = "_files/称重单7张.pdf"
     cat1["items"][0]["collected_at"] = "2026-09-15"
     (root / "_evidence_catalog.json").write_text(json.dumps(cat1, ensure_ascii=False), encoding="utf-8")
-    ced.generate_evidence_catalog(str(md), root, "废料")
+    r = run("init-evidence-slots", table, "--program-md", str(md),
+            "--evidence-root", str(root), "--project", "废料")
+    assert r.returncode == 0, (r.stdout + r.stderr)[:300]
     cat2 = json.loads((root / "_evidence_catalog.json").read_text(encoding="utf-8"))
     kept = [it for it in cat2["items"] if it["file"]]
     check("旧纸条还在", len(kept) == 1 and kept[0]["file"] == "_files/称重单7张.pdf")
