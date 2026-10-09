@@ -204,6 +204,17 @@ def main():
         print(f"\n{'='*60}")
         print(f"  共计 {len(results)} 个文件: ✅ {passed}  ⚠️  {warned}  🔴 {blocked}")
         print(f"{'='*60}\n")
+        # 结构化答卷（B1）：人话模式尾行追 SHEET；--json 保持纯 JSON（存量全量解析不动）。
+        verdict = "block" if has_blocker else "warn" if has_warn else "pass"
+        print("SHEET:" + json.dumps({
+            "tool": "validate-report",
+            "action": verdict,
+            "message": f"{len(results)} 个文件: 过了 {passed}, 警告 {warned}, 拦下 {blocked}",
+            "summary": {"total": len(results), "passed": passed,
+                        "warned": warned, "blocked": blocked},
+            "details": results,
+            "crashed": False,
+        }, ensure_ascii=False))
     else:
         print(json.dumps(results, ensure_ascii=False, indent=2))
 
@@ -223,5 +234,13 @@ if __name__ == "__main__":
     except Exception:
         # 未预期崩溃 → exit(2) 阻断。绝不能让崩溃的退出码(1)被闸机误判成"警告"而放行
         import traceback
+        print("SHEET:" + json.dumps({
+            "tool": "validate-report",
+            "action": "block",
+            "message": "脚本崩溃，已转拦下",
+            "summary": {"total": 0, "passed": 0, "warned": 0, "blocked": 1},
+            "details": [],
+            "crashed": True,
+        }, ensure_ascii=False))
         traceback.print_exc()
         sys.exit(2)
