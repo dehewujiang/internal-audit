@@ -214,6 +214,9 @@ def search_tables(term: str) -> list:
                 "matches": matches, "_project": "",
             })
     return results
+
+
+def get_projects_index_path():
     """Find projects-index.json from gold source (same dir as this script's repo)"""
     script_dir = Path(__file__).resolve().parent
     gold_root = script_dir.parent.parent  # _shared/../.. = gold root
