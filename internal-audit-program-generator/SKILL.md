@@ -30,8 +30,11 @@ description: 为汽车零部件（紧固件/冲焊件）企业生成内部审计
 | [references/instruction_details.md](./references/instruction_details.md) | 完整步骤说明 | 各Step执行时 |
 | [references/step2_risk_identification.md](./references/step2_risk_identification.md) | Step 2 风险识别详细规范 | Step 2 |
 | [references/step3_program_generation.md](./references/step3_program_generation.md) | Step 3 程序生成详细规范 | Step 3 |
+| [references/ctx_init.md](./references/ctx_init.md) | Step 0.3/0.4/0.5 初始化与追问细则 | Step 0 |
 | [references/red_team_attack.md](./references/red_team_attack.md) | 红队攻击：程序检测力对抗验证（剧本→回灌修订→再攻，≤2轮） | Step 4.6 |
 | [references/output_template.md](./references/output_template.md) | 输出格式模板 | Step 4 |
+| [references/output_and_gates.md](./references/output_and_gates.md) | Step 4/4.5/4.6 输出结构与闸机细则 | Step 4-4.6 |
+| [references/quality_evaluation.md](./references/quality_evaluation.md) | Step 5 质量评估执行细则 | Step 5 |
 | [references/quality_checklist.md](./references/quality_checklist.md) | 质量自检清单 | 输出前 |
 | `references/internal_audit_risk_framework.md` | 经验风险参考（背景知识） | Step 2 |
 | `references/automotive_reasoning_guide.md` | 舞弊手法参考 | Step 3 轨道B |
@@ -102,63 +105,17 @@ Step 5: 质量评估（自动）
 
 ### 0.3 读取制度分析报告（可选）
 
-检查 `internal-audit-workspace/policy-analyses/*.json`，如存在则提取：
-- `baseline_audit_program` → 轨道A基线程序
-- `control_gaps` (verification_status="已确认") → Step 2 输入
-- `risk_points` (severity="高") → Step 2 输入
-- `conflicts` → Step 2 输入
-
-**详细操作**：见 [references/instruction_details.md#step-03](./references/instruction_details.md#step-03)
+检查 `internal-audit-workspace/policy-analyses/*.json`，有则提取基线程序、控制缺口、高危风险点、冲突，细节见 [ctx_init.md](./references/ctx_init.md)。
 
 ### 0.4 配置空白检测与动态追问（强制）
 
-读取 my-config.md 后，检查与本次审计主题相关的关键配置项是否仍为空白（`【】` 占位符）：
-
-| 审计主题 | 需检测的关键配置项 |
-|---------|------------------|
-| 采购/供应链 | 大额采购审批起点、外协加工流程、模具管理流程 |
-| 生产/存货 | 废料处置流程、存货盘点流程 |
-| 销售/收款 | VMI确认时点、主机厂对账方式、索赔/年降处理方式 |
-| 费用/报销 | 差旅报销流程（审批层级、报销系统） |
-| 人力资源 | 考勤系统、薪资计算方式 |
-
-**处理规则**：
-1. 相关配置项仍为 `【】` → 从 `references/dynamic_questions.md` 的问题矩阵选取 **1-2 个**对应问题向用户追问（每次只问 1-2 题，提供跳过选项）
-2. 用户回答后 → 将答案回写 `audit-topics/my-config.md` 对应字段（只填空，不覆盖已有内容）
-3. 用户选择"跳过" → 使用默认预设继续，不阻塞流程
-4. 已填写的配置项不再追问
-
-**追问格式**：
-```text
-为了更深地切中要害，请再补充一个业务细节：
-
-👉 [来自 dynamic_questions.md 问题矩阵的问题]
-
-(可直接回复，或回复"跳过"使用默认预设)
-```
-
-**回写示例**：
-- 问题："废料处置归属？" → 答案写入 my-config.md「废料处置流程 → 处置权限归属」
-- 问题："VMI 确认时点？" → 答案写入 my-config.md「销售与收款流程 → VMI确认时点」
-
-**目的**：配置空白 = 风险识别盲区（事实锚定规则会使 AI 避开未配置的领域）。补齐后，Step 2 风险识别、轨道B 舞弊测试、访谈问卷锚定性全部受益。
+检查 my-config.md 中相关配置项是否仍为 `【】` 空白，空白则从 `dynamic_questions.md` 问题矩阵追问 1-2 题、答后回写。完整表格与追问格式见 [ctx_init.md](./references/ctx_init.md)。
 
 ---
 
 ### 0.5 模式判定：全新生成 vs 增量更新（强制）
 
-运行 `python _shared/scripts/phase_gate.py check` 并检查是否存在已有审计程序：
-
-| 条件 | 模式 | 处理 |
-|------|------|------|
-| 无已有程序（v1.0 不存在） | **全新生成** | 继续 Step 1 - Step 5 |
-| 已有 v1.0 程序，且 phase_gate 返回 `action=prompt_program_update`（存在待处理线索） | **增量更新** | 执行 [references/incremental_update.md](./references/incremental_update.md) 完整流程：读取现有程序 + 待处理线索（design-assessments 中 `status="pending"` 的项 / whistleblower_pending）→ 线索过滤 → 生成 S 序列补充程序（十、十一章）→ 状态回写。**完成后不再走 Step 1-5** |
-| 已有 v1.0 程序，phase_gate 无更新信号 | 全新生成（覆盖） | 提示用户确认覆盖，确认后走 Step 1-5 |
-
-**增量更新核心规则**（详见 incremental_update.md）：
-- 编号 S01/S02...，不使用 R01（避免与 v1.0 冲突）
-- 只追加不覆盖：v1.0 已有步骤和证据链永久保留
-- 程序存在根本性错误时走「勘误模式」：勘误注记 + 追加 `-C` 修正步骤，禁止直接修改已有步骤
+跑 `phase_gate.py check` 判模式：无旧程序→全新生成；有旧程序且有更新信号→走增量更新（S 序列，详见 [incremental_update.md](./references/incremental_update.md)；判定表见 [ctx_init.md](./references/ctx_init.md)）。增量更新完成后不再走 Step 1-5。
 
 ---
 
@@ -172,32 +129,7 @@ Step 5: 质量评估（自动）
 
 ### 1.2 审计目的选择表单（强制展示）
 
-```
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-📋 请确认本次审计目的
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-请选择本次审计的目的（可多选）：
-
-A) 舞弊调查
-→ 核心问题：舞弊是否已发生？谁做了什么？
-→ 激活轨道：A + B + C + D
-
-B) 内控效果评估
-→ 核心问题：控制是否有效防范了风险？
-→ 激活轨道：A（深化）+ C + D
-
-C) 合规性审计
-→ 核心问题：制度/法规是否被遵守？
-→ 激活轨道：A + F + D
-
-D) 运营效率审计
-→ 核心问题：资源是否被有效利用？哪里存在浪费？
-→ 激活轨道：A + E + D
-
-请回复选项字母（如"A"或"A+B"）。
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-```
+向用户展示四选目的表单（舞弊调查/内控效果/合规性/运营效率，可多选），按选择级联路由激活轨道。表单全文与级联路由表见 [output_and_gates.md](./references/output_and_gates.md) 和 [instruction_details.md](./references/instruction_details.md)。
 
 ### 1.3 触发原因询问
 
@@ -205,12 +137,7 @@ D) 运营效率审计
 
 ### 1.4 目的级联路由
 
-| 审计目的 | 激活轨道 | 核心问题 | 制度分析覆盖度 |
-|---------|---------|---------|--------------|
-| 舞弊调查 | A + B + C + D | 舞弊是否已发生？ | ⚠️ 部分 |
-| 内控效果评估 | A（深化）+ C + D | 控制是否有效？ | ✅ 高 |
-| 合规性审计 | A + F + D | 制度是否被遵守？ | ✅ 完全 |
-| 运营效率审计 | A + E + D | 资源是否被浪费？ | ❌ 低 |
+级联路由表（目的→激活轨道→核心问题→制度分析覆盖度）见 [output_and_gates.md](./references/output_and_gates.md) Step 4.5 节同款表格。
 
 ---
 
@@ -220,35 +147,11 @@ D) 运营效率审计
 
 ### 2.1 基础风险框架（所有目的均执行）
 
-AI 自由推演风险点，按三类标注。**优先质量而非数量，禁止使用数量最低值约束。**
+AI 自由推演风险点，按三类（经验/系统/公司/制度设计）标注，每类有事实支撑的最低要求，禁止数量约束；已有制度编号（CG/RP/D/CF）直接沿用不重编。逐条自检能否指向具体来源行。质量约束表、防重复规则全文见 [step2_risk_identification.md](./references/step2_risk_identification.md)。
 
-每个风险点必须满足以下质量约束：
+### 2.4 新假设落任务板（桌子在 `internal-audit-workspace/audit-table/*.json`，找不到就停下报告——宪法#12）
 
-| 风险类型 | 最低事实支撑要求 | 说明 |
-|---------|-----------------|------|
-| 【经验类】 | 每个风险点必须描述该舞弊手法在本公司场景下的具体表现形式，不得使用通用行业描述 | 行业已验证的舞弊/控制风险 |
-| 【系统类】 | 每个风险点必须引用 my-config.md 中的具体系统名称和模块，并描述该系统的哪个配置或功能点可能被利用 | 基于公司实际 ERP/MES 系统推演 |
-| 【公司类】 | 每个风险点必须在 about-me.md 中有 ≥2 条独立事实作为支撑依据，且须说明每条事实与该风险之间的因果链路 | 基于 about-me.md 公司特征推演 |
-| 【制度类-设计缺陷】 | 每个风险点必须引用具体的制度编号和条款内容，不得使用"制度规定不足"等模糊描述 | 来自 document-organizer JSON |
-
-**防重复（2026-09-14 定）**：制度类风险若与制度分析 JSON 中已有的 `control_gaps`（CG-）/`risk_points`（RP-）/`design_observations`（D-）/`conflicts`（CF-）说的是**同一件事**，**不得重新编号重写描述**——直接沿用原编号（`R21 = CG-HR-009`，正文引用原条目的 id 与描述，可补充审计视角）。推演出的**新**风险才启用新的 R 编号。这保证"程序 ↔ 制度分析 ↔ 问题单"三处对同一件事只有一个名字，报告阶段不用人肉对账。
-
-**事实锚定自检规则**：每输出一个风险点后，立即自检——"我能否指向 about-me.md 或 my-config.md 或制度分析JSON的具体行来支持这个风险的存在？"如果不能，进行标注。
-
-### 2.4 新假设落任务板（桌子在 `internal-audit-workspace/audit-table/*.json`，建项目时已开好；找不到就停下报告，不要跳过——宪法#12）
-
-风险清单定稿后，逐条过一遍，有户口的只挂引用、不占新行：
-
-```bash
-# 无户口的新假设 → 立任务（待查），room 固定用"检查单"
-python ledger/ledger.py add-task <桌子.json> --title "<假设一句话>" --room 检查单 --ref <R编号>
-# 有户口的（fact_anchors 命中 CG/RP/CF/D 编号）→ 带 --known-anchor，桌上不添行
-python ledger/ledger.py add-task <桌子.json> --title "<假设一句话>" --room 检查单 --ref <R编号> --known-anchor <命中的编号>
-```
-
-任务是假设不是结论，查实了由执行关任务转事实行，这里只立不结。
-
-**详细规范**：见 [references/step2_risk_identification.md](./references/step2_risk_identification.md)
+风险清单定稿后，无户口的新假设立任务（待查）、有户口的带 `--known-anchor` 不添行。命令见 [step2_risk_identification.md](./references/step2_risk_identification.md)。任务是假设不是结论，查实由执行关任务转事实行，这里只立不结。
 
 ### 2.2 目的自适应风险类别（按需激活）
 
@@ -257,11 +160,7 @@ python ledger/ledger.py add-task <桌子.json> --title "<假设一句话>" --roo
 
 ### 2.3 Step 2.5: 跨类复合风险强制扫描（所有目的，每次必须执行）
 
-基于 Step 2 风险清单和 about-me.md 动态推演：
-1. 跨类复合风险（标注【跨类-Step2.5】）
-2. ERP主数据风险（标注【ERP主数据-Step2.5】）
-
-**禁止**：使用预设清单替代推演。
+基于 Step 2 风险清单和 about-me.md 动态推演跨类复合风险与 ERP 主数据风险，**禁止**用预设清单替代推演。详见 [step2_risk_identification.md](./references/step2_risk_identification.md)。
 
 ---
 
@@ -304,247 +203,41 @@ python ledger/ledger.py add-task <桌子.json> --title "<假设一句话>" --roo
 
 ### 3.4 轨道D: 边界探测（建议执行，除非时间明确受限）
 
-**触发条件**：只有当你能回答以下问题时才输出——"为什么这个风险在 FLAN 这家公司比在其他任何汽车零部件公司都更需要关注？"
-
-**禁止输出以下模式**：
-- ❌ 通用型风险（如"AI生成虚假单据"——这适用于任何公司，不具有差异性）
-- ❌ 无法回答"为什么是这家公司独特风险"的条目
-- ❌ 超过2个风险点，宁缺毋滥
-
-**输出格式**：每个风险点必须附一段具体解释："为什么这家公司更需要关注这个风险？"解释中必须引用 about-me.md 或 my-config.md 中的具体公司特征，不得使用"行业趋势""技术发展"等外部因素替代。
+只输出能回答"为什么这家公司比别家更需要关注"的风险（引用 about-me/my-config 具体特征），禁止通用型风险，≤2个宁缺毋滥。完整触发条件与输出格式见 [step3_program_generation.md](./references/step3_program_generation.md)。
 
 ### 3.5 轨道E: 运营效率专项（仅运营效率审计）
 
-三步执行：
-1. AI 自由生成效率程序（不先读 playbook）
-2. 读取 `efficiency_audit_playbook.md` 进行差异比对
-3. 提示用户更新 playbook（不自动写入）
+三步：AI 自由生成 → 读 `efficiency_audit_playbook.md` 比对 → 提示用户更新 playbook（不自动写入）。
 
 ### 3.6 轨道F: 合规专项（仅合规性审计）
 
-三步执行（与轨道E对称）：
-1. AI 自由生成合规程序
-2. 读取 `compliance_audit_playbook.md` 比对
-3. 提示用户更新 playbook
+三步（与轨道E对称）：AI 自由生成 → 读 `compliance_audit_playbook.md` 比对 → 提示用户更新 playbook。
 
-> **轨道B对抗验证已并入 Step 4.6**（2026-10-07）：原 3.7 的裁判三级判定
-> （COVERED/PARTIAL/EXPOSED）、30%/50% 定量阈值、安全前导语、补充建议立户口，
-> 全部吸收进 Step 4.6 红队攻击，且攻击范围从轨道B扩至全轨道。
-> 见 [references/red_team_attack.md](./references/red_team_attack.md)。
+> **轨道B对抗验证已并入 Step 4.6**（2026-10-07）：裁判判定、阈值、户口规则全部在 [references/red_team_attack.md](./references/red_team_attack.md)。
 
 ---
 
 ## Step 4: 输出结构（强制格式）
 
-**章节激活规则**：若某轨道未被激活，对应章节输出"本次审计目的不含此轨道，已跳过"。
-
-```markdown
-# [审计主题]审计程序
-
-## 一、审计背景与目标
-[审计主题、目的、触发原因、激活轨道]
-
-## 二、情境分析
-### 2.1 风险识别清单
-### 2.2 覆盖确认
-
-## 三、测试程序（轨道A：控制有效性测试）[所有目的]
-
-## 四、测试程序（轨道B：舞弊实质性测试）[舞弊调查/内控效果评估]
-
-## 五、测试程序（轨道C：系统/公司类实质性测试）[所有目的]
-
-## 六、测试程序（轨道E：运营效率专项）[仅运营效率审计]
-
-## 七、测试程序（轨道F：合规专项）[仅合规性审计]
-
-## 八、测试程序（轨道D：边界探测）
-
-## 九、数据来源与资料清单
-```
-
-**完整模板**：见 [references/output_template.md](./references/output_template.md)
-
-**两列必填要求（设计理由 / 测试目的）**：每个测试程序行必须填写两列——
-- **设计理由**：为什么这样设计（针对的风险/舞弊手法、为何选此测试方式、测试设计的原理依据）
-- **测试目的**：能达到什么目的（能发现什么异常信号、证明或证伪什么结论）
-
-**禁止套话**：❌"验证XX控制是否有效"；✅必须锚定风险手法+测试原理+可观测的异常信号。
-轨道D 注意：本列聚焦"测试设计逻辑"，与"为什么这家公司更需要关注"（公司特异性）不重复。
-漏填任一列 → 数据行列数不一致 → Step 4.5 脚本闸机自动拦截。
-
-**🚨 强制要求**：每个轨道的全部表格内容必须用 HTML 注释标记包裹，导出脚本依赖此标记定位各轨道数据：
-
-```markdown
-<!-- track A -->
-### 三、测试程序（轨道A：控制有效性测试）
-| 风险编号 | 风险名称 | ... |
-|---|---|
-| R01 | ... | ... |
-<!-- end track A -->
-
-<!-- track B -->
-### 四、测试程序（轨道B：舞弊实质性测试）
-| 风险编号 | 舞弊情景 | ... |
-|---|---|
-| R01 | ... | ... |
-<!-- end track B -->
-```
-
-标记缺失会导致导出脚本无法识别轨道边界，整个轨道被跳过。
+按激活轨道输出九章节，章节激活规则、两列必填（设计理由/测试目的）、HTML 轨道标记、模板全文见 [output_and_gates.md](./references/output_and_gates.md) + [output_template.md](./references/output_template.md)。铁律：漏填两列或标记缺失都会被 Step 4.5 拦下。
 
 ---
 
 ## Step 4.5: 程序结构化校验（脚本闸机，屏障二）
 
-**目的**：用确定性脚本硬拦截"格式完美但内容缺漏"的程序，与 Step 5 的 LLM 推理检查互补（脚本管"有没有"，LLM 管"好不好"）。
-
-1. 解析为结构化 IR：
-   ```bash
-   python _shared/scripts/program_ir_parser.py <程序MD文件> --out internal-audit-workspace/program_ir.json
-   ```
-2. 结构化校验（覆盖率 / 判定标准量化 / 数据来源比例 / 账上对账）：
-   ```bash
-   python _shared/scripts/validate-program.py <程序MD文件> --ir --strict --workspace <项目根目录>
-   ```
-   `--workspace` 给了才跑风险清单↔账上对账（孤儿风险 block）；不给则跳过（旧版程序不误拦）。
-3. **激活轨道校验（N15）**：比对 `program_ir.json` 的 `activated_tracks` 与 Step 1.4 目的级联路由的预期轨道：
-
-   | 审计目的 | 预期轨道 |
-   |---------|---------|
-   | 舞弊调查 | A + B + C + D |
-   | 内控效果评估 | A + C + D |
-   | 合规性审计 | A + F + D |
-   | 运营效率审计 | A + E + D |
-
-   预期轨道缺失 → **block**（原因可能是该轨道未生成，或 `<!-- track X -->` 标记缺失/错误——两者一律拦截，不得静默放行）。
-4. 有 blocker → 执行修复闭环（屏障三）：
-   - 查看 `program_ir.json` 的 `coverage.uncovered_risks` 和 `activated_tracks`，定位遗漏的风险 ID 和缺失轨道
-   - 回到 Step 3，**只针对遗漏的风险/轨道重新生成对应程序段**（不是全部重来）
-   - 重新运行本步骤（Step 4.5）→ 通过后进入 Step 5
-5. 仅有 warning → 记录在 Step 5 的质量评估中一并考虑
-6. **填抽屉入口**（桌子在 `internal-audit-workspace/audit-table/*.json`，建项目时已开好；找不到就停下报告，不要跳过——宪法#12）：程序文档本身就是抽屉里的"检查表"，落盘后把入口填进去，报告前闸机才查得到它：
-   ```bash
-   python ledger/ledger.py set-drawer <桌子.json> --name 检查表 \
-       --path internal-audit-workspace/audit-programs/<程序文件>.md --status 待执行
-   ```
+四步闸机：IR 解析 → 结构化校验（`validate-program.py --ir --strict --workspace`）→ 激活轨道比对（缺轨道/缺标记一律 block）→ 修复闭环（只补遗漏段，不全部重来）。最后给桌子填抽屉入口（`set-drawer`）。完整命令与预期轨道表见 [output_and_gates.md](./references/output_and_gates.md)。
 
 ---
 
 ## Step 4.6: 红队攻击（检测力对抗验证，强制）
 
-**目的**：Step 5 管"程序写得好不好"，本环节管"程序抓不抓得住"。扮恶意内部人出攻击剧本（漏洞点/第一人称攻击路径/反侦测手段/修复动作），裁判三级判定（COVERED/PARTIAL/EXPOSED + 30%/50%阈值），
-回灌修订后再攻，≤2 轮。
-
-**沿革**：本环节吸收原 Step 3.7（轨道B对抗验证）的全部规则，攻击范围扩至全轨道。
-
-**执行**：读取 [references/red_team_attack.md](./references/red_team_attack.md)，全程按其执行（角色设定、安全前导语、剧本四要素、轨道攻击焦点、裁判判定、户口规则、修订闭环、存档 `audit-programs/red-team/<程序文件名>_剧本.md`）。
-
-**出口**：连续一轮无新漏洞，或达 2 轮上限（未修复盲区存档并标注"执行时补偿性关注"）。完成后进 Step 5，并在其质量自检中追加确认红队环节已执行。
+Step 5 管写得好不好，本环节管抓不抓得住：扮恶意内部人出攻击剧本 → 裁判三级判定（30%/50%阈值）→ 回灌修订再攻 ≤2 轮。全程按 [red_team_attack.md](./references/red_team_attack.md) 执行，剧本存档 `audit-programs/red-team/`，未修复盲区标注"执行时补偿性关注"。
 
 ---
 
 ## Step 5: 质量评估（引用评估框架）
 
-**执行前加载**：`.claude/skills/internal-audit-evaluator/SKILL.md`，定位 **audit_program** 的检查清单。以下检查项与框架定义一致。
-
-> 前置声明：本程序已通过 Step 4.5 脚本闸机（风险覆盖度 ≥80% / 判定标准量化 / 数据来源比例 / 激活轨道完整性）。以下为 LLM 推理层检查。
-
-### 5.1 格式检查
-
-| 检查项 | 执行方式 | 自动修正？ |
-|--------|---------|:---------:|
-| 模板完整性 | 扫描全文 `{{` 和 `_X_` 占位符 | ✅ 发现即替换 |
-| 量化标准真实性 | 扫描所有表格的量化标准列，检查是否为开关型判断（是/否、有/无） | ⚠️ 标记给用户确认 |
-
-### 5.2 推理检查：风险点推理链回溯
-
-从输出的风险清单中按 risk_level 从高到低排序，取风险等级最高的 **3 个**风险点，逐一执行以下回溯检查：
-
-```
-对每个回溯的风险点：
-
-① 【事实锚定】该风险点是否有 ≥2 条具体事实来自 about-me.md 或制度分析？
-   → 列出具体事实文本和来源文件名
-
-② 【程序映射】该风险点对应的测试程序，是否在逻辑上能够检测该风险？
-   → 检查"风险描述 → 测试方法 → 判定标准"的因果链路是否完整
-
-③ 【量化判定】测试程序的量化标准是否可执行（"如果X则Y"逻辑）？
-   → 排除开关型判断（是/否、有/无）和模糊描述
-
-④ 【唯一性】该风险点是否针对 FLAN 公司特点，还是可以原样复制到其他公司？
-   → 检查风险描述中是否包含公司特定信息（系统名、产品名、组织架构等）
-```
-
-**输出格式**：
-
-```
-推理链回溯 R-XXX：[风险名称]
-├─ ✅/❌ 事实锚定：[具体事实] 来源：[文件名]
-├─ ✅/❌ 程序映射：[程序编号] → [检测逻辑是否成立]
-├─ ✅/❌ 量化判定：[是/否]，原因：[说明]
-└─ ✅/❌ 唯一性：[FLAN独有/通用]
-```
-
-### 5.3 推理检查：轨道D唯一性
-
-对轨道D（边界探测）的每个风险点，检查是否附有"为什么这家公司更需要关注"的具体解释。缺少解释或解释为通用描述（"行业趋势""技术发展"）→ 标记 ❌。
-
-### 5.4 效率损失金额强制估算
-
-**触发条件**：审计目的包含"运营效率审计"时执行。
-
-**禁止**：输出 `_X_万元` 占位符。必须基于 about-me.md 中的公司数据进行合理估算（年营收21亿、成本占比60%+、客户集中度62.24%等）。
-
-**方法**：
-1. 从 about-me.md 提取可用基数
-2. 对每个效率损失维度，给出估算方法和计算过程
-3. 输出具体估算金额（含合理范围），标注置信度
-
-| 置信度 | 条件 |
-|--------|------|
-| 高 | 有直接数据支撑，计算过程透明 |
-| 中 | 有间接数据支撑，需假设 |
-| 低 | 基于经验估算 |
-
-### 5.5 质量判定与文档标记
-
-统计以上所有检查项的 ✅/❌ 数量，按评估框架规则判定：
-
-| 条件 | 判定 | 文档标记 |
-|:----:|------|---------|
-| 所有检查项 ✅ | ✅ 可直接使用 | 无 |
-| 仅格式检查项 ❌ | ⚠️ 已自动修正 | 无 |
-| 推理检查项 1-2 项 ❌ | ⚠️ 建议审查后执行 | ⚠️ 标记在文档开头 |
-| 推理检查项 ≥3 项 ❌，或任意事实锚定 ❌ | 🔴 质量待审 | 🔴 标记 + 红色分隔线 |
-
-### 5.6 结果存储与质量门
-
-评估完成后，将结果写入评估历史库，并执行质量门检查：
-
-```bash
-# 将检查结果写入临时文件
-echo '{
-  "eval_id": "EVAL-YYYYMMDD-HHMMSS",
-  "content_type": "audit_program",
-  "content_id": "存货管理_审计程序_v1.0",
-  "overall_judgment": "pass|warn|fail",
-  "checks": [
-    {"name": "模板完整性", "result": "pass", "detail": "..."},
-    {"name": "推理链回溯-R01", "result": "pass", "detail": "..."}
-  ]
-}' > /tmp/eval_result.json
-
-# 写入历史库
-python .claude/skills/internal-audit-evaluator/record_evaluation.py --input /tmp/eval_result.json
-
-# 执行质量门（低于阈值自动标记 regenerate）
-python .claude/skills/internal-audit-evaluator/quality_gate.py --input /tmp/eval_result.json
-
-# 如果 quality_gate.py 输出 action="regenerate" → 回到 Step 1 重新生成
-# 如果 quality_gate.py 输出 action="pass" → 继续输出
-```
+先加载 evaluator 框架（audit_program 清单），声明已过脚本闸机，然后执行：5.1 格式检查 → 5.2 推理链回溯（前3高风险四问）→ 5.3 轨道D唯一性 → 5.4 效率损失强制估算（效率审计时）→ 5.5 质量判定 → 5.6 写评估历史+质量门（regenerate 则回 Step 1）。检查项细则、输出格式、命令全文见 [quality_evaluation.md](./references/quality_evaluation.md)。
 
 ---
 
@@ -560,21 +253,7 @@ python .claude/skills/internal-audit-evaluator/quality_gate.py --input /tmp/eval
 
 ## 禁止事项
 
-- ❌ 禁止在未读取 `about-me.md` 前生成任何审计内容
-- ❌ 禁止硬编码公司具体数值（所有数字必须来自 about-me.md）
-- ❌ 禁止在审计目的确认前进入 Step 2
-- ❌ 禁止使用数量最低值约束替代质量约束（已废弃"【系统类】≥5个"等规则）
-- ❌ 禁止跳过 Step 2.5（跨类复合风险推演每次必须执行）
-- ❌ 禁止轨道E/F在读取 playbook 之前生成程序
-- ❌ 禁止轨道B处理【系统类】【公司类】风险
-- ❌ 禁止轨道B生成控制有效性测试程序（必须是实质性测试）
-- ❌ 禁止使用"大额""高风险"等模糊词替代实际阈值
-- ❌ 禁止输出存货跌价准备、截止测试等会计报表审计内容
-- ❌ 禁止跳过 Step 5 质量评估
-- ❌ 禁止轨道D输出通用型风险（必须回答"为什么这家公司更需要关注"）
-- ❌ 禁止在量化标准字段填入开关型判断（是/否、有/无）或无法测量的描述
-- ❌ 禁止轨道E效率损失使用 `_X_` 占位符替代具体估算
-- ❌ 禁止输出任何无法在 about-me.md / my-config.md / 制度分析JSON中找到事实支撑的风险点
+硬禁令十条：未读 about-me 不生成、不硬编码公司数值、目的未确认不进 Step 2、不用数量约束替代质量约束、不跳过 Step 2.5、轨道E/F 未读 playbook 不生成、轨道B 不碰系统/公司类风险且只做实质性测试、模糊词禁止替代阈值、不做会计报表审计内容、不跳过质量评估与轨道D唯一性要求（完整十五条见 [quality_checklist.md](./references/quality_checklist.md)）。
 
 ---
 
