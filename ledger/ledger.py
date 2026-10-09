@@ -23,12 +23,14 @@ ledger.py — 新桌子的管家（只管"往桌上写"，不管"查"和"拍照"
     python ledger.py add-gap 桌子.json --finding F-2026-003 --missing "绩效评分原始记录"
     python ledger.py add-task 桌子.json --title "钢筋回扣疑似内外勾结" --room 检查单 --ref R-010
     python ledger.py close-task 桌子.json --id T-001 --verdict 已结 --finding F-2026-010
+    python ledger.py init-evidence-slots 桌子.json --program-md 程序.md --evidence-root evidence/
     python ledger.py show 桌子.json
 """
 
 import argparse
 import json
 import os
+import re
 import sys
 from pathlib import Path
 
@@ -89,7 +91,7 @@ def _refuse(code_msg: str, args=None) -> None:
 
 
 def blank_table(name: str) -> dict:
-    """空桌子：三格占好，证据为空，抽屉三个入口空着等填，收料本子空着，任务板空着。"""
+    """空桌子：三格占好，证据为空，抽屉三个入口空着等填，收料本子空着，任务板空着，证据槽位空着。"""
     return {
         "schema_version": SCHEMA_VERSION,
         "table": name,
@@ -102,6 +104,7 @@ def blank_table(name: str) -> dict:
         "checklist": list(CHECKLIST),
         "ingested": {},
         "tasks": [],
+        "evidence_slots": [],
     }
 
 
@@ -126,6 +129,7 @@ def load(path: Path) -> dict:
             ]
         data.setdefault("ingested", {})
         data.setdefault("tasks", [])
+        data.setdefault("evidence_slots", [])
         data["schema_version"] = SCHEMA_VERSION
     names = [x.get("slot") for x in data.get("left", [])]
     if names != LEFT_SLOTS:
@@ -404,6 +408,123 @@ def cmd_set_drawer(args) -> None:
     _say(args, "pass", f"抽屉填好：{args.name}")
 
 
+_SLOT_CODE_RE = re.compile(r'^([A-H]\d+(?:\.\d+)?|S\d+)$')
+
+
+def _normalize_evidence_name(raw: str) -> str:
+    """标准化证据名称，用于去重比对。去掉括号注释、多余空格、统一顿号逗号。"""
+    cleaned = re.sub(r'[（(][^)）]*[)）]', '', raw)
+    cleaned = re.sub(r'\s+', '', cleaned)
+    cleaned = cleaned.replace('、', ',').replace('；', ',')
+    return cleaned.strip(',')
+
+
+def cmd_init_evidence_slots(args) -> None:
+    """证据槽位初始化（Phase 2）：从审计程序 MD 提取取证方式列，落账上一张表。
+
+    解析复用 _shared/scripts/program_ir_parser.build_ir（与 validate-program 同源，
+    作废行自动跳过）。账上 evidence_slots 全量重写（幂等）；兼容导出旧格式
+    evidence/_evidence_catalog.json（下游 checklist/queries 无感）；_files/ 目录建好。
+    已贴文件的 file/collected_at 按标准化名认回，不擦。
+    """
+    from datetime import datetime
+    md_path = Path(args.program_md)
+    if not md_path.exists():
+        _refuse(f"拒收：程序文件不存在：{md_path}（本次一个字没写）", args)
+    root = Path(args.evidence_root)
+    try:
+        shared = Path(__file__).resolve().parent.parent / "_shared" / "scripts"
+        sys.path.insert(0, str(shared))
+        from program_ir_parser import build_ir
+    except Exception as e:
+        _refuse(f"拒收：解析器加载失败：{e}（本次一个字没写）", args)
+    try:
+        ir = build_ir(str(md_path))
+    except Exception as e:
+        _refuse(f"拒收：程序解析失败：{e}（本次一个字没写）", args)
+
+    raw = []
+    seen_codes = set()
+    for s in ir.get("steps", []) or []:
+        if s.get("is_deleted"):
+            continue
+        code = (s.get("step_id") or "").strip()
+        if not code or not _SLOT_CODE_RE.match(code) or code in seen_codes:
+            continue
+        seen_codes.add(code)
+        items = [it.strip() for it in re.split(r'[、,;；\n]', s.get("data_source") or '')
+                 if it.strip()]
+        if items:
+            raw.append({"code": code, "track": s.get("track") or "", "items": items})
+
+    merged = {}
+    for slot in raw:
+        for item in slot["items"]:
+            norm = _normalize_evidence_name(item)
+            if not norm:
+                continue
+            if norm not in merged:
+                merged[norm] = {"name": item, "tracks": set(), "programs": []}
+            merged[norm]["tracks"].add(slot["track"])
+            if slot["code"] not in merged[norm]["programs"]:
+                merged[norm]["programs"].append(slot["code"])
+    slots = []
+    for i, (_, d) in enumerate(sorted(merged.items()), 1):
+        slots.append({
+            "id": f"EVD-{i:03d}",
+            "name": d["name"],
+            "source_track": ",".join(sorted(d["tracks"])),
+            "source_programs": sorted(d["programs"]),
+            "file": None,
+            "collected_at": None,
+        })
+
+    # 合流旧纸条：重做只加新格，已贴的按标准化名认回来，不擦。
+    catalog_path = root / "_evidence_catalog.json"
+    old_created = None
+    if catalog_path.exists():
+        try:
+            old = json.loads(catalog_path.read_text(encoding="utf-8"))
+            old_created = old.get("created_at")
+            old_files = {}
+            for it in old.get("items") or []:
+                if it.get("file"):
+                    old_files[_normalize_evidence_name(it.get("name") or "")] = (
+                        it.get("file"), it.get("collected_at"))
+            for m in slots:
+                key = _normalize_evidence_name(m["name"])
+                if key in old_files:
+                    m["file"], m["collected_at"] = old_files[key]
+        except Exception:
+            pass
+    now = datetime.now().strftime("%Y-%m-%d")
+    catalog = {
+        "project": args.project or "",
+        "created_at": old_created or now,
+        "updated_at": now,
+        "total_slots": len(slots),
+        "filled_slots": sum(1 for m in slots if m["file"]),
+        "items": slots,
+    }
+    root.mkdir(parents=True, exist_ok=True)
+    catalog_path.write_text(json.dumps(catalog, ensure_ascii=False, indent=2),
+                            encoding="utf-8")
+    (root / "_files").mkdir(parents=True, exist_ok=True)
+
+    path = Path(args.file)
+    data = load(path)
+    data["evidence_slots"] = slots
+    save(path, data, op="证据槽位初始化")
+    _say(args, "pass",
+         f"槽位就绪：{len(slots)}个（已贴{curr_filled(slots)}个），"
+         f"账上 evidence_slots + 兼容 catalog 双写，_files/ 已建")
+
+
+def curr_filled(slots: list) -> int:
+    """已贴文件数。"""
+    return sum(1 for m in slots if m.get("file"))
+
+
 def cmd_show(args) -> None:
     data = load(Path(args.file))
     print(f"桌子：{data['table']}")
@@ -511,6 +632,13 @@ def main() -> None:
     c = sub.add_parser("show", help="看桌子现状")
     c.add_argument("file")
     c.set_defaults(fn=cmd_show)
+
+    c = sub.add_parser("init-evidence-slots", help="证据槽位初始化：从程序MD提取引证列，落账上表+兼容catalog")
+    c.add_argument("file")
+    c.add_argument("--program-md", required=True, help="审计程序 Markdown 文件路径")
+    c.add_argument("--evidence-root", required=True, help="证据目录（落 _evidence_catalog.json + _files/）")
+    c.add_argument("--project", default="", help="项目名（记入兼容 catalog，可空）")
+    c.set_defaults(fn=cmd_init_evidence_slots)
 
     args = p.parse_args()
     args.fn(args)

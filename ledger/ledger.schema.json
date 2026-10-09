@@ -3,6 +3,7 @@
   "table": "string: 这张桌子查什么事",
   "left": "固定3格: 确定的毛病 / 怀疑偷骗(标红) / 说不清的信号, 每格 {slot, red, text, ref_finding_ids[]}",
   "tasks": "任务板: 一条假设一个任务, 每条 {id(T-001起), title, status(待查|已结|作废), source{room,ref}, fact_anchors[], ref_finding_ids[], created_at, closed_at, close_reason(作废时必填)}。新假设先落这里(待查), 查实转事实行走 add-line(来源ref指回任务id), 查否标作废。有户口的不占新行(只挂引用)",
+  "evidence_slots": "证据槽位表(Phase 2 从审计程序取证方式列生成, init-evidence-slots): 每槽 {id(EVD-001起), name, source_track, source_programs[], file(已贴路径,可空), collected_at(可空)}。重做全量重写但已贴文件按标准化名认回; 同时兼容导出 evidence/_evidence_catalog.json 供 checklist/queries 无感读取",
   "right": "证据列表, 每条 {slot_id(证据柜槽位号,可空), file, from, when, grade(证据等级A/B/C/D/E,照实标;红格只认A/E)}",
   "drawers": "三张表的入口(只记在哪、什么状态, 不装内容), 每张 {name, path(相对项目根,可空), status(自由文本,可空)}",
   "checklist": ["证据够了吗", "制度看全了吗", "红格看了吗"],

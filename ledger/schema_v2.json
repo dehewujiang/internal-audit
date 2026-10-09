@@ -42,6 +42,8 @@
 
   "tasks(1.3新增·任务板)": "一条假设一个任务，每条 {id(T-001起), title, status(待查|已结|作废), source{room,ref}, fact_anchors[], ref_finding_ids[], created_at, closed_at, close_reason(作废时必填)}。新假设先落这里(待查)，查实转事实行走 add-line(来源ref指回任务id)，查否标作废。有户口的不占新行(只挂引用)。任务是假设不是结论，红格 A/E 门不管任务。",
 
+  "evidence_slots(Phase 2新增·证据槽位表)": "从审计程序取证方式列生成（init-evidence-slots，解析与 validate-program 同源），每槽 {id(EVD-001起), name, source_track, source_programs[], file, collected_at}。重做全量重写，已贴文件按标准化名认回；兼容导出 evidence/_evidence_catalog.json。",
+
   "与v1.2的区别": {
     "1.ingested取消": "不再有'抄写本子'。v1.2用ingested记录sweep抄了哪些、防止抄重抄漏；v2.0直接写桌，没有抄写步骤，所以不需要。",
     "2.每行加source": "每条事实自带来源（哪个房间、什么编号、什么状态），不用回头查。",

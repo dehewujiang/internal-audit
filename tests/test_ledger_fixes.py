@@ -556,11 +556,17 @@ def test_skill_docs():
     check("建项目技能：桌子落地在 audit-table/", "audit-table" in init)
 
     # C1/C2/C4：写桌子的技能必须直接写桌（v2.0：add-line 带来源，不再 sweep 抄）
-    for d in ("document-organizer/SKILL.md", "audit-interview-designer/SKILL.md",
-              "audit-execution-assistant/SKILL.md"):
+    # （2026-10-09 瘦身后执行技能正文只留路牌，命令串在 references/ledger_write.md；
+    #   主SKILL.md+分文件任一含规则即算在位，与下方红队判例同口径）
+    for d in ("document-organizer/SKILL.md", "audit-interview-designer/SKILL.md"):
         text = (REPO_ROOT / d).read_text(encoding="utf-8")
         check(f"{d.split('/')[0]}：直接写桌子(add-line)",
               "add-line" in text and "--room" in text)
+    exec_sub = ((REPO_ROOT / "audit-execution-assistant/SKILL.md").read_text(encoding="utf-8")
+                + (REPO_ROOT / "audit-execution-assistant/references/ledger_write.md")
+                .read_text(encoding="utf-8"))
+    check("audit-execution-assistant：直接写桌子(add-line)",
+          "add-line" in exec_sub and "--room" in exec_sub)
     check("报告技能：读桌子",
           "audit-table" in (REPO_ROOT / "internal-audit-report-generator/SKILL.md")
           .read_text(encoding="utf-8"))
@@ -585,7 +591,10 @@ def test_skill_docs():
     gen = gen_sub[1] + gen_sub[2]
     check("程序生成：对抗验证补充建议须立设计观察户口",
           "立户口" in gen and "design-assessments/" in gen)
-    check("程序生成：制度类风险沿用原编号（防重复）", "沿用原编号" in gen_sub[1])
+    # （2026-10-09 瘦身后 2.1 规则本体在 references/step2_risk_identification.md:24，
+    #   主SKILL.md+分文件任一含规则即算在位，与红队判例同口径）
+    gen_all = gen + (REPO_ROOT / "internal-audit-program-generator/references/step2_risk_identification.md").read_text(encoding="utf-8")
+    check("程序生成：制度类风险沿用原编号（防重复）", "沿用原编号" in gen_all)
 
 
 def main():
