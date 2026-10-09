@@ -310,6 +310,24 @@ def main():
     # 输出 JSON（无论 --strict，总是打印）
     print(json.dumps(report, ensure_ascii=False, indent=2))
 
+    # 结构化答卷（B1）：尾行追 SHEET。overall=pass→pass；
+    # overall=fail 时 strict→block、非 strict→warn（退出码保持现状 2/0 不动，B3c 再对齐）。
+    action = ("pass" if overall else "block" if args.strict else "warn")
+    print("SHEET:" + json.dumps({
+        "tool": "validate-interview",
+        "action": action,
+        "message": ("问卷通过" if overall else
+                    "问卷未通过（严格模式，已拦下）" if args.strict else
+                    "问卷未通过（非严格模式，记警告）"),
+        "summary": {"total": len(checks),
+                    "passed": sum(1 for c in checks if c["result"] == "pass"),
+                    "warned": 0 if overall or args.strict else 1,
+                    "blocked": 0 if overall else 1},
+        "details": [{"check": c["name"], "result": c["result"],
+                     "message": c.get("detail", "")} for c in checks],
+        "crashed": False,
+    }, ensure_ascii=False))
+
     if args.strict and not overall:
         sys.exit(2)
 
@@ -324,5 +342,13 @@ if __name__ == "__main__":
     except Exception:
         # 未预期崩溃 → exit(2) 阻断。绝不能让崩溃的退出码(1)被闸机误判成"警告"而放行
         import traceback
+        print("SHEET:" + json.dumps({
+            "tool": "validate-interview",
+            "action": "block",
+            "message": "脚本崩溃，已转拦下",
+            "summary": {"total": 0, "passed": 0, "warned": 0, "blocked": 1},
+            "details": [],
+            "crashed": True,
+        }, ensure_ascii=False))
         traceback.print_exc()
         sys.exit(2)
