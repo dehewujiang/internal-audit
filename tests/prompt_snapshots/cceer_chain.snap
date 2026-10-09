@@ -11,6 +11,7 @@
 # 日期: 2026-10-08 | 变更: 关双轨第二步（写桌子节改先贴证据再上桌、add-evidence 加--grade）——本快照覆盖的 CCEER 推理链无实质变化，回归 GREEN待人工复查
 # 日期: 2026-10-08 | 变更: 任务板第一步（写桌子节加结论从任务板来先结任务：查实 close-task 已结带单号，查否 close-task 作废带理由）——本快照覆盖的 CCEER 推理链无实质变化，回归 GREEN待人工复查
 # 日期: 2026-10-09 | 变更: 答卷收尾（写桌子节“收料已删除直写上桌”一句）——本快照覆盖的 CCEER 推理链无实质变化，回归 GREEN待人工复查
+# 日期: 2026-10-09 | 变更: 技能瘦身（SKILL.md 702→279行：Step 0-4 细节搬入 references/design_verify 等8个新分文件，正文只留步骤名+路牌链接，Step 3 推理链主线压缩为 Step 3b-1/2/3 一句话式）——推理链五要素/预刹车/质证/终止条件/上桌门卫主线未变，仅位置和详略变化，回归 GREEN待人工复查
 
 ## CCEER 五要素结构
 
@@ -30,4 +31,4 @@
 
 ## Finding 生成流程（Step 3 主线）
 
-预刹车（事实信源自检）→ 5-Why 根因 → 根因质证 → 确定性校验（validate-finding.py 查初稿）→ 直觉推理引擎（按风险等级分级）→ 职业怀疑 5 问自检 → 描述优化 → 证据等级核验 → 最终硬校验（高风险须填写 decision_rationale.risk_level_reason）→ 上桌（add-line）→ 门卫复核硬度（ledger/check.py，高风险须 A/E）
+预刹车（事实信源自检，详见 root_cause_framework.md）→ 5-Why 根因 → 根因质证（读-only审查，详见 root_cause_framework.md）→ 确定性校验（validate-finding.py 查初稿）→ 直觉推理引擎（按风险等级分级，详见 intuition_engine.md）→ 职业怀疑 5 问自检（详见 cceer_standards.md）→ 描述优化（详见 finding_optimizer.md）→ 证据等级核验 → 最终硬校验（validate-finding.py，高风险须填写 decision_rationale.risk_level_reason）→ 上桌（add-line，详见 ledger_write.md）→ 门卫复核硬度（ledger/check.py，高风险须 A/E）

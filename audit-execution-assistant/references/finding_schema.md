@@ -150,3 +150,16 @@
 | management_action_plan | 管理层整改计划 |
 | target_completion_date | 计划完成日期 |
 | auditor_assessment | 审计师评估：充分/不充分/需补充证据 |
+
+## 关键词自动提取规则
+
+每次生成finding时，自动从以下字段提取关键词：
+- title
+- description
+- criteria
+
+**提取规则**：
+1. 分词后排除停用词（的、是、有、在、了等）
+2. 保留业务术语（废料、审批、盘点、ERP、存货等）
+3. 保留金额相关词（大额、5万元等）
+4. 关键词记在桌子行文本里（查询直查文本，不再维护 index by_keyword）
