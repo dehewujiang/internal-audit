@@ -35,7 +35,8 @@ def get_short_hash():
     try:
         result = subprocess.run(
             ["git", "rev-parse", "--short", "HEAD"],
-            capture_output=True, text=True, check=True
+            capture_output=True, text=True, check=True,
+            encoding="utf-8", errors="replace"
         )
         return result.stdout.strip()
     except (subprocess.CalledProcessError, FileNotFoundError):
@@ -102,11 +103,13 @@ def main():
     if "--commit" in sys.argv:
         result = subprocess.run(
             ["git", "add", "VERSION.json"],
-            capture_output=True, text=True
+            capture_output=True, text=True,
+            encoding="utf-8", errors="replace"
         )
         result = subprocess.run(
             ["git", "commit", "-m", f"chore: bump VERSION.json to {new_version}"],
-            capture_output=True, text=True
+            capture_output=True, text=True,
+            encoding="utf-8", errors="replace"
         )
         if result.returncode == 0:
             print(f"✅ 已提交: {result.stdout.strip().split(chr(10))[-1]}")

@@ -173,7 +173,10 @@ def do_postcheck(action: str, file_path: str) -> int:
     cmd = [sys.executable, str(script_path), target] + list(postcheck.get("args", []))
 
     print(f"[GATE] 后置校验: {action} → {script_name} {target}")
-    result = subprocess.run(cmd, capture_output=True, text=True)
+    # GBK 修（B档）：中文控制台下默认按 GBK 解子进程中文/emoji 输出会炸，
+    # 显式 utf-8 + replace，坏字节走"无答卷回退退出码"通道，不崩。
+    result = subprocess.run(cmd, capture_output=True, text=True,
+                            encoding="utf-8", errors="replace")
 
     # B2 答卷优先：读尾行 SHEET 答卷判；无答卷/坏答卷 → 回退到退出码三档
     sheet = _read_answer_sheet(result.stdout)

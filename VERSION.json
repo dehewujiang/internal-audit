@@ -1,7 +1,7 @@
 {
-  "version": "2026-10-09-3",
-  "git_commit": "f54b874",
-  "updated_at": "2026-10-09T10:33:33+08:00",
+  "version": "2026-10-10-1",
+  "git_commit": "32ec23d",
+  "updated_at": "2026-10-10T08:19:03+08:00",
   "changes": [
     {
       "type": "feat",
