@@ -345,6 +345,11 @@ def _collect_ledger_ctx(workspace):
             ref = str(((x.get("source") or {}).get("ref")) or "").strip().upper()
             if ref:
                 anchors.add(ref)
+            # C1·A：行内完整编号（[CG-001] 等写在正文里）同样是户口 ——
+            # 同一格多行共用一个 source，只有最后一次的 ref 留得下，行内编号必须从文本里捞
+            for m in re.finditer(r"\[(CG|RP|CF|D)-([A-Z0-9]+)\]",
+                                 str(x.get("text") or "").upper()):
+                anchors.add(f"{m.group(1)}-{m.group(2)}")
         for task in t.get("tasks", []):
             ref = _norm_ref(((task.get("source") or {}).get("ref")) or "")
             if ref:

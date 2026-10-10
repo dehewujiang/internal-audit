@@ -1,4 +1,6 @@
-# JSON输出格式完整规范
+# JSON输出格式完整规范（C1·S4 起：不再落盘为 policy-analyses/*.json，仅作为底稿头格式）
+
+> 结论以上桌（audit-table 左格）为准；此处的 JSON 结构只用作底稿 `working-papers/<制度名>_分析.md` 开头的机器可读头，供追溯 document_info（版本/生效日期）与计数核对，不再写入 policy-analyses/。
 
 ## 根结构
 

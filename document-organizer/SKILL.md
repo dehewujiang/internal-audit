@@ -263,23 +263,23 @@ OCR 会自动检测并标记以下需要人工核对的内容：
    - 优先分析整个制度体系，而非单份文件
    - 单文件分析时，所有control_gaps标记verification_status="待确认"
 
-6. **JSON输出必须包含**：
-   - `schema_version` 字段
+6. **底稿头 JSON（C1·S4 起停写 policy JSON，转单写）**：
+   - 不再落盘 `policy-analyses/*.json`；结论唯一正本是桌子左格
+   - 底稿 `working-papers/<制度名>_分析.md` 开头附一份本规范 JSON（`schema_version` + `document_info` + 四数组 + `summary`），供追溯版本与计数核对
    - `document_info` 对象（**`version` 版本号 + `effective_date` 生效日期 必填**——防废止制度污染风险识别；`previous_versions`/`version_diff_available` 如有则填）
-   - `control_points` 数组
-   - `control_gaps` 数组
-   - `risk_points` 数组
-   - `conflicts` 数组（如有）
-   - `summary` 对象
 
-7. **双目录输出**（批量分析时）：
-   - `policy-analyses/`：完整分析报告（JSON + Markdown）
-   - `design-assessments/`：设计观察（D-XXX 编号，供 Phase 4 验证升级）
+7. **单写桌子 + 底稿（批量分析时，C1·S4 起双写转单写）**：
+   - 桌子左格：结论（`[CG-XXX]` 行格式 + `--status` 版本口径，见下条"写桌子"）
+   - `design-assessments/`：设计观察（D-XXX 编号，供 Phase 4 验证升级，保留）
+   - `working-papers/<制度名>_分析.md`：底稿（过程 + 基线程序全文 + 底稿头 JSON）
 8. **写桌子**（桌子在 `internal-audit-workspace/audit-table/*.json`，建项目时已开好；找不到就停下报告，不要跳过——宪法#12）：分析结论**直接写桌子**，不再写本子再抄——顺序铁律：**先过 Step 5 质量评估再上桌**（拦下就改完再写，不带病上桌）——
    - 控制缺口 `已确认` / 制度冲突 → `python ledger/ledger.py add-line <桌子.json> --slot 确定的毛病 --text <结论> --room 看制度 --ref <编号> --status <状态>`
    - 控制缺口 `待确认` / 风险点 / 设计观察 `pending` → `python ledger/ledger.py add-line <桌子.json> --slot 说不清的信号 --text <结论> --room 看制度 --ref <编号> --status <状态>`
    - 分析过程（为什么这么判断、看的是制度哪一条）写底稿：`working-papers/<制度名>_分析.md`
    - 收料已删除（A6），结论直写上桌。桌子是账本（记结论），底稿是备查（记过程）。
+   - **行格式（C1·完整编号直接写）**：`--text` 以 `[CG-001]` 开头再写结论正文，编号就是内容的一部分，同一制度内从 001 连续编号，不跳号不重号；读账时看到什么就是什么，不做拆分。
+   - **`--status` 版本口径（C1·D3）**：`已确认·<制度名>v<document_info.version>/<effective_date>`（例：`已确认·考勤管理规定v2/2024-01-01`）；待确认的行同理把 `已确认` 换成 `待确认`。
+   - **基线程序不上桌（C1·D2）**：`baseline_audit_program` 是任务不是结论，只在抽屉·检查表记入口 + 全文放底稿 `working-papers/<制度名>_分析.md`，不占左格。
 
 ---
 

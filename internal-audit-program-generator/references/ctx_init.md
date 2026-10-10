@@ -37,7 +37,9 @@
 
 ### 0.3 读取制度分析报告（可选）
 
-检查 `internal-audit-workspace/policy-analyses/*.json`，如存在则提取：
+**先读桌，无桌回落 JSON**（C1·S2-R1 双读）：
+1. 先看 `internal-audit-workspace/audit-table/*.json` 左格里 `room=看制度` 的行（行首 `[CG-XXX]` 等完整编号直接可读）——确定的毛病/说不清的信号 → Step 2 输入；抽屉·检查表记的底稿入口 → 底稿全文取 `baseline_audit_program` 做轨道A基线。
+2. 桌上没有看制度的行 → 回落检查 `internal-audit-workspace/policy-analyses/*.json`，如存在则提取：
 - `baseline_audit_program` → 轨道A基线程序
 - `control_gaps` (verification_status="已确认") → Step 2 输入
 - `risk_points` (severity="高") → Step 2 输入

@@ -223,15 +223,16 @@ Step 1.5.5: 与规则型提取合并
 **输入位置**：`internal-audit-workspace/documents/` — 待分析的源制度文档（由用户在项目初始化后放入）
 
 **输出位置**：
-1. `internal-audit-workspace/policy-analyses/` — 完整分析报告（人类可读 + 机器可读）
-2. `internal-audit-workspace/design-assessments/` — 设计观察（供Phase 4验证升级）
+1. 桌子 `internal-audit-workspace/audit-table/*.json` 左格 —— 结论（C1·S4 起唯一正本，`[CG-XXX]` 行格式 + `--status` 版本口径，见 SKILL.md 写桌子一条）
+2. `internal-audit-workspace/design-assessments/` — 设计观察（供Phase 4验证升级，保留）
+3. `internal-audit-workspace/working-papers/<制度名>_分析.md` — 底稿（过程 + 基线程序全文 + 底稿头 JSON）
 
 **输出内容**：
 
-1. **Markdown报告**（人类可读）：`{文档名}分析报告.md` → 写入 `policy-analyses/`
-2. **JSON结构化数据**（机器可读）：`{文档名}分析报告.json` → 写入 `policy-analyses/`
-3. **版本差异报告**（如适用）：`{文档名}_v{A}_vs_v{B}_差异.md` → 写入 `policy-analyses/`
-4. **设计观察**（Phase 2输出）：`{审计主题}_设计观察.md` + `{审计主题}_设计观察.json` → 写入 `design-assessments/`
+1. **Markdown报告**（人类可读）：`{文档名}分析报告.md` → 转入底稿（不再写入 `policy-analyses/`）
+2. ~~**JSON结构化数据**（机器可读）：`{文档名}分析报告.json` → 写入 `policy-analyses/`~~（C1·S4 起停写；机器读桌，格式见 json-schema.md 底稿头）
+3. **版本差异报告**（如适用）：`{文档名}_v{A}_vs_v{B}_差异.md` → 转入底稿
+4. **设计观察**（Phase 2输出）：`{审计主题}_设计观察.md` + `{审计主题}_设计观察.json` → 写入 `design-assessments/`（保留）
 
 ### Step 6b：输出设计观察到 design-assessments/（CRITICAL）
 

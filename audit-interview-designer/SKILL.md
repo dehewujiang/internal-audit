@@ -35,7 +35,7 @@ description: |
 ### Step 1：上下文分析与知识缺口识别
 
 **输入源**：
-1. `internal-audit-workspace/policy-analyses/*.json`（只读取 `verification_status="待确认"` 或 `design_effectiveness="无效"` 的项）
+1. 桌子 `internal-audit-workspace/audit-table/*.json` 左格里 `room=看制度` 的行（行首 `[CG-XXX]` 直接可读；`待确认` 状态的行 → 确认性问题；无桌子 → 回落 `policy-analyses/*.json` 只读 `verification_status="待确认"` 或 `design_effectiveness="无效"` 的项）（C1·S2-R3 双读：先读桌、无桌回落）
 2. `audit-topics/about-me.md`（公司背景）
 3. `.claude/skills/internal-audit-program-generator/references/internal_audit_risk_framework.md`（**核心输入：过往审计经验与风险库**）
 4. 桌子 `internal-audit-workspace/audit-table/*.json`（历史发现，只读"确定的毛病/怀疑偷骗"两格；无桌子就跳过）

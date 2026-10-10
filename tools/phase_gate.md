@@ -13,7 +13,7 @@
 phase_0_init → phase_1_document_analysis → phase_1_5_interview → phase_2_program_generation → phase_3_execution → phase_4_report
 
 ## 退出条件（自动检查）
-- Phase 1 → 1.5: policy-analyses/ 存在 ≥1 个 JSON + audit_topic 已设置
+- Phase 1 → 1.5: 桌上有看制度的结论行（无桌回落 policy-analyses/ ≥1 个 JSON） + audit_topic 已设置
 - Phase 1.5 → 2: 用户确认（人工决策点，无自动条件）
 - Phase 2 → 3: audit-programs/ 存在 ≥1 个文件 + audit_purpose 已确认
 - Phase 3 → 4: findings/ 存在 ≥1 个 F-*.json

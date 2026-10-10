@@ -72,6 +72,25 @@ PHASE_CN = {
 }
 
 
+def _policy_rows(ws: Path) -> int:
+    """桌上看制度的行数（C1·S3 门限）。读不出 → 0（看板不崩）。"""
+    ddir = ws / "audit-table"
+    if not ddir.exists():
+        return 0
+    n = 0
+    for p in sorted(ddir.glob("*.json")):
+        try:
+            t = json.loads(p.read_text(encoding="utf-8-sig"))
+        except Exception:
+            continue
+        for x in t.get("left", []):
+            text = str(x.get("text") or "")
+            src = x.get("source") or {}
+            if "[CG-" in text or src.get("room") == "看制度":
+                n += 1
+    return n
+
+
 def _table_rows(ws: Path) -> int:
     """桌上 left[] 事实行数。读不出 → 0（看板不崩）。"""
     ddir = ws / "audit-table"
@@ -136,8 +155,11 @@ def cmd_next(args) -> None:
     ev_got, ev_all = _evidence_progress(ws)
 
     done = []
-    if n_policy:
-        done.append(f"制度分析 {n_policy} 份")
+    n_table_policy = _policy_rows(ws)
+    if n_table_policy:
+        done.append(f"制度分析桌上 {n_table_policy} 行")
+    elif n_policy:
+        done.append(f"制度分析 {n_policy} 份（旧 JSON，未上桌）")
     if n_prog:
         done.append(f"审计程序 {n_prog} 份")
     if rows:
@@ -256,9 +278,12 @@ def check_exit_conditions(ws: Path, current_phase: str, data: dict, args=None) -
     issues = []
 
     if current_phase == "phase_1_document_analysis":
-        analyses = list((ws / "policy-analyses").glob("*.json")) if (ws / "policy-analyses").exists() else []
-        if len(analyses) == 0:
-            issues.append({"type": "block", "msg": "policy-analyses/ 无 JSON (需 >=1 份制度分析)"})
+        # C1·S3 门限：先看桌上有无看制度的行；空桌但有旧 JSON（过渡期）也放行；
+        # 两边都空才拦
+        if _policy_rows(ws) == 0:
+            analyses = list((ws / "policy-analyses").glob("*.json")) if (ws / "policy-analyses").exists() else []
+            if len(analyses) == 0:
+                issues.append({"type": "block", "msg": "桌上无看制度的结论行（需 document-organizer 先上桌），policy-analyses/ 也无 JSON"})
         if not data.get("audit_topic"):
             issues.append({"type": "block", "msg": "audit_topic 未设置"})
 

@@ -420,8 +420,39 @@ def cmd_brief(args):
     print_brief_card(b)
 
 
+def _policy_lines_from_tables(topic_filter=None):
+    """从桌子 left[] 里捞看制度的行（C1·S2-R2：先读桌）。
+
+    行格式是完整编号直接写（[CG-001] 开头就是正文一部分），此处只做"有没有上桌"的
+    判断，不拆分 —— 读出来是什么就展示什么。
+    返回 [(桌名, 格名, 全文, 状态)]，无桌/无行 → []（调用方回落 JSON）。
+    """
+    rows = []
+    for fpath, table in load_audit_tables():
+        tname = table.get("table", fpath.stem)
+        if topic_filter and topic_filter not in tname:
+            continue
+        for entry in table.get("left", []):
+            text = (entry.get("text") or "").strip()
+            if not text:
+                continue
+            src = entry.get("source") or {}
+            if "[CG-" in text or src.get("room") == "看制度":
+                rows.append((tname, entry.get("slot", ""), text,
+                             src.get("status", "-")))
+    return rows
+
+
 def cmd_analyses(args):
     """查询制度分析结果"""
+    table_rows = _policy_lines_from_tables(args.topic)
+    if table_rows:
+        print(f"📋  制度分析查询（桌上 {len(table_rows)} 格有结论）\n")
+        for tname, slot, text, status in table_rows:
+            print(f"  📄 {tname} · {slot}（{status}）")
+            print(f"     {text}\n")
+        return
+
     analyses_dir = get_policy_analyses_dir()
     if not analyses_dir.exists():
         print("📂 policy-analyses/ 目录不存在")
