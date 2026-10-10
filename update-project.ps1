@@ -69,7 +69,7 @@ Write-Host "========================================" -ForegroundColor Cyan
 Write-Host "  Upgrade Check" -ForegroundColor White
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host "  Project       : $ProjectDir" -ForegroundColor White
-Write-Host "  Deployed with : $($lock.deployed_with)（历史标记；升级一律按锁定版）" -ForegroundColor White
+Write-Host "  Locked version : $($lock.locked_version)（历史标记 deployed_with=$($lock.deployed_with)）" -ForegroundColor White
 Write-Host "  Locked at     : $($lock.locked_at)" -ForegroundColor White
 Write-Host ""
 Write-Host "  Local  version : $localVer  (commit $localCommit)" -ForegroundColor Yellow
@@ -138,17 +138,14 @@ New-Item -ItemType Directory -Path $backupDir -Force | Out-Null
 Write-Host ""
 Write-Host "── Backup → .backup/$ts ──" -ForegroundColor Cyan
 
-# ── Determine upgrade mode ──────────────────────────────
+# ── Upgrade: re-copy all directories (B3 起唯一模式；旧 junction 项目首次升级自动转实目录） ──
 
-# B1 兼容垫片：恒按锁定版全量 recopy；旧 junction 部署首次升级自动完成转换
 if ($lock.deployed_with -ne "stable") {
     Write-Host "  [WARN] 检测到 junction 部署，已按锁定版全量 recopy 一次完成转换" -ForegroundColor Yellow
 }
-$isStable = $true
 
-if ($isStable) {
-    # ── Stable mode: re-copy all directories ──
-    Write-Host "── Upgrading (stable mode — recopy) ──" -ForegroundColor Cyan
+# ── Locked mode: re-copy all directories ──
+Write-Host "── Upgrading (locked mode — recopy) ──" -ForegroundColor Cyan
 
     # Auto-discover audit skills at repo root by SKILL.md marker (merge, not replace).
     # Single source of truth is the repo root; dev-only .claude/skills/ is NOT a source.
@@ -289,45 +286,6 @@ if ($isStable) {
             $upFail++
         }
     }
-
-} else {
-    # ── Junction mode: only update root config files ──
-    Write-Host "── Upgrading (junction mode — config files only) ──" -ForegroundColor Cyan
-
-    $upOk = 0; $upFail = 0
-
-    $rootFiles = @("CLAUDE-project.md", "constitution.md", "OPS.md")
-    foreach ($rf in $rootFiles) {
-        $src = Join-Path $GOLD $rf
-        if (-not (Test-Path $src)) { continue }
-        if ($rf -eq "CLAUDE-project.md") {
-            $dest = Join-Path $ProjectDir "CLAUDE.md"
-        } else {
-            $dest = Join-Path $ProjectDir $rf
-        }
-        # Backup
-        if (Test-Path $dest) {
-            $backupTarget = Join-Path $backupDir (Split-Path $dest -Leaf)
-            try {
-                Copy-Item -Path $dest -Destination $backupTarget -Force -ErrorAction Stop
-            } catch { }
-        }
-        # Upgrade
-        try {
-            Copy-Item -Path $src -Destination $dest -Force -ErrorAction Stop
-            $fileLabel = if ($rf -eq "CLAUDE-project.md") { "CLAUDE.md" } else { $rf }
-            Write-Host "  [OK]   $fileLabel upgraded" -ForegroundColor Green
-            $upOk++
-        } catch {
-            Write-Host "  [FAIL] $rf — $_" -ForegroundColor Red
-            $upFail++
-        }
-    }
-
-    Write-Host ""
-    Write-Host "  ℹ️  Skills, _shared/, tools/, ledger/ are junction-linked — already live." -ForegroundColor DarkGray
-    Write-Host "     Only config files (CLAUDE.md, constitution.md, OPS.md) were updated." -ForegroundColor DarkGray
-}
 
 # ── Rotate old backups (keep last 3) ────────────────────
 

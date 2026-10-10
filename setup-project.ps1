@@ -1,14 +1,8 @@
-# setup-project.ps1 - Internal Audit Project Initializer
+# setup-project.ps1 - Internal Audit Project Initializer（单模式：新项目一律锁定版）
 # Usage: powershell -File setup-project.ps1 -ProjectDir "D:\path\to\project"
-#        powershell -File setup-project.ps1 -ProjectDir "D:\path\to\project" --stable   (production lock)
 #
-# Junction (default, live sync with gold source — edit gold, changes appear everywhere):
-#   .claude/skills/  10 audit skill dirs (discovered at repo root by SKILL.md marker)
-#   _shared/         phase_gate, validate, queries, project_init
-#   tools/           pdf_ocr_extractor.py + 13 capability declarations
-#   ledger/          新桌子零件（ledger.py 管家 + check.py 门卫 + checklist 打勾纸 + audit_table 报告闸机 + export 总览表格）
-#
-# Copy --stable (snapshot at setup time, immune to gold-source changes):
+# Copy — snapshot at setup time, immune to gold-source changes (B3 起唯一模式，
+# junction 路已删；历史 -Stable 参数不再接受，传了会报错）:
 #   .claude/skills/  all audit skill dirs copied, not linked
 #   _shared/         all scripts copied, not linked
 #   tools/           all tools copied, not linked
@@ -27,10 +21,7 @@
 
 param(
     [Parameter(Mandatory=$true)]
-    [string]$ProjectDir,
-
-    [Parameter(Mandatory=$false)]
-    [switch]$Stable
+    [string]$ProjectDir
 )
 
 $GOLD = "D:\Nut\00_my_digital\12_AGI\skills\internal-audit"
@@ -47,32 +38,7 @@ if (-not (Test-Path $ProjectDir)) {
 
 $ok = 0; $fail = 0
 
-# B1 兼容垫片：-Stable 已合一，所有新项目均为锁定版（参数忽略，不报错）
-if ($Stable) {
-    Write-Host "[WARN] -Stable 已合一，所有新项目均为锁定版（参数忽略）" -ForegroundColor Yellow
-}
-
 # ── Helpers ──────────────────────────────────────────────
-function New-Junction {
-    param([string]$Link, [string]$Target)
-    if (Test-Path $Link) {
-        Write-Host "  [SKIP] $Link" -ForegroundColor DarkGray
-        $script:ok++
-        return
-    }
-    # Ensure parent exists
-    $parent = Split-Path $Link -Parent
-    if (-not (Test-Path $parent)) { New-Item -ItemType Directory -Path $parent -Force | Out-Null }
-    cmd /c mklink /J "$Link" "$Target" 2>&1 | Out-Null
-    if ($LASTEXITCODE -eq 0) {
-        Write-Host "  [OK]   $Link" -ForegroundColor Green
-        $script:ok++
-    } else {
-        Write-Host "  [FAIL] $Link  (target: $Target)" -ForegroundColor Red
-        $script:fail++
-    }
-}
-
 function New-StableCopy {
     param([string]$Dest, [string]$Source)
     if (Test-Path $Dest) {
@@ -94,11 +60,9 @@ function New-StableCopy {
 }
 
 # ════════════════════════════════════════════════════════
-# 1. Skills — junction (default) or copy (--stable)
+# 1. Skills — copy (B3 起唯一模式）
 # ════════════════════════════════════════════════════════
-# B1：已合一，恒走锁定版复制（else 分支保留待 B3 删除）
-$modeLabel = "Copy (stable)"
-Write-Host "── Skills ($modeLabel) ──" -ForegroundColor Cyan
+Write-Host "── Skills (Copy stable) ──" -ForegroundColor Cyan
 
 # Auto-discover audit skills: a repo-root directory containing SKILL.md is a deployable skill.
 # Single source of truth is the repo root. The dev-only .claude/skills/ (geb-*) is NOT a source.
@@ -111,49 +75,33 @@ if ($SKILLS.Count -eq 0) {
     foreach ($skill in $SKILLS) {
         $link   = Join-Path $ProjectDir ".claude\skills\$skill"
         $target = Join-Path $GOLD $skill
-        if ($true) {  # B1 已合一：恒走锁定版复制
-            New-StableCopy -Dest $link -Source $target
-        } else {
-            New-Junction -Link $link -Target $target
-        }
+        New-StableCopy -Dest $link -Source $target
     }
 }
 
 # ════════════════════════════════════════════════════════
-# 2. _shared/ — junction (default) or copy (--stable)
+# 2. _shared/ — copy (B3 起唯一模式）
 # ════════════════════════════════════════════════════════
-Write-Host "── _shared/ ($modeLabel) ──" -ForegroundColor Cyan
+Write-Host "── _shared/ (Copy stable) ──" -ForegroundColor Cyan
 $sharedLink = Join-Path $ProjectDir "_shared"
 $sharedTarget = Join-Path $GOLD "_shared"
-if ($true) {  # B1 已合一：恒走锁定版复制
-    New-StableCopy -Dest $sharedLink -Source $sharedTarget
-} else {
-    New-Junction -Link $sharedLink -Target $sharedTarget
-}
+New-StableCopy -Dest $sharedLink -Source $sharedTarget
 
 # ════════════════════════════════════════════════════════
-# 3b. ledger/ — junction (default) or copy (--stable)
+# 3b. ledger/ — copy (B3 起唯一模式）
 # ════════════════════════════════════════════════════════
-Write-Host "── ledger/ ($modeLabel) ──" -ForegroundColor Cyan
+Write-Host "── ledger/ (Copy stable) ──" -ForegroundColor Cyan
 $ledgerLink = Join-Path $ProjectDir "ledger"
 $ledgerTarget = Join-Path $GOLD "ledger"
-if ($true) {  # B1 已合一：恒走锁定版复制
-    New-StableCopy -Dest $ledgerLink -Source $ledgerTarget
-} else {
-    New-Junction -Link $ledgerLink -Target $ledgerTarget
-}
+New-StableCopy -Dest $ledgerLink -Source $ledgerTarget
 
 # ════════════════════════════════════════════════════════
-# 3. tools/ — junction (default) or copy (--stable)
+# 3. tools/ — copy (B3 起唯一模式）
 # ════════════════════════════════════════════════════════
-Write-Host "── tools/ ($modeLabel) ──" -ForegroundColor Cyan
+Write-Host "── tools/ (Copy stable) ──" -ForegroundColor Cyan
 $toolsLink = Join-Path $ProjectDir "tools"
 $toolsTarget = Join-Path $GOLD "tools"
-if ($true) {  # B1 已合一：恒走锁定版复制
-    New-StableCopy -Dest $toolsLink -Source $toolsTarget
-} else {
-    New-Junction -Link $toolsLink -Target $toolsTarget
-}
+New-StableCopy -Dest $toolsLink -Source $toolsTarget
 
 # ════════════════════════════════════════════════════════
 # 4. Root files — copy (CLAUDE-project.md → CLAUDE.md, constitution.md, OPS.md)
@@ -325,22 +273,16 @@ Write-Host ""
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host "  Project : $ProjectDir" -ForegroundColor White
 Write-Host "  Source  : $GOLD" -ForegroundColor White
-Write-Host "  Mode    : STABLE (copy — immune to gold-source changes)" -ForegroundColor Yellow  # B1 已合一恒锁定
+Write-Host "  Mode    : STABLE (copy — immune to gold-source changes)" -ForegroundColor Yellow
 Write-Host "  Setup   : $ok OK / $fail FAIL" -ForegroundColor $(if ($fail -eq 0) { "Green" } else { "Red" })
 Write-Host "  Check   : $check_ok OK / $check_ng MISS" -ForegroundColor $(if ($check_ng -eq 0) { "Green" } else { "Red" })
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host ""
 
 if ($fail -eq 0 -and $check_ng -eq 0) {
-    # B1 已合一恒锁定：Next 提示走 stable 版（else 分支保留待 B3 删除）
-    if ($true) {
-        Write-Host "Next: cd `"$ProjectDir`" ; claude" -ForegroundColor Yellow
-        Write-Host "      (upgrade with: update-project.ps1 -ProjectDir `"$ProjectDir`")" -ForegroundColor DarkGray
-        Write-Host "      (register with: python _shared/scripts/queries.py register --path `"$ProjectDir`" --topic <主题> --period <期间>)" -ForegroundColor DarkGray
-    } else {
-        Write-Host "Next: cd `"$ProjectDir`" ; claude" -ForegroundColor Yellow
-        Write-Host "      (register with: python _shared/scripts/queries.py register --path `"$ProjectDir`" --topic <主题> --period <期间>)" -ForegroundColor DarkGray
-    }
+    Write-Host "Next: cd `"$ProjectDir`" ; claude" -ForegroundColor Yellow
+    Write-Host "      (upgrade with: update-project.ps1 -ProjectDir `"$ProjectDir`")" -ForegroundColor DarkGray
+    Write-Host "      (register with: python _shared/scripts/queries.py register --path `"$ProjectDir`" --topic <主题> --period <期间>)" -ForegroundColor DarkGray
 } else {
     Write-Host "Fix failures above, then: cd `"$ProjectDir`" ; claude" -ForegroundColor Red
 }
