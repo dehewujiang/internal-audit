@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this repo is
 
-一个正在进行的内部审计项目。所有审计工作产出的文件在 `internal-audit-workspace/`，工具脚本通过 junction 链接到技能仓库（或 `--stable` 模式下为本地副本）。状态在文件系统之间传递，不靠对话记忆。
+一个正在进行的内部审计项目。所有审计工作产出的文件在 `internal-audit-workspace/`，工具脚本为部署时的锁定副本（VERSION.lock.json 锁定版本），升级用 update-project.ps1。状态在文件系统之间传递，不靠对话记忆。
 
 本项目包含 **12 个 AI 技能**（SKILL.md），覆盖审计全流程 6 个阶段。
 

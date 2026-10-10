@@ -42,11 +42,7 @@ powershell -File "D:\Nut\00_my_digital\12_AGI\skills\internal-audit\setup-projec
 
 跑完后，窗口里会出现一堆文字，最后一行如果是 `Done` 开头，就说明部署成功了。
 
-如果你希望这个项目**不受后续系统更新的影响**（正式审计项目建议这么做），用下面这行代替：
-
-```
-powershell -File "D:\Nut\00_my_digital\12_AGI\skills\internal-audit\setup-project.ps1" -ProjectDir . --stable
-```
+新项目一律是锁定版：工具是部署那一刻的固定副本，不受后续系统更新影响，升级用下面的 update 命令。
 
 **第四步：启动 AI 助手**
 
@@ -133,15 +129,13 @@ python D:\Nut\00_my_digital\12_AGI\skills\internal-audit\bump-version.py
 
 ### 第二步：升级项目（在每个部署项目做）
 
-只适用于 `--stable` 模式部署的项目：
+所有项目均需 update 升级，旧 junction 项目首次升级会自动转为锁定版：
 
 ```
 powershell -File D:\Nut\00_my_digital\12_AGI\skills\internal-audit\update-project.ps1 -ProjectDir .
 ```
 
 脚本会告诉你更新了什么，你确认后才升级。旧版本自动备份到 `.backup/` 文件夹，出问题可以退回去。
-
-如果你用的是默认模式（junction 链接），不需要手动升级——改完自动生效。但这也意味着系统行为可能在你审计过程中变化。正式项目建议用 `--stable`。
 
 ---
 
@@ -161,9 +155,9 @@ powershell -File D:\Nut\00_my_digital\12_AGI\skills\internal-audit\update-projec
 
 不用回退，往前走：对 AI 说补了什么材料，系统插任务接着查。账只增不减，不会丢数据。
 
-### 系统行为突然变了（junction 模式的审计项目）
+### 系统行为突然变了（历史 junction 项目）
 
-说明黄金源被更新了。如果你需要行为稳定，重新部署一个新项目，用 `--stable` 模式。
+历史 junction 项目升级后即锁定，不再漂移。如升级后行为不对，看下一条"升级后系统行为不对"。
 
 ### 升级后系统行为不对
 
@@ -281,9 +275,8 @@ python _shared/scripts/queries.py compare --topic <主题> --from 2025 --to 2026
 ### 系统部署
 
 ```
-powershell -File setup-project.ps1 -ProjectDir .             默认模式（junction，实时同步）
-powershell -File setup-project.ps1 -ProjectDir . --stable    稳定模式（锁定版本）
-powershell -File update-project.ps1 -ProjectDir .            增量升级（stable 模式用）
+powershell -File setup-project.ps1 -ProjectDir .             新项目（一律锁定版）
+powershell -File update-project.ps1 -ProjectDir .            增量升级
 ```
 
 ---
