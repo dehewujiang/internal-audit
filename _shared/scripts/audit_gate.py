@@ -33,6 +33,9 @@ WORKSPACE = Path(os.getcwd())
 #   - validate-interview.py 必须传 --strict：它非 strict 时无论成败都返回 0，闸机会永远放行
 #   - validate-program.py / validate-report.py 刻意不传 --strict：strict 模式下这两个脚本把
 #     "阻断"也编成退出码 1，闸机将无法把它与"警告"区分开（见各自文件的 strict 分支）
+#   - B2 起闸机优先读脚本 stdout 尾行 SHEET 答卷（action=pass/warn/block），退出码仅作
+#     回退通道（无答卷/答卷坏掉时才用）。因此各脚本一律跑人话模式，不传 --json
+#     （--json 保持纯 JSON，供全量解析 stdout 的存量消费者）。
 ACTIONS = {
     "generate_finding": {
         "prechecks": [
@@ -76,7 +79,7 @@ ACTIONS = {
         "prechecks": [],
         "postcheck": {
             "script": "validate-policy-analysis.py",
-            "args": ["--json"],
+            "args": [],
             "message": "制度分析校验未通过"
         }
     },
@@ -126,6 +129,29 @@ def do_precheck(action: str) -> int:
     return 0
 
 
+def _read_answer_sheet(stdout: str):
+    """读脚本 stdout 尾行 SHEET 答卷，返回 dict；无答卷/坏答卷返回 None（走退出码回退）。"""
+    for line in reversed((stdout or "").splitlines()):
+        line = line.strip()
+        if line.startswith("SHEET:"):
+            try:
+                data = json.loads(line[len("SHEET:"):])
+            except Exception:
+                return None
+            if isinstance(data, dict) and data.get("action") in ("pass", "warn", "block"):
+                return data
+            return None
+    return None
+
+
+def _human_text(stdout: str) -> str:
+    """人话全文（去掉尾行 SHEET，免得 LLM 把机器行当人阅读）。"""
+    return "\n".join(
+        line for line in (stdout or "").splitlines()
+        if not line.strip().startswith("SHEET:")
+    ).rstrip()
+
+
 def do_postcheck(action: str, file_path: str) -> int:
     """执行后置校验（调用 validate 脚本）"""
     if action not in ACTIONS:
@@ -149,10 +175,39 @@ def do_postcheck(action: str, file_path: str) -> int:
     print(f"[GATE] 后置校验: {action} → {script_name} {target}")
     result = subprocess.run(cmd, capture_output=True, text=True)
 
-    # 三档语义：0=通过 / 1=警告（打印后放行） / ≥2=阻断
+    # B2 答卷优先：读尾行 SHEET 答卷判；无答卷/坏答卷 → 回退到退出码三档
+    sheet = _read_answer_sheet(result.stdout)
+    if sheet is not None:
+        verdict = sheet["action"]
+        code_verdict = {0: "pass", 1: "warn"}.get(result.returncode, "block")
+        if verdict != code_verdict:
+            print(f"[GATE] ⚠️ 答卷与退出码不一致（答卷={verdict}, 码={result.returncode}），以答卷为准")
+            _log_to_trail(f"postcheck_mismatch:{action}:answer={verdict}:code={result.returncode}")
+        print(f"[GATE] 答卷 verdict={verdict}（退出码仅备查={result.returncode}）")
+        if verdict == "pass":
+            print(f"[GATE] ✅ 校验通过")
+            _log_to_trail(f"postcheck_pass:{action}:answer")
+            return 0
+        if verdict == "warn":
+            print(f"[GATE] ⚠️ 校验有警告，放行（{script_name}）")
+            print(f"[GATE] --- 警告详情 ---")
+            print(_human_text(result.stdout) or result.stderr)
+            print(f"[GATE] --- 结束 ---")
+            _log_to_trail(f"postcheck_warn:{action}:answer")
+            return 0
+        print(f"[GATE] ❌ {postcheck['message']}")
+        print(f"[GATE] --- 错误详情 ---")
+        print(_human_text(result.stdout) or result.stderr)
+        print(f"[GATE] --- 结束 ---")
+        _log_to_trail(f"postcheck_fail:{action}:answer")
+        return 1
+
+    print(f"[GATE] ⚠️ 无答卷，回退到退出码判读")
+    _log_to_trail(f"postcheck_noanswer:{action}")
+    # 三档语义（回退通道）：0=通过 / 1=警告（打印后放行） / ≥2=阻断
     if result.returncode == 0:
         print(f"[GATE] ✅ 校验通过")
-        _log_to_trail(f"postcheck_pass:{action}")
+        _log_to_trail(f"postcheck_pass:{action}:exitcode")
         return 0
 
     if result.returncode == 1:
@@ -160,14 +215,14 @@ def do_postcheck(action: str, file_path: str) -> int:
         print(f"[GATE] --- 警告详情 ---")
         print(result.stdout or result.stderr)
         print(f"[GATE] --- 结束 ---")
-        _log_to_trail(f"postcheck_warn:{action}")
+        _log_to_trail(f"postcheck_warn:{action}:exitcode")
         return 0
 
     print(f"[GATE] ❌ {postcheck['message']}")
     print(f"[GATE] --- 错误详情 ---")
     print(result.stderr or result.stdout)
     print(f"[GATE] --- 结束 ---")
-    _log_to_trail(f"postcheck_fail:{action}")
+    _log_to_trail(f"postcheck_fail:{action}:exitcode")
     return 1
 
 
