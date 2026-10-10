@@ -47,6 +47,11 @@ if (-not (Test-Path $ProjectDir)) {
 
 $ok = 0; $fail = 0
 
+# B1 兼容垫片：-Stable 已合一，所有新项目均为锁定版（参数忽略，不报错）
+if ($Stable) {
+    Write-Host "[WARN] -Stable 已合一，所有新项目均为锁定版（参数忽略）" -ForegroundColor Yellow
+}
+
 # ── Helpers ──────────────────────────────────────────────
 function New-Junction {
     param([string]$Link, [string]$Target)
@@ -91,7 +96,8 @@ function New-StableCopy {
 # ════════════════════════════════════════════════════════
 # 1. Skills — junction (default) or copy (--stable)
 # ════════════════════════════════════════════════════════
-$modeLabel = if ($Stable) { "Copy (stable)" } else { "Junction" }
+# B1：已合一，恒走锁定版复制（else 分支保留待 B3 删除）
+$modeLabel = "Copy (stable)"
 Write-Host "── Skills ($modeLabel) ──" -ForegroundColor Cyan
 
 # Auto-discover audit skills: a repo-root directory containing SKILL.md is a deployable skill.
@@ -105,7 +111,7 @@ if ($SKILLS.Count -eq 0) {
     foreach ($skill in $SKILLS) {
         $link   = Join-Path $ProjectDir ".claude\skills\$skill"
         $target = Join-Path $GOLD $skill
-        if ($Stable) {
+        if ($true) {  # B1 已合一：恒走锁定版复制
             New-StableCopy -Dest $link -Source $target
         } else {
             New-Junction -Link $link -Target $target
@@ -119,7 +125,7 @@ if ($SKILLS.Count -eq 0) {
 Write-Host "── _shared/ ($modeLabel) ──" -ForegroundColor Cyan
 $sharedLink = Join-Path $ProjectDir "_shared"
 $sharedTarget = Join-Path $GOLD "_shared"
-if ($Stable) {
+if ($true) {  # B1 已合一：恒走锁定版复制
     New-StableCopy -Dest $sharedLink -Source $sharedTarget
 } else {
     New-Junction -Link $sharedLink -Target $sharedTarget
@@ -131,7 +137,7 @@ if ($Stable) {
 Write-Host "── ledger/ ($modeLabel) ──" -ForegroundColor Cyan
 $ledgerLink = Join-Path $ProjectDir "ledger"
 $ledgerTarget = Join-Path $GOLD "ledger"
-if ($Stable) {
+if ($true) {  # B1 已合一：恒走锁定版复制
     New-StableCopy -Dest $ledgerLink -Source $ledgerTarget
 } else {
     New-Junction -Link $ledgerLink -Target $ledgerTarget
@@ -143,7 +149,7 @@ if ($Stable) {
 Write-Host "── tools/ ($modeLabel) ──" -ForegroundColor Cyan
 $toolsLink = Join-Path $ProjectDir "tools"
 $toolsTarget = Join-Path $GOLD "tools"
-if ($Stable) {
+if ($true) {  # B1 已合一：恒走锁定版复制
     New-StableCopy -Dest $toolsLink -Source $toolsTarget
 } else {
     New-Junction -Link $toolsLink -Target $toolsTarget
@@ -258,7 +264,7 @@ if (Test-Path $versionLockDest) {
             locked_version = $versionData.version
             git_commit     = $versionData.git_commit
             locked_at      = (Get-Date -Format "yyyy-MM-ddTHH:mm:sszzz")
-            deployed_with  = if ($Stable) { "stable" } else { "junction" }
+            deployed_with  = "stable"  # B1：语义冻结为历史标记，新项目统一锁定版
             gold_source    = $GOLD
         }
         $lockData | ConvertTo-Json -Depth 4 | Set-Content $versionLockDest -Encoding UTF8
@@ -271,7 +277,7 @@ if (Test-Path $versionLockDest) {
                 locked_version = "unknown"
                 git_commit     = "unknown"
                 locked_at      = (Get-Date -Format "yyyy-MM-ddTHH:mm:sszzz")
-                deployed_with  = if ($Stable) { "stable" } else { "junction" }
+                deployed_with  = "stable"  # B1：语义冻结为历史标记，新项目统一锁定版
                 gold_source    = $GOLD
             }
             $lockData | ConvertTo-Json -Depth 4 | Set-Content $versionLockDest -Encoding UTF8
@@ -319,18 +325,15 @@ Write-Host ""
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host "  Project : $ProjectDir" -ForegroundColor White
 Write-Host "  Source  : $GOLD" -ForegroundColor White
-if ($Stable) {
-    Write-Host "  Mode    : STABLE (copy — immune to gold-source changes)" -ForegroundColor Yellow
-} else {
-    Write-Host "  Mode    : junction (live sync — gold changes appear automatically)" -ForegroundColor DarkGray
-}
+Write-Host "  Mode    : STABLE (copy — immune to gold-source changes)" -ForegroundColor Yellow  # B1 已合一恒锁定
 Write-Host "  Setup   : $ok OK / $fail FAIL" -ForegroundColor $(if ($fail -eq 0) { "Green" } else { "Red" })
 Write-Host "  Check   : $check_ok OK / $check_ng MISS" -ForegroundColor $(if ($check_ng -eq 0) { "Green" } else { "Red" })
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host ""
 
 if ($fail -eq 0 -and $check_ng -eq 0) {
-    if ($Stable) {
+    # B1 已合一恒锁定：Next 提示走 stable 版（else 分支保留待 B3 删除）
+    if ($true) {
         Write-Host "Next: cd `"$ProjectDir`" ; claude" -ForegroundColor Yellow
         Write-Host "      (upgrade with: update-project.ps1 -ProjectDir `"$ProjectDir`")" -ForegroundColor DarkGray
         Write-Host "      (register with: python _shared/scripts/queries.py register --path `"$ProjectDir`" --topic <主题> --period <期间>)" -ForegroundColor DarkGray

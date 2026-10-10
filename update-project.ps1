@@ -69,7 +69,7 @@ Write-Host "========================================" -ForegroundColor Cyan
 Write-Host "  Upgrade Check" -ForegroundColor White
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host "  Project       : $ProjectDir" -ForegroundColor White
-Write-Host "  Deployed with : $($lock.deployed_with)" -ForegroundColor White
+Write-Host "  Deployed with : $($lock.deployed_with)（历史标记；升级一律按锁定版）" -ForegroundColor White
 Write-Host "  Locked at     : $($lock.locked_at)" -ForegroundColor White
 Write-Host ""
 Write-Host "  Local  version : $localVer  (commit $localCommit)" -ForegroundColor Yellow
@@ -140,7 +140,11 @@ Write-Host "── Backup → .backup/$ts ──" -ForegroundColor Cyan
 
 # ── Determine upgrade mode ──────────────────────────────
 
-$isStable = $lock.deployed_with -eq "stable"
+# B1 兼容垫片：恒按锁定版全量 recopy；旧 junction 部署首次升级自动完成转换
+if ($lock.deployed_with -ne "stable") {
+    Write-Host "  [WARN] 检测到 junction 部署，已按锁定版全量 recopy 一次完成转换" -ForegroundColor Yellow
+}
+$isStable = $true
 
 if ($isStable) {
     # ── Stable mode: re-copy all directories ──
