@@ -4,7 +4,8 @@
 validate-catalog.py — _evidence_catalog.json 结构校验器（R05）
 
 [INPUT]:  _evidence_catalog.json 文件路径
-[OUTPUT]: 校验报告（文本/JSON），exit 0=pass / 1=block / 2=文件错误
+[OUTPUT]: 校验报告（文本/JSON），exit 0=pass/warn / 2=block或文件错误；
+          人话模式尾行追 SHEET 答卷（action=pass/warn/block）
 [POS]:    _shared/scripts 的证据清单校验工具，被 audit-execution-assistant/SKILL.md
           Step 1 引用（读取 catalog 前调用）；损坏时阻止执行阶段误判证据状态
 
@@ -102,7 +103,8 @@ def main():
 
     parser = argparse.ArgumentParser(description="证据清单 _evidence_catalog.json 结构校验器")
     parser.add_argument("path", help="catalog JSON 文件路径")
-    parser.add_argument("--strict", action="store_true", help="block 时 exit 1（默认 exit 0）")
+    parser.add_argument("--strict", action="store_true",
+                        help="已废弃（B3a 起 block 一律 exit 2，无需加 strict；保留仅为兼容旧调用）")
     parser.add_argument("--json", action="store_true", help="输出 JSON 格式")
     args = parser.parse_args()
 
@@ -135,11 +137,39 @@ def main():
         for w in warns:
             print(f"[WARN] {w}")
         print(f"action={action}（{len(blocks)} block / {len(warns)} warn）")
+        # 结构化答卷（B3a）：人话模式尾行追 SHEET；--json 保持纯 JSON。
+        print("SHEET:" + json.dumps({
+            "tool": "validate-catalog",
+            "action": action,
+            "message": f"槽位 {len(data.get('items', [])) if isinstance(data.get('items'), list) else 0} 个: "
+                       f"拦下 {len(blocks)}, 警告 {len(warns)}",
+            "summary": {"total": len(data.get("items", [])) if isinstance(data.get("items"), list) else 0,
+                        "passed": 1 if action == "pass" else 0,
+                        "warned": 1 if action == "warn" else 0,
+                        "blocked": 1 if action == "block" else 0},
+            "details": [{"check": "structure_counts", "result": action,
+                         "message": "; ".join(blocks + warns) or "通过"}],
+            "crashed": False,
+        }, ensure_ascii=False))
 
     if blocks:
-        sys.exit(1 if args.strict else 0)
+        sys.exit(2)
     sys.exit(0)
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception:
+        # 未预期崩溃 → exit(2) 阻断。绝不能让崩溃的退出码(1)被闸机误判成"警告"而放行
+        import traceback
+        print("SHEET:" + json.dumps({
+            "tool": "validate-catalog",
+            "action": "block",
+            "message": "脚本崩溃，已转拦下",
+            "summary": {"total": 0, "passed": 0, "warned": 0, "blocked": 1},
+            "details": [],
+            "crashed": True,
+        }, ensure_ascii=False))
+        traceback.print_exc()
+        sys.exit(2)

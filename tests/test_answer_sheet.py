@@ -10,7 +10,7 @@
 
 背景：新架构"脚本一律吐结构化答卷，LLM 读答卷比数退出码靠谱"。
 B0 先立测试（事前红：当前无脚本吐答卷，SHEET 断言全红），B1/B3 逐个脚本转绿。
-已知偏差：validate-catalog 默认 block 也 exit 0（strict 才拦），迁移时一并改（B3a）。
+已知偏差（B3a 已修）：validate-catalog 默认 block 曾 exit 0（strict 才拦），现一律 exit 2，--strict 保留为兼容空开关。
 """
 
 import json
