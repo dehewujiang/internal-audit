@@ -37,16 +37,22 @@ def check(label, ok, detail=""):
 
 
 def _ws(name, tasks=(), left_refs=(), gaps=()):
-    """搭一个最小项目：桌子（任务+左边行）+ 制度分析（缺口编号）。"""
+    """搭一个最小项目：桌子（任务+左边行，C1·A 行格式）。
+
+    S5 起夹具全走账：缺口编号写进左格行首 `[CG-XXX]`（正文一部分），
+    不再写 policy-analyses/*.json（旧读口已删）。
+    """
     ws = SANDBOX / name
     (ws / "internal-audit-workspace" / "audit-table").mkdir(parents=True)
-    (ws / "internal-audit-workspace" / "policy-analyses").mkdir(parents=True)
     table = {
         "schema_version": "1.3",
         "table": name,
-        "left": [{"slot": "说不清的信号", "red": False, "text": f"{r} 风险点",
-                  "ref_finding_ids": [], "source": {"room": "看制度", "ref": r}}
-                 for r in left_refs],
+        "left": ([{"slot": "说不清的信号", "red": False, "text": f"{r} 风险点",
+                   "ref_finding_ids": [], "source": {"room": "看制度", "ref": r}}
+                  for r in left_refs] +
+                 [{"slot": "说不清的信号", "red": False, "text": f"[{g}] 缺口待查",
+                   "ref_finding_ids": [], "source": {"room": "看制度"}}
+                  for g in gaps]),
         "right": [],
         "drawers": [],
         "checklist": [],
@@ -58,10 +64,6 @@ def _ws(name, tasks=(), left_refs=(), gaps=()):
     }
     (ws / "internal-audit-workspace" / "audit-table" / "T.json").write_text(
         json.dumps(table, ensure_ascii=False), encoding="utf-8")
-    pa = {"control_gaps": [{"gap_id": g} for g in gaps],
-          "risk_points": [], "conflicts": []}
-    (ws / "internal-audit-workspace" / "policy-analyses" / "a.json").write_text(
-        json.dumps(pa, ensure_ascii=False), encoding="utf-8")
     return ws
 
 

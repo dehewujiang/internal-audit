@@ -50,7 +50,7 @@ ACTIONS = {
     },
     "generate_program": {
         "prechecks": [
-            {"name": "制度分析完成", "desc": "桌上有看制度的结论行（无桌回落 policy-analyses/ 不为空）"},
+            {"name": "制度分析完成", "desc": "桌上有看制度的结论行"},
         ],
         "postcheck": {
             "script": "validate-program.py",

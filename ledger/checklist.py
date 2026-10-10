@@ -48,7 +48,6 @@ def main() -> int:
     ws = Path(ap.parse_args().workspace) / "internal-audit-workspace"
 
     docs = _names(ws / "documents")
-    analyses = _names(ws / "policy-analyses", ".json")
     table_policy = 0
     tdir = ws / "audit-table"
     if tdir.exists():
@@ -60,9 +59,8 @@ def main() -> int:
             for x in t.get("left", []):
                 if "[CG-" in str(x.get("text") or "") or (x.get("source") or {}).get("room") == "看制度":
                     table_policy += 1
-    ok1 = bool(docs and (table_policy or analyses))
-    print(f"①制度看全了吗 {_tick(ok1)} 制度{len(docs)}份" +
-          (f"/桌上{table_policy}行" if table_policy else f"/分析{len(analyses)}份") +
+    ok1 = bool(docs and table_policy)
+    print(f"①制度看全了吗 {_tick(ok1)} 制度{len(docs)}份/桌上{table_policy}行" +
           ("" if ok1 else " → 去documents补制度，或跑看制度那步"))
     interviews = _names(ws / "interview-materials", ".xlsx")
     print(f"②问话发出收回吗 {_tick(bool(interviews))} 问卷{len(interviews)}份" +

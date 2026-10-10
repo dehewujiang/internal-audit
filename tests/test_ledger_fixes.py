@@ -409,28 +409,25 @@ def test_sweep_routing():
 # 断言 8（C2）：收料只添不盖——反复收不重复，状态变了只挪格
 # ══════════════════════════════════════════════════════════════
 def test_real_fieldnames():
-    print("[8b] 真实产物字段名兜底：广东长华撞出来的三套（对账门认）")
+    print("[8b] 真实产物编号兜底：广东长华撞出来的三套（对账门认）")
     ws = SANDBOX / "真实字段项目"
     wsx = ws / "internal-audit-workspace"
-    for sub in ("policy-analyses", "audit-table", "audit-programs"):
+    for sub in ("audit-table", "audit-programs"):
         (wsx / sub).mkdir(parents=True, exist_ok=True)
 
-    # 真实 document-organizer 产出用 gap_id/rp_id/conflict_id（2026-09-14 实撞）
-    (wsx / "policy-analyses" / "HR_分析.json").write_text(json.dumps({
-        "schema_version": "1.0.0",
-        "control_gaps": [
-            {"gap_id": "CG-HR-001", "description": "考勤签收缺失",
-             "verification_status": "已确认"},
-        ],
-        "risk_points": [
-            {"rp_id": "RP-HR-001", "risk_level": "high", "description": "五权合一"},
-        ],
-        "conflicts": [
-            {"conflict_id": "CF-HR-001", "description": "全勤奖条款打架"},
-        ],
-    }, ensure_ascii=False), encoding="utf-8")
+    # S5 起夹具全走账：三套编号以上桌行存在（行首完整编号，正文一部分）。
+    # （旧：gap_id/rp_id/conflict_id 三套 JSON 字段名，2026-09-14 实撞；旧本子停写后作废）
     (wsx / "audit-table" / "T.json").write_text(json.dumps({
-        "schema_version": "1.3", "table": "T", "left": [], "right": [],
+        "schema_version": "1.3", "table": "T",
+        "left": [
+            {"slot": "确定的毛病", "red": False,
+             "text": "[CG-HR-001] 考勤签收缺失；[CF-HR-001] 全勤奖条款打架",
+             "ref_finding_ids": [], "source": {"room": "看制度"}},
+            {"slot": "说不清的信号", "red": False,
+             "text": "[RP-HR-001] 五权合一",
+             "ref_finding_ids": [], "source": {"room": "看制度"}},
+        ],
+        "right": [],
         "drawers": [], "checklist": [], "ingested": {}, "tasks": [],
     }, ensure_ascii=False), encoding="utf-8")
 

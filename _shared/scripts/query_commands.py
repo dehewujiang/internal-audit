@@ -444,72 +444,15 @@ def _policy_lines_from_tables(topic_filter=None):
 
 
 def cmd_analyses(args):
-    """查询制度分析结果"""
+    """查询制度分析结果（S5 起只读桌，不再回落旧本子）"""
     table_rows = _policy_lines_from_tables(args.topic)
-    if table_rows:
-        print(f"📋  制度分析查询（桌上 {len(table_rows)} 格有结论）\n")
-        for tname, slot, text, status in table_rows:
-            print(f"  📄 {tname} · {slot}（{status}）")
-            print(f"     {text}\n")
+    if not table_rows:
+        print("📂 桌上无看制度的结论行（先跑 document-organizer 上桌）")
         return
-
-    analyses_dir = get_policy_analyses_dir()
-    if not analyses_dir.exists():
-        print("📂 policy-analyses/ 目录不存在")
-        return
-
-    files = sorted(analyses_dir.glob("*.json"))
-    if not files:
-        print("📂 policy-analyses/ 中无分析结果")
-        return
-
-    topic_filter = args.topic
-    total_cp = 0
-    total_gaps = 0
-    total_risks = 0
-
-    print(f"📋  制度分析查询（{len(files)} 份分析结果）\n")
-
-    for fpath in files:
-        try:
-            with open(fpath, "r", encoding="utf-8") as f:
-                data = json.load(f)
-        except json.JSONDecodeError:
-            print(f"  ⚠️ {fpath.name}: JSON 格式错误，跳过")
-            continue
-
-        if topic_filter and topic_filter not in fpath.stem:
-            continue
-
-        cps = data.get("control_points", [])
-        gaps = data.get("control_gaps", [])
-        risks = data.get("risk_points", [])
-        summary = data.get("summary", {})
-
-        total_cp += len(cps)
-        total_gaps += len(gaps)
-        total_risks += len(risks)
-
-        print(f"  📄 {fpath.stem}")
-        print(f"     控制点: {len(cps)} | 控制缺口: {len(gaps)} | 风险点: {len(risks)}")
-
-        if gaps and (args.gaps or args.verbose):
-            for g in gaps:
-                if isinstance(g, dict):
-                    title = g.get("title", g.get("name", ""))
-                    status = g.get("verification_status", "-")
-                    severity = g.get("severity", g.get("risk_level", "-"))
-                    print(f"       缺口: {title[:40]} [{severity}] 状态:{status}")
-
-        if risks and args.verbose:
-            high_risks = [r for r in risks if isinstance(r, dict)
-                          and r.get("severity", r.get("risk_level", "")) in ("高", "high")]
-            if high_risks:
-                for r in high_risks:
-                    print(f"       🔴 高风险: {r.get('title', r.get('name', ''))[:40]}")
-        print()
-
-    print(f"汇总: 控制点 {total_cp} 个, 控制缺口 {total_gaps} 个, 风险点 {total_risks} 个")
+    print(f"📋  制度分析查询（桌上 {len(table_rows)} 格有结论）\n")
+    for tname, slot, text, status in table_rows:
+        print(f"  📄 {tname} · {slot}（{status}）")
+        print(f"     {text}\n")
 
 
 def cmd_register(args):

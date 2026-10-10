@@ -19,7 +19,7 @@
 | 档位 | 含义 | 适用场景 | 先例 |
 |:---|:---|:---|:---|
 | **文件级** | 读 index/清单/单份目标文件，代替全目录读取 | 产物累积增长（findings/audit-programs） | catalog 按程序编号定位；findings 读 index.json |
-| **字段级** | 同一文件只读关键字段（含状态过滤） | 结构化 JSON 大表（design-assessments/policy-analyses） | policy-analyses 超 5 文件只读关键字段 |
+| **字段级** | 同一文件只读关键字段（含状态过滤） | 结构化 JSON 大表（design-assessments/底稿头） | 底稿头超 5 文件只读关键字段；结论一律读账不读旧本子（S5） |
 
 ### 明确不采用 RAG
 
@@ -55,31 +55,31 @@
 
 ### 2. audit-interview-designer（P1.5 访谈）
 
-**当前输入**
-- `policy-analyses/*.json`（SKILL.md:38）
+**当前输入**（S5 起只读账，不再读旧本子）
+- 桌子 `audit-table/*.json` 左格 `room=看制度` 的行（行首 `[CG-XXX]` 直接可读；`待确认` 的行 → 确认性问题）
 - `findings/index.json`（SKILL.md:41，已读索引而非全文——文件级先例）
 - `design-assessments/[主题]_设计观察.json`，建立 `{id, title, description}` 索引用于矛盾检测（SKILL.md:158——已字段级）
 - about-me.md（SKILL.md:39，C 类不裁剪）；risk_framework/interview_templates（背景知识，非全文输入）
 
 **裁剪规则**
-- policy-analyses：**字段级**——只读 `verification_status="待确认"` 或 `design_effectiveness="无效"` 的项（SKILL.md:49 已定义该查找逻辑，显式化为静态过滤条件）
+- 看制度行：**行级**——只读 `待确认` 状态的行（确认性问题只针对待确认项，过滤后子集完整覆盖提问依据）
 - design-assessments：**字段级**——保持 `{id, title, description}` 三字段索引（已有）
 - findings：**文件级**——保持读 index.json（已有）
 
 **修改点**
-- policy-analyses 读取指令显式化为静态字段过滤表述（写死"只读取 verification_status=待确认 或 design_effectiveness=无效 的项"）
+- （S5 起无修改点：读账行级过滤已在 SKILL 输入源写死）
 
 **子集充分性**：确认性问题只针对待确认/无效项，过滤后子集完整覆盖提问依据。
 
 ### 3. internal-audit-program-generator（P2 程序生成）
 
-**当前输入**
-- `policy-analyses/*.json`，Step 0.3 已字段级提取：`control_gaps`（verification_status="已确认"）+ `risk_points`（severity="高"）+ `conflicts`（SKILL.md:101-105）
+**当前输入**（S5 起只读账，不再读旧本子）
+- 桌子左格 `room=看制度` 的行 + 抽屉·检查表记的底稿入口（底稿全文取 `baseline_audit_program` 做轨道A基线），Step 0.3 双读转单读
 - 增量更新模式读 `design-assessments` 待处理线索（SKILL.md:151）
 - current-audit.json（SKILL.md:87，C 类）；about-me.md / my-config.md（SKILL.md:91/97，C 类，禁用缓存）
 
 **裁剪规则**
-- policy-analyses：**字段级**——保持 Step 0.3 既有静态条件（已达标）
+- 看制度行：**行级**——读账已是最小（结论行即输入，无旧本子可裁）
 - design-assessments（增量模式）：**字段级**——只读 `status="pending"` 的待处理线索（与"线索过滤"语义一致，SKILL.md:151）
 
 **修改点**
@@ -168,7 +168,7 @@
 |:---|:---|:---|:---|
 | 1 | 证据 catalog 按当前程序编号定位槽位（source_programs），而非全目录扫描 | `audit-execution-assistant/SKILL.md:120` | 文件级 |
 | 2 | findings 读 `index.json` 而非全文 | `audit-interview-designer/SKILL.md:41` | 文件级 |
-| 3 | 制度分析 JSON 超过 5 个文件时，只读取关键字段而非全文 | `internal-audit-program-generator/SKILL.md:554` | 字段级 |
+| 3 | 结论读账即最小（旧"制度分析 JSON 超 5 文件读关键字段"口径 S5 起作废） | `document-organizer/SKILL.md 写桌子` | 行级 |
 
 补充：interview-designer 对 design-assessments 只建 `{id, title, description}` 三字段索引（`audit-interview-designer/SKILL.md:158`）——字段级先例。
 
@@ -179,7 +179,7 @@
 | skill | 阶段 | 裁剪动作 | 档位 |
 |:---|:---|:---|:---|
 | document-organizer | P1 | 不裁剪（分治法已达标；制度文件 C 类） | — |
-| audit-interview-designer | P1.5 | policy-analyses 显式字段过滤；其余已达标 | 字段级 |
+| audit-interview-designer | P1.5 | 读桌看制度行（待确认行）；其余已达标 | 行级 |
 | internal-audit-program-generator | P2 | 增量模式 design-assessments 加 status=pending 过滤 | 字段级 |
 | audit-execution-assistant | P3 | **design-assessments 按 status=pending 过滤（不限来源）** | 字段级 |
 | audit-finding-debate | P3.5 | 无强制；可选经 index.json 定位 | — |

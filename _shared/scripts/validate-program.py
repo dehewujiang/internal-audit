@@ -306,8 +306,9 @@ def _norm_ref(raw):
 def _collect_ledger_ctx(workspace):
     """从项目账上收两样东西：任务编号集合 + 户口编号集合。
 
-    户口 = 制度分析三类编号（CG/RP/CF/D，沿用落格规则户口口径）
-    + 桌上左边行的来源编号 + 任务编号。找不到账（旧版程序/路径不对）
+    户口 = 桌上左边行（来源编号 + 行内 [CG/RP/CF/D-XXX] 完整编号，正文一部分）
+    + design-assessments 观察编号 + 任务编号。S5 起只读账，不再读
+    policy-analyses/*.json（停写旧本子）。找不到账（旧版程序/路径不对）
     返回 None，对账跳过不误拦。
     """
     ws = Path(workspace)
@@ -315,17 +316,6 @@ def _collect_ledger_ctx(workspace):
     if not base.is_dir():
         return None
     anchors, task_refs = set(), set()
-    for p in sorted((base / "policy-analyses").glob("*.json")) if (base / "policy-analyses").is_dir() else []:
-        try:
-            a = json.loads(p.read_text(encoding="utf-8-sig"))
-        except Exception:
-            continue
-        for g in a.get("control_gaps") or []:
-            anchors.add(str(g.get("gap_id") or g.get("id") or "").strip().upper())
-        for r in a.get("risk_points") or []:
-            anchors.add(str(r.get("rp_id") or r.get("risk_id") or r.get("id") or "").strip().upper())
-        for c in a.get("conflicts") or []:
-            anchors.add(str(c.get("conflict_id") or c.get("id") or "").strip().upper())
     for p in sorted((base / "design-assessments").glob("*.json")) if (base / "design-assessments").is_dir() else []:
         try:
             a = json.loads(p.read_text(encoding="utf-8-sig"))
@@ -347,7 +337,7 @@ def _collect_ledger_ctx(workspace):
                 anchors.add(ref)
             # C1·A：行内完整编号（[CG-001] 等写在正文里）同样是户口 ——
             # 同一格多行共用一个 source，只有最后一次的 ref 留得下，行内编号必须从文本里捞
-            for m in re.finditer(r"\[(CG|RP|CF|D)-([A-Z0-9]+)\]",
+            for m in re.finditer(r"\[(CG|RP|CF|D)-([A-Z0-9][A-Z0-9-]*)\]",
                                  str(x.get("text") or "").upper()):
                 anchors.add(f"{m.group(1)}-{m.group(2)}")
         for task in t.get("tasks", []):

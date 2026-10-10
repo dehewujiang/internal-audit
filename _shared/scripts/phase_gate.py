@@ -148,18 +148,15 @@ def cmd_next(args) -> None:
     idx = PHASES.index(current)
     cname, actions = PHASE_CN[current]
 
-    n_policy = _count_files(ws, "policy-analyses", pattern="*.json")
+    done = []
+    n_table_policy = _policy_rows(ws)
+    if n_table_policy:
+        done.append(f"制度分析桌上 {n_table_policy} 行")
     n_prog = _count_files(ws, "audit-programs")
     n_report = _count_files(ws, "reports")
     rows = _table_rows(ws)
     ev_got, ev_all = _evidence_progress(ws)
 
-    done = []
-    n_table_policy = _policy_rows(ws)
-    if n_table_policy:
-        done.append(f"制度分析桌上 {n_table_policy} 行")
-    elif n_policy:
-        done.append(f"制度分析 {n_policy} 份（旧 JSON，未上桌）")
     if n_prog:
         done.append(f"审计程序 {n_prog} 份")
     if rows:
@@ -278,12 +275,9 @@ def check_exit_conditions(ws: Path, current_phase: str, data: dict, args=None) -
     issues = []
 
     if current_phase == "phase_1_document_analysis":
-        # C1·S3 门限：先看桌上有无看制度的行；空桌但有旧 JSON（过渡期）也放行；
-        # 两边都空才拦
+        # C1·S5：只看桌（旧 JSON 回落已删）。空桌即拦。
         if _policy_rows(ws) == 0:
-            analyses = list((ws / "policy-analyses").glob("*.json")) if (ws / "policy-analyses").exists() else []
-            if len(analyses) == 0:
-                issues.append({"type": "block", "msg": "桌上无看制度的结论行（需 document-organizer 先上桌），policy-analyses/ 也无 JSON"})
+            issues.append({"type": "block", "msg": "桌上无看制度的结论行（需 document-organizer 先上桌）"})
         if not data.get("audit_topic"):
             issues.append({"type": "block", "msg": "audit_topic 未设置"})
 

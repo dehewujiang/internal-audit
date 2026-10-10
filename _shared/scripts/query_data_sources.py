@@ -44,6 +44,8 @@ def get_eval_dir() -> Path:
 
 
 def get_policy_analyses_dir() -> Path:
+    # S5 起最后一位读者：仅 _load_all_control_points（控制点明细追溯）还在用。
+    # 控制点有效项不上桌（C 内容映射），明细只能从旧本子/底稿头取；底稿头可机读后删此函数。
     return find_workspace() / "policy-analyses"
 
 
