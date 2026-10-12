@@ -23,7 +23,7 @@
 - ❄️ 附带发现（validate-policy-analysis 字段误报）—— 随第二批一并消解
 
 ### 其他
-- **推远程**：三个仓库均有本地领先提交未推——`~/.claude/`（新建，尚未设远程）、`12_AGI/`、`internal-audit/`
+- ~~**推远程**~~ → **2026-10-12 澄清，不是欠账**：internal-audit 已同步（b72f188）；12_AGI 靠坚果云同步（fixtures 说：skills.git 仓库已删/不让推，用户拍板不推，[用户确认]）；~/.claude 未设远程，同属"不当欠账"
 - 增量制度分析脚本（`analysis_manifest.py` + `incremental_analysis_gate.py`）已入库未接入（全库 0 引用）。判定：设计超前、需求未触发 → 保留不删，待制度更新频繁时接线。记录见 `_shared/scripts/README.md`
 - `create_evidence_dirs.py` 重构候选：名为建目录、实为 457 行解析器；3 处死代码（v2.1 取消程序目录后遗留）；与 `evidence_catalog.py` 职责重叠。功能在用，不紧急 → 下次动 evidence 时重构
 - C6 推理日志全量铺开：试点已完成，跑 1 个真实审计项目后评估（见 `REASON-LOG.md`）
