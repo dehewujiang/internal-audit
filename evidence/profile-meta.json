@@ -1,0 +1,1 @@
+{"level": "L2", "review_required": false, "task": "profile_table.py 画像器 v1.0（按已拍板提纲：唯一上限10万/蓄水池1万/四关键词）", "verify": "合成表断言（表头偏移/合计行/空值/唯一/分位数approx）+ 跑两遍逐字节相同 + 20万行合成大表 <2min。证据见 evidence/profile-run.json。"}

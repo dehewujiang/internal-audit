@@ -274,6 +274,14 @@ python _shared/scripts/validate-relations.py internal-audit-workspace/reconcile/
 
 口径卡模板在 `_shared/reconcile/relations.example.json`，拷到 `internal-audit-workspace/reconcile/relations.json` 再改。拦下时看 `[BLOCK]` 那行，补齐口径再跑。
 
+### 表格画像
+
+```
+python _shared/scripts/profile_table.py <表格文件> --out <画像.json>   表格太大读不懂时先画画像
+```
+
+画像是表格的"体检缩影"（几行几列、表头在第几行、有无合计行、每列空值和唯一情况），AI 和你都只看画像，不用翻几十万行原表。拿到画像后，把"sheet/表头行/列名"照抄进口径卡就行。
+
 ### 跨项目查询（需先 register）
 ```
 python _shared/scripts/queries.py register --list                                         列出已注册
@@ -297,6 +305,9 @@ powershell -File update-project.ps1 -ProjectDir .            增量升级
 
 ### 勾稽口径卡
 两张表对数之前，先填口径卡再跑比对：比哪两张表、比哪列、币种单位、含税未税、容差多少，五项缺一就拦下。模板和检查命令见上面"常见情况"和"速查表"。第一版只支持"明细合计数对总数"一种比法。
+
+### 表格画像
+表太大读不懂时，先跑画像再看结果：画像告诉你表头在第几行、有没有合计行、每列有没有空值和重复，拿着它填口径卡就行。
 
 ## 近期更新（2026-07-22）
 

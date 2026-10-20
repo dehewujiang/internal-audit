@@ -23,6 +23,7 @@
 | evidence-catalog | 证据清单管理（生成槽位/扫描文件/匹配建议/状态汇总） | level_0 | `skills/internal-audit/_shared/scripts/evidence_catalog.py` |
 | validate-catalog | 证据清单结构校验（槽位必填/唯一性/计数一致性，R05） | level_0 | `skills/internal-audit/_shared/scripts/validate-catalog.py` |
 | validate-relations | 勾稽口径卡校验（口径/容差/键唯一三硬停，v1.0 只认 detail_to_total） | level_0 | `skills/internal-audit/_shared/scripts/validate-relations.py` |
+| profile-table | 表格画像器（分块扫描产定长画像 JSON，表头/合计行/空值/唯一/分位数approx） | level_0 | `skills/internal-audit/_shared/scripts/profile_table.py` |
 | ledger-keeper | 新桌子管家：开桌/写格/贴证据/对单号/老账搬家（只管写）。v2.0 支持直接写桌带来源标记（`--room/--ref/--status`） | level_0 | `skills/internal-audit/ledger/ledger.py` |
 | ledger-gate | 新桌子日常门卫：只读桌子查大事+高风险硬度 | level_0 | `skills/internal-audit/ledger/check.py` |
 | ledger-checklist | 新桌子打勾纸：六句话看板，只看不拦 | level_0 | `skills/internal-audit/ledger/checklist.py` |
