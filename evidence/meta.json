@@ -1,0 +1,1 @@
+{"level": "L2", "task": "relations.json schema v1.0 + validate-relations.py + field_dictionary.json + OPS.md同步", "impact": "新增 _shared/scripts/validate-relations.py、_shared/reconcile/ 两个金源文件；改 OPS.md。三处均为新增/文档，不碰现有逻辑与接口，可直接删除回退。", "verify": "红绿测试：好文件exit 0；缺口径/缺容差/key未验/type越界/filter越界各exit 2；跑全量python冒烟。证据见 evidence/run.json + test.log。", "review_required": false}

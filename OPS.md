@@ -1,6 +1,6 @@
 # 内部审计 AI 助手 — 操作手册
 
-> 版本：2026-07-22 | 阅读时间：7 分钟
+> 版本：2026-10-20 | 阅读时间：7 分钟
 
 ---
 
@@ -96,6 +96,10 @@ claude
 ### 证据等级不够支撑高风险结论
 
 系统会自动拦截——高风险发现必须有 A 级（系统导出的数据）或 E 级（第三方机构出的证明）证据。被拦截时，你要么补更硬的证据，要么降级为中风险。
+
+### 两张表的数字对不上（勾稽）
+
+比如"采购明细加起来不等于总账数"。你只需要做一件事：**把口径告诉 AI**——比的是哪两张表、比哪一列、币种单位是元还是万元、含税还是未税、差多少算没问题（容差）。AI 把这些记进一张口径卡（`reconcile/relations.json`），系统先检查口径卡填全了没有（没填全会拦下，不是 bug），填全了才跑比对，结果生成一份差异底稿给你看。**差异本身不是结论**，你看过之后觉得是问题，才记成 finding。
 
 ### 想查当前项目的发现
 
@@ -257,19 +261,27 @@ python _shared/scripts/queries.py findings --status 待整改        待整改�
 python _shared/scripts/queries.py search "关键词"                 全文搜索
 python _shared/scripts/queries.py trace F-2026-001                追溯发现链
 python _shared/scripts/queries.py summary                         汇总统计
-python _shared/scripts/queries.py decide D-003                    查某个决策点
+python _shared/scripts/queries.py decide D-2026-003                查某个决策点
 python _shared/scripts/queries.py decide --all                    列出所有决策点
 ```
 
-### 跨项目查询（需先 register）
+### 勾稽口径
 
+```
+python _shared/scripts/validate-relations.py internal-audit-workspace/reconcile/relations.json       口径卡填全了没有
+python _shared/scripts/validate-relations.py internal-audit-workspace/reconcile/relations.json --json  机器可读结果
+```
+
+口径卡模板在 `_shared/reconcile/relations.example.json`，拷到 `internal-audit-workspace/reconcile/relations.json` 再改。拦下时看 `[BLOCK]` 那行，补齐口径再跑。
+
+### 跨项目查询（需先 register）
 ```
 python _shared/scripts/queries.py register --list                                         列出已注册
 python _shared/scripts/queries.py register --path <目录> --topic <主题> --period <期间>     注册项目
 python _shared/scripts/queries.py register --remove <ID>                                   删除注册
 python _shared/scripts/queries.py findings --risk 高 --cross-project                      跨项目查询
 python _shared/scripts/queries.py search "关键词" --cross-project                          跨项目搜索
-python _shared/scripts/queries.py compare --topic <主题> --from 2025 --to 2026 --cross-project  跨项目对比
+python _shared/scripts/queries.py compare --topic <主题> --from-year 2025 --to-year 2026 --cross-project  跨项目对比
 ```
 
 ### 系统部署
@@ -280,6 +292,11 @@ powershell -File update-project.ps1 -ProjectDir .            增量升级
 ```
 
 ---
+
+## 近期更新（2026-10-20）
+
+### 勾稽口径卡
+两张表对数之前，先填口径卡再跑比对：比哪两张表、比哪列、币种单位、含税未税、容差多少，五项缺一就拦下。模板和检查命令见上面"常见情况"和"速查表"。第一版只支持"明细合计数对总数"一种比法。
 
 ## 近期更新（2026-07-22）
 

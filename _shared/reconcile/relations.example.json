@@ -1,0 +1,39 @@
+{
+  "schema_version": "1.0",
+  "dictionary_version": "1.0",
+  "relations": [
+    {
+      "id": "R-001",
+      "type": "detail_to_total",
+      "title": "2025年采购明细合计数 = 总账采购额",
+      "detail": {
+        "file": "_files/采购明细2025.xlsx",
+        "sheet": "明细",
+        "header_row": 3,
+        "key_col": "发票号码",
+        "amount_col": "金额（元）",
+        "filter": {"col": "审核状态", "op": "eq", "value": "已审核"}
+      },
+      "total": {
+        "file": "_files/总账2025.xlsx",
+        "sheet": "汇总",
+        "cell": "B20"
+      },
+      "field_map": {
+        "发票号码": "contract_id",
+        "金额（元）": "amount"
+      },
+      "caliber": {
+        "currency_unit": "元",
+        "tax": "未税",
+        "date_range": "2025-01-01~2025-12-31",
+        "note": "明细只含已审核，不含暂估；总账取未税数",
+        "declared_by": "XXX",
+        "declared_at": "2026-10-21"
+      },
+      "tolerance": {"mode": "absolute", "value": 1, "unit": "元"},
+      "key_unique_checked": true,
+      "status": "active"
+    }
+  ]
+}

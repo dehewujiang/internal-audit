@@ -1,0 +1,13 @@
+{
+  "schema_version": "1.0",
+  "version": "1.0",
+  "usage": "relations.json 的 field_map 值只能从本词典的 key 里选；选不到先扩词典再写配置",
+  "fields": {
+    "contract_id": "业务主键：合同号/发票号/凭证号",
+    "amount": "金额（数值列）",
+    "date": "业务日期",
+    "status": "状态字段（已审核/已确认/待确认等原文）",
+    "currency_unit": "币种单位：元/万元",
+    "tax": "含税/未税/不适用"
+  }
+}
