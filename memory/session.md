@@ -66,3 +66,15 @@ ADR-043。测试项目只读。图纸只剩 A6 答卷收尾。
 sweep/import 及 427 行收料代码删除；旧测试迁移（直写对照/任务作废/
 流水口径/字段名转对账门）；附带收紧 add-task 户口语义。
 旧 8 测试+B1–B8+回归全过。ADR-044。测试项目只读。图纸后半张收工。
+
+---
+
+## 本次（2026-10-20）：勾稽口径卡 + 画像器（审计数据能力落地第一批）
+
+起因：与另一 LLM 的讨论结论（handoff-20261020）——"办公"=审计通用数据活；harness 能力核对后定下"脚本执行、人定口径"。
+做了：
+- 口径卡 schema v1.0 + `validate-relations.py`（三硬停两道门，exit 2）+ 词典/模板（commit `8d8cde4`）
+- OPS 全量审计：勾稽画像 5 处新增 + compare `--from-year/--to-year`、`decide D-2026-003`、版本号三处旧账修正
+- 画像器 `profile_table.py`（复用体检三探针，分块扫描，合成表断言+确定性+20 万行 8.6s，GREEN 5/5，commit `bb2c3fe`）
+- 两提交回归 GREEN=2 RED=0，快照过；用户拍板推 GitHub（覆盖"坚果云不推"旧决定，已 push）
+未做：`check_reconcile.py` 执行器、真实表实跑、`agents/*.md`+`context_hygiene.md`。ADR-045。

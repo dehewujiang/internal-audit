@@ -16,9 +16,10 @@ internal-audit/
 │   ├── skills/               ← 2 个 geb 原生真身 + 10 个审计技能 junction 门牌（非取货点，见 ADR-027）
 │   └── settings.json
 │   （注意：.claude/rules/ 已于 2026-09-11 移除——规则统一由 ~/.claude/rules/ 提供，见下）
-├── _shared/scripts/          ← phase_gate + validate-* ×8 + queries + data_executor + audit_gate
+├── _shared/scripts/          ← phase_gate + validate-* ×9 + queries + data_executor + audit_gate
 │                                + check_mandatory_coverage + project_init + program_ir_parser
-│                                + evidence_catalog + bump-version
+│                                + evidence_catalog + bump-version + profile_table（画像器）
+├── _shared/reconcile/        ← 勾稽口径：field_dictionary.json + relations.example.json（模板与词典金源）
 ├── ledger/                   ← 新桌子（见下）
 ├── tools/                    ← pdf_ocr_extractor.py（PaddleOCR）+ 13 个能力声明
 ├── audit-topics/             ← 审计主题模板（人力资源管理、存货管理）
@@ -54,7 +55,7 @@ internal-audit/
 - `validate-interview.py` **必须传** `--strict`——它非 strict 时无论成败都返回 0，闸机会永远放行
 - `validate-report.py` / `validate-program.py` **刻意不传** `--strict`——它们的 strict 分支把"阻断"也映射成退出码 1，闸机将无法与"警告"区分
 
-**崩溃兜底**：五个校验脚本入口均有 `try/except → exit(2)`，防止"脚本挂了"（Python 默认返回 1）被误判成"有警告"放行。
+**崩溃兜底**：六个校验脚本入口均有 `try/except → exit(2)`，防止"脚本挂了"（Python 默认返回 1）被误判成"有警告"放行。
 
 ## 新桌子 ledger
 
