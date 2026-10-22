@@ -106,7 +106,11 @@ Phase flow: `phase_0_init → phase_1_document_analysis → phase_1_5_interview 
 | `validate-interview.py` | Validate interview materials |
 | `validate-catalog.py` | Validate _evidence_catalog.json structure (slots/count consistency, R05) |
 | `validate-json.py` | Generic JSON schema validation |
-| `create_evidence_dirs.py` | ⚠️ 待退役：槽位生成已由 `ledger.py init-evidence-slots` 接管（账上表+兼容导出），本脚本不再被调用 |
+| `validate-relations.py` | 勾稽口径卡校验（口径/容差/键唯一三硬停） |
+| `data_executor.py` | LLM 代码沙箱执行（子进程真超时；留 code.py/run.json；支持 `别名=路径#工作表`） |
+| `data_health_check.py` | 证据入桌前体检（真假表头/加密/多版本/图片待 OCR），只看不改 |
+| `profile_table.py` | 表格画像（分块扫描，定长画像 JSON：表头/合计行/空值/唯一/分位数） |
+| `explore_paper.py` | 探索底稿：`new` 建骨架（自动写源文件 sha）/ `check` 自检（事实须有依据、线索须有下一步证据） |
 | `evidence_catalog.py` | Evidence catalog CRUD: scan files, suggest matches, update slots, status summary |
 | `project_init.py` | Project safety check before workspace creation |
 | `query_data_sources.py` | Backend data source queries (used by queries.py) |
@@ -156,7 +160,7 @@ Every Python script call must pass `phase_gate.py tool-check` first. Exit 1 = bl
 | Phase 1 (document) | `validate-policy-analysis.py`, `pdf_ocr_extractor.py`, `check_mandatory_coverage.py` | policy-analysis |
 | Phase 1.5 (interview) | `validate-interview.py` | interview |
 | Phase 2-3 (program) | `validate-program.py` | program |
-| Phase 3 (execution) | `validate-finding.py`, `evidence_catalog.py`, `data_executor.py`, `data_health_check.py` | finding |
+| Phase 3 (execution) | `validate-finding.py`, `evidence_catalog.py`, `data_executor.py`, `data_health_check.py`, `profile_table.py`, `explore_paper.py` | finding |
 | Phase 4 (report) | `validate-report.py` | report |
 
 **Globals** (all phases): `phase_gate.py`, `queries.py`, `validate-json.py`, `audit_styles.py`, `excel_core.py`, `decisions_schema.py`, `ledger/ledger.py`, `ledger/check.py`, `ledger/checklist.py`, `ledger/audit_table.py`, `ledger/export.py`

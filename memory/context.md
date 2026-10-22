@@ -16,9 +16,10 @@ internal-audit/
 │   ├── skills/               ← 2 个 geb 原生真身 + 10 个审计技能 junction 门牌（非取货点，见 ADR-027）
 │   └── settings.json
 │   （注意：.claude/rules/ 已于 2026-09-11 移除——规则统一由 ~/.claude/rules/ 提供，见下）
-├── _shared/scripts/          ← phase_gate + validate-* ×9 + queries + data_executor + audit_gate
+├── _shared/scripts/          ← phase_gate + validate-* ×8 + queries + data_executor + audit_gate
 │                                + check_mandatory_coverage + project_init + program_ir_parser
 │                                + evidence_catalog + bump-version + profile_table（画像器）
+│                                + explore_paper（探索底稿：建骨架+自检）
 ├── _shared/reconcile/        ← 勾稽口径：field_dictionary.json + relations.example.json（模板与词典金源）
 ├── ledger/                   ← 新桌子（见下）
 ├── tools/                    ← pdf_ocr_extractor.py（PaddleOCR）+ 13 个能力声明
@@ -88,6 +89,20 @@ ledger/
 - **接入点**：program-generator SKILL.md Step 4.5（解析→校验→激活轨道比对→修复闭环）
 - **注意**：解析器收集《风险识别清单》时须收全 2.1.1~2.1.5 五张表（曾因 `break` 只读首表，覆盖率分母残缺）
 
+## 探索车道（2026-10-22 第一批）
+
+```
+探索车道（找线索）                    勾稽车道（钉结论）
+画像/体检 → data_executor 沙箱         口径卡 → validate-relations
+→ code.py+run.json+result.csv          → check_reconcile（未写）
+→ explore_paper new/check 成底稿       → 勾稽底稿
+产物：evidence/explore/                产物：evidence/reconcile/
+```
+
+- `explore_paper.py`：`new` 生成 `底稿.md`+`底稿.json`（自动写源文件 size/sha256，拒绝覆盖）；`check` 拦「事实缺 basis / basis 文件不存在 / 线索缺 evidence_needed / 线索 basis 不是已登记事实 id / conclusion 非布尔」
+- 真实数据产物 `evidence/explore/`、`evidence/reconcile/` 被 `.gitignore` 挡住；测试红/绿日志 `evidence/red.log`、`test.log` 例外入库
+- 探索结果只是线索；要成为重复检查，必须固化成口径卡
+
 ## 10 个 Skill 流水线
 
 ```
@@ -113,15 +128,17 @@ report-generator             (Phase 4 → reports/)
 - finding schema 1.2.0（扁平结构：title / risk_level / origin / evidence[]）
 - 证据等级 A-E 五级，高风险 finding 必须 A 或 E
 - 项目命名：`project_name` 必须等于项目文件夹名
-- `data_executor` 安全：import 白名单（仅 pandas/numpy）+ threading.Timer 超时
+- `data_executor` 安全：import 白名单（仅 pandas/numpy）+ **子进程到点被杀**（默认 30 秒，`--timeout`）；每次执行落 `code.py` + `run.json`（源文件 sha/起止/行列数/状态）；`-d 别名=路径#工作表`，路径含 `#` 时优先按整条文件处理
 - **业务规则只写"为什么"**（本文件与 decisions.md）；"改了什么"交给 git
 
 ## 已部署项目
 
 | ID | 项目 | 主题 | 阶段 |
 |:---:|------|------|------|
-| P-2026-001 | 武汉长源 | 人力资源管理 | phase_3_execution |
-| P-2026-002 | 广东长华 | 人力资源管理 | phase_2_program_generation |
+| P-2026-001 | 武汉长源 | 人力资源管理 | phase_3_execution —— **已结束（2026-10-22）** |
+| P-2026-002 | 广东长华 | 人力资源管理 | phase_2_program_generation —— **已结束（2026-10-22）** |
+
+> 2026-10-22 用户确认：两个现场项目已结束，不再部署；`update-project.ps1` 等有新现场项目再跑。AU_TEST_基建工程为测试项目（10-09-3，未升 10-22-1）。
 
 ## 用户长期目标
 Flan 从"操作员"变成"审核员"——系统自己管流程，他只做关键决策。
