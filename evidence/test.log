@@ -1,0 +1,32 @@
+=== GREEN RUN 2026-10-22T15:13:20+08:00 ===
+--- test_gate_ir.py EXIT=0
+
+PASS
+--- test_batch2_writeback.py EXIT=0
+
+全过
+--- test_batch3_queries.py EXIT=0
+
+全过
+--- test_batch4_lineage.py EXIT=0
+
+全过
+--- test_batch5_reports.py EXIT=0
+
+全过
+--- test_ledger_fixes.py EXIT=0
+
+✅ 全过
+--- test_audit_gate_tiers.py EXIT=0
+
+PASS
+--- test_source_reconciliation.py EXIT=0
+
+PASS
+--- test_data_executor_artifacts.py EXIT=0
+
+PASS
+--- test_explore_paper.py EXIT=0
+
+PASS
+ALL_FAIL=0

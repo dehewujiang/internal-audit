@@ -1,6 +1,6 @@
 # 内部审计 AI 助手 — 操作手册
 
-> 版本：2026-10-20 | 阅读时间：7 分钟
+> 版本：2026-10-22 | 阅读时间：7 分钟
 
 ---
 
@@ -282,6 +282,17 @@ python _shared/scripts/profile_table.py <表格文件> --out <画像.json>   表
 
 画像是表格的"体检缩影"（几行几列、表头在第几行、有无合计行、每列空值和唯一情况），AI 和你都只看画像，不用翻几十万行原表。拿到画像后，把"sheet/表头行/列名"照抄进口径卡就行。
 
+### 表格探索（表太乱、还不知道要查什么）
+
+```
+python _shared/scripts/data_executor.py columns <文件>#<工作表>                              先看列名和样例
+python _shared/scripts/data_executor.py execute -c "<代码>" -d "表=<文件>#<工作表>" -o <输出目录>   跑一次探索
+python _shared/scripts/explore_paper.py new --id EWP-2026-001 --title "<标题>" --source <源文件> --out <目录>   建底稿骨架
+python _shared/scripts/explore_paper.py check <底稿目录>                                      底稿自检
+```
+
+每次探索都会在输出目录留下三样：`code.py`（这次算了什么）、`run.json`（源文件 sha、开始结束时间、行列数、结果）、`result.csv`（结果）。卡死默认 30 秒自动停（`--timeout` 可改）。一张 Excel 有多张工作表时，用 `#工作表名` 指定；如果文件名本身含 `#`，系统会优先把它当完整文件名，不会误切。探索完用 `explore_paper.py` 建底稿：事实没有依据文件、线索没有下一步证据，会被拦下。
+
 ### 跨项目查询（需先 register）
 ```
 python _shared/scripts/queries.py register --list                                         列出已注册
@@ -300,6 +311,11 @@ powershell -File update-project.ps1 -ProjectDir .            增量升级
 ```
 
 ---
+
+## 近期更新（2026-10-22）
+
+### 探索车道闭环
+表格探索现在会留痕：每次运行保存代码、源文件 sha、起止时间和结果；卡死会到点自动停；支持指定工作表。新增底稿自检：事实必须能指到结果文件，线索必须写下一步证据。探索底稿样例见本地 `evidence/explore/`（含真实数据，不入库）。
 
 ## 近期更新（2026-10-20）
 

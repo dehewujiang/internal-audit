@@ -1,0 +1,132 @@
+=== RED RUN (HEAD d13b280, clean worktree) 2026-10-22T15:09:58+08:00 ===
+--- test_data_executor_artifacts.py ---
+
+[一] 执行后留痕：code.py + run.json
+  ✅ 退出码（成功=0）
+  ✅ result.csv 已生成
+  ❌ code.py 已生成
+     期望: True
+     实际: False
+  ❌ code.py 内容与执行代码一致
+     期望: "OUTPUT = dfs['t'].copy()\nOUTPUT['新列'] = 1\n"
+     实际: None
+  ❌ run.json 已生成
+     期望: True
+     实际: False
+  ❌ run.json 状态=ok
+     期望: 'ok'
+     实际: None
+  ❌ run.json 记录源文件 sha256（64位）
+     期望: 64
+     实际: 0
+  ❌ run.json 记录开始/结束时间
+     期望: True
+     实际: False
+  ❌ run.json 记录列数
+     期望: 3
+     实际: None
+  ❌ run.json 记录列名
+     期望: ['甲', '乙', '新列']
+     实际: None
+
+[二] 指定工作表：别名=路径#工作表
+  ✅ 退出码（成功=0）
+  ❌ 结果来自第二张表
+     期望: True
+     实际: False
+  ✅ 结果不含第一张表的列
+  ❌ run.json 记录工作表名
+     期望: '第二张'
+     实际: None
+
+[三] 真超时：死循环到点被杀
+  ✅ 超时后退出码=2
+  ❌ 错误信息含“超时”
+     期望: True
+     实际: False
+  ✅ 2 秒超时在 10 秒内返回
+  ❌ run.json 状态=timeout
+     期望: 'timeout'
+     实际: None
+
+[四] 路径本身含 #：不误当工作表
+  ✅ 退出码（成功=0）
+  ✅ 整条路径被正确读取
+  ✅ run.json 工作表为空
+
+FAIL — 12 条断言未通过：
+  - code.py 已生成
+  - code.py 内容与执行代码一致
+  - run.json 已生成
+  - run.json 状态=ok
+  - run.json 记录源文件 sha256（64位）
+  - run.json 记录开始/结束时间
+  - run.json 记录列数
+  - run.json 记录列名
+  - 结果来自第二张表
+  - run.json 记录工作表名
+  - 错误信息含“超时”
+  - run.json 状态=timeout
+EXIT=1
+--- test_explore_paper.py ---
+
+[一] new：生成骨架并记录 sha256
+  ❌ 退出码（成功=0）
+     期望: 0
+     实际: 2
+  ❌ 底稿.md 已生成
+     期望: True
+     实际: False
+  ❌ 底稿.json 已生成
+     期望: True
+     实际: False
+  ❌ 源文件 sha256 一致
+     期望: 'c05fde9c452c4b65aa3ded167d53c759d7c3c7ff97e3f29a8e936770a6653d99'
+     实际: None
+  ❌ 编号写入正确
+     期望: 'EWP-2026-999'
+     实际: None
+  ❌ facts/leads 初始为空
+     期望: ([], [])
+     实际: (None, None)
+  ✅ 重复建同一目录被拒（exit 2）
+
+[二] check：事实缺依据 → 拦下
+  ✅ 退出码=2
+  ❌ 提示缺依据
+     期望: True
+     实际: False
+
+[三] check：依据文件不存在 → 拦下
+  ✅ 退出码=2
+  ❌ 提示文件不存在
+     期望: True
+     实际: False
+
+[四] check：线索缺下一步证据 → 拦下
+  ✅ 退出码=2
+  ❌ 提示缺下一步证据
+     期望: True
+     实际: False
+
+[五] check：合格底稿 → 放行
+  ❌ 退出码=0
+     期望: 0
+     实际: 2
+  ❌ 输出 action=pass
+     期望: True
+     实际: False
+
+FAIL — 11 条断言未通过：
+  - 退出码（成功=0）
+  - 底稿.md 已生成
+  - 底稿.json 已生成
+  - 源文件 sha256 一致
+  - 编号写入正确
+  - facts/leads 初始为空
+  - 提示缺依据
+  - 提示文件不存在
+  - 提示缺下一步证据
+  - 退出码=0
+  - 输出 action=pass
+EXIT=1

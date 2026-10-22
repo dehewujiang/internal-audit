@@ -1,7 +1,7 @@
 {
-  "version": "2026-10-10-1",
-  "git_commit": "32ec23d",
-  "updated_at": "2026-10-10T08:19:03+08:00",
+  "version": "2026-10-22-1",
+  "git_commit": "d13b280",
+  "updated_at": "2026-10-22T15:23:59+08:00",
   "changes": [
     {
       "type": "feat",
@@ -422,6 +422,26 @@
       "type": "docs",
       "file": "CLAUDE-project.md+OPS.md",
       "summary": "命令表加next一行,用户手册进度查询改指next"
+    },
+    {
+      "type": "feat",
+      "file": "_shared/scripts/data_executor.py",
+      "summary": "执行留痕(code.py+run.json含源文件sha/起止/行列数)+子进程真超时+#工作表选择；路径含#不误切"
+    },
+    {
+      "type": "feat",
+      "file": "_shared/scripts/explore_paper.py",
+      "summary": "探索底稿工具：new建骨架(自动写源文件sha)+check自检(事实须有依据文件/线索须有下一步证据,exit 2)"
+    },
+    {
+      "type": "test",
+      "file": "tests/test_data_executor_artifacts.py+tests/test_explore_paper.py",
+      "summary": "红23条转绿34条；锁死留痕/真超时/工作表/路径含#/底稿自检五类拦截"
+    },
+    {
+      "type": "docs",
+      "file": "OPS.md+AGENTS.md+CLAUDE.md+project-init/SKILL.md+.gitignore",
+      "summary": "同步探索车道命令与工具登记；新项目建evidence/explore+reconcile；证据产物忽略、测试日志白名单"
     }
   ]
 }

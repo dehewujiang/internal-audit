@@ -25,9 +25,19 @@ node_modules/
 
 # Logs
 *.log
+# 证据日志例外：小文本、随交付归档（红/绿测试原始输出）
+!evidence/test.log
+!evidence/red.log
+# 子代理运行记录（机器生成，可能很大，不入库）
+evidence/subagents.jsonl
 
 # OS
 .DS_Store
+
+# 审计数据产物（含真实公司数据：设备/人员/合同号），禁止入库，只留本地
+# 原始 xlsx 已由上方 *.xlsx 忽略；这里挡住探索底稿与结果 CSV
+evidence/explore/
+evidence/reconcile/
 
 # 运行工具痕迹（oh-my-openagent / workbuddy 工作目录，产物已入库，不入版本控制）
 .omo/

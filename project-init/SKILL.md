@@ -125,7 +125,11 @@ C) 取消
 │   ├── audit-programs/            # Phase 3 输出
 │   ├── findings/                  # Phase 4 输出
 │   ├── debates/                   # Phase 4.5 输出
-│   └── reports/                   # Phase 5 输出
+│   ├── reports/                   # Phase 5 输出
+│   ├── evidence/
+│   │   ├── explore/               # 探索底稿（探索车道产物）
+│   │   └── reconcile/             # 勾稽底稿（勾稽车道产物）
+│   └── reconcile/                 # 勾稽口径卡 relations.json
 ```
 
 ### 4.3 生成 current-audit.json（schema 1.1，含 audit_state）
@@ -246,6 +250,9 @@ python ledger/ledger.py create "internal-audit-workspace/audit-table/{topic_name
 ✓ internal-audit-workspace/findings/
 ✓ internal-audit-workspace/debates/
 ✓ internal-audit-workspace/reports/
+✓ internal-audit-workspace/evidence/explore/
+✓ internal-audit-workspace/evidence/reconcile/
+✓ internal-audit-workspace/reconcile/
 ✓ CLAUDE.md
 
 下一步：

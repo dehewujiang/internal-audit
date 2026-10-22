@@ -1,0 +1,30 @@
+{
+  "reviewer": "验收小工",
+  "date": "2026-10-22",
+  "verdict": "通过",
+  "checked": [
+    {"item": "复验1：run.json 记录列数与列名，测试实跑绿", "result": "pass", "evidence": "python tests/test_data_executor_artifacts.py → 19 条断言全 ✅，EXIT=0；[一] 含“run.json 记录列数=3”“记录列名=['甲','乙','新列']”；打开 evidence/explore/_smoke_sheet/run.json 见 columns=3, column_names=['合同号','设备名称','总价']"},
+    {"item": "复验2：红阶段 evidence/red.log 是真实失败输出", "result": "pass", "evidence": "red.log 132 行，逐条 ✅/❌ 带期望/实际；data 测试 7 过 12 败、explore 测试 4 过 11 败，正好对应 19/15 条断言，EXIT=1。内容与 HEAD(d13b280) 旧行为一致：旧 CLI 无 --timeout 故 exit 2 但无“超时”文案；旧 # 路径被当不存在文件跳过故“不含第一张列”为空集通过——非自述，是真跑输出"},
+    {"item": "复验3：evidence/run.json 的 real_data 命令完整且按原文复跑成功", "result": "pass", "evidence": "照抄 run.json:23 命令（含 -c/-o，输出 evidence/explore/_smoke_sheet）实跑 → EXIT=0；run.json status=ok, rows=88, columns=3, sheet=2025设备推进, sha256 64 位；code.py/result.csv 复跑前后 sha256 完全一致（e9ffcd…/e38fd4…）"},
+    {"item": "复验4：路径含 # 按整条文件路径处理（代码+文档+测试）", "result": "pass", "evidence": "split_data_spec 先 Path(value).is_file() 判断再 rpartition，docstring 已写明；OPS.md:294 已写“文件名本身含 # 时优先当完整文件名”；测试第[四]节实跑（带#号.csv）3 条断言全 ✅，run.json sheet=null"},
+    {"item": "复验5：测试防挂，timeout_sec 已传给 subprocess.run", "result": "pass", "evidence": "tests/test_data_executor_artifacts.py run_exec 末行 subprocess.run(..., timeout=timeout_sec)；第[三]节调用 timeout=2, timeout_sec=10，内层 2 秒、外层 10 秒，实跑 2 秒级返回并 exit 2"},
+    {"item": "复验6：样例 result/facts 已用新执行器重跑且含 code.py+run.json", "result": "pass", "evidence": "evidence/explore/2026-10-22_设备维修履历/result/facts/ 下有 code.py/result.csv/run.json；run.json status=ok, rows=44, columns=3, column_names=['项','值','说明']，与 OPS“每次留三样”一致"},
+    {"item": "全量 10 个测试回归", "result": "pass", "evidence": "gate_ir/batch2/batch3/batch4/batch5/ledger_fixes/audit_gate_tiers/source_reconciliation/test_data_executor_artifacts/test_explore_paper 逐个实跑，全部 EXIT=0，ALL_FAIL=0"},
+    {"item": "样例底稿自检仍为 pass", "result": "pass", "evidence": "explore_paper.py check evidence/explore/2026-10-22_设备维修履历 → action=pass（0 block / 0 warn），EXIT=0"},
+    {"item": "summary/run.json 叙述与实测一致（红 23 败、绿 34 过）", "result": "pass", "evidence": "红 12+11=23，绿 19+15=34；summary.md 与 run.json 已改为对应数字；evidence/test.log 为 15:13 新一轮 GREEN 10/10"},
+    {"item": "git 忽略与工作区未被我改动", "result": "pass", "evidence": "git check-ignore evidence/explore/_smoke_sheet/run.json → .gitignore:34 命中；git status --short 无代码/文档新增改动（仅原有 M 与新增 review.json）"}
+  ],
+  "missing": [],
+  "findings": [
+    {"severity": "minor", "file": "_shared/scripts/data_executor.py", "issue": "文件 564 行仍超过编码契约“文件 >300 行需标记并评估拆分”的阈值", "detail": "已由协调方确认接受，拆分评估留待后续，不阻塞本批", "evidence": "wc -l _shared/scripts/data_executor.py = 564"},
+    {"severity": "minor", "file": "evidence/run.json", "issue": "files_changed 未列 evidence/red.log，证据文件清单不完整", "detail": "red.log 由 *.log 规则忽略、不随仓库走；本地复验可用，交接/归档时需另行说明或改名留存", "evidence": "git check-ignore -v evidence/red.log → .gitignore:27:*.log；git ls-files evidence/red.log 为空"},
+    {"severity": "minor", "file": "evidence/explore/_smoke_sheet", "issue": "真实数据产物位于被忽略的 evidence/explore/ 下，仅本地可见", "detail": "这是既定的真实数据不入库策略，命令与结果已由我在本地复跑核对，不阻塞；交接时需说明产物只在本机", "evidence": "git check-ignore -v evidence/explore/_smoke_sheet/run.json → .gitignore:34"}
+  ],
+  "conditions": [
+    "已接受遗留（不阻塞）：data_executor.py 564 行的拆分评估留待后续",
+    "已接受遗留（不阻塞）：CLAUDE-project.md 部署运行版补 explore_paper.py 一行",
+    "非阻塞建议：若红阶段日志需随交付归档，把 evidence/red.log 改名或在 .gitignore 加白名单，否则只留在本机",
+    "非阻塞建议：evidence/explore/ 下含真实数据，交接时明确“产物仅本地、命令与 sha 可复现”"
+  ],
+  "verified_at": "2026-10-22T15:21:33"
+}

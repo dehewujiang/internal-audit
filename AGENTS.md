@@ -16,7 +16,7 @@
 | finding-debate | 对 finding 进行业务审视和攻防演练；v1.2 加被审计人画像（情境驱动扮演/渐进升级/制度条文反咬）与实战援助（驳论预判/逐轮点评/回复分析） | level_1 | `skills/internal-audit/audit-finding-debate/SKILL.md` |
 | report-generator | 汇总 finding 生成结构化审计报告 | level_0 | `skills/internal-audit/internal-audit-report-generator/SKILL.md` |
 | validate-finding | finding 格式+根因+证据等级校验 | level_0 | `skills/internal-audit/_shared/scripts/validate-finding.py` |
-| data-executor | LLM 生成的 pandas 代码沙箱执行（大文件分析） | level_0 | `skills/internal-audit/_shared/scripts/data_executor.py` |
+| data-executor | LLM 生成的 pandas 代码沙箱执行（子进程真超时；落 code.py+run.json；支持 `#工作表`） | level_0 | `skills/internal-audit/_shared/scripts/data_executor.py` |
 | data-health-check | 数据体检室：证据入桌前体检（Excel真假表头/加密/多版本/图片OCR待人工确认），只看不改 | level_0 | `skills/internal-audit/_shared/scripts/data_health_check.py` |
 | audit-gate | LLM 推理前后的硬闸机（precheck/postcheck） | level_0 | `skills/internal-audit/_shared/scripts/audit_gate.py` |
 | mandatory-check | constitution #10 制度完整性检查 | level_0 | `skills/internal-audit/_shared/scripts/check_mandatory_coverage.py` |
@@ -24,6 +24,7 @@
 | validate-catalog | 证据清单结构校验（槽位必填/唯一性/计数一致性，R05） | level_0 | `skills/internal-audit/_shared/scripts/validate-catalog.py` |
 | validate-relations | 勾稽口径卡校验（口径/容差/键唯一三硬停，v1.0 只认 detail_to_total） | level_0 | `skills/internal-audit/_shared/scripts/validate-relations.py` |
 | profile-table | 表格画像器（分块扫描产定长画像 JSON，表头/合计行/空值/唯一/分位数approx） | level_0 | `skills/internal-audit/_shared/scripts/profile_table.py` |
+| explore-paper | 探索底稿：建骨架（自动写源文件 sha）+ 自检（事实须有依据/线索须有下一步证据） | level_0 | `skills/internal-audit/_shared/scripts/explore_paper.py` |
 | ledger-keeper | 新桌子管家：开桌/写格/贴证据/对单号/老账搬家（只管写）。v2.0 支持直接写桌带来源标记（`--room/--ref/--status`） | level_0 | `skills/internal-audit/ledger/ledger.py` |
 | ledger-gate | 新桌子日常门卫：只读桌子查大事+高风险硬度 | level_0 | `skills/internal-audit/ledger/check.py` |
 | ledger-checklist | 新桌子打勾纸：六句话看板，只看不拦 | level_0 | `skills/internal-audit/ledger/checklist.py` |

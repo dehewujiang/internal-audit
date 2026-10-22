@@ -1,1 +1,39 @@
-{"changed": ["_shared/scripts/validate-relations.py", "_shared/reconcile/field_dictionary.json", "_shared/reconcile/relations.example.json", "OPS.md", "evidence/meta.json"], "commands": [{"args": "_shared/reconcile/relations.example.json", "exit": 0, "cmd": "validate-relations.py GOOD"}, {"exit": 2, "cmd": "validate-relations.py bad-caliber (note empty)"}, {"exit": 2, "cmd": "validate-relations.py bad-tol (tolerance missing)"}, {"exit": 2, "cmd": "validate-relations.py bad-key (key_unique_checked=false)"}, {"exit": 2, "cmd": "validate-relations.py bad-type (rollforward)"}, {"exit": 2, "cmd": "validate-relations.py bad-filter (op=like)"}, {"exit": 0, "cmd": "validate-relations.py warn-dict --json (action=warn)"}, {"exit": 0, "cmd": "validate-json.py _shared/reconcile (2 passed)"}, {"exit": 0, "cmd": "validate-json.py evidence (1 passed)"}], "level": "L2", "result": "GREEN 9/9: 1 pass + 5 block + 1 warn + 2 json-valid"}
+{
+  "task": "第一批：探索车道闭环（data_executor 留痕/真超时/sheet + explore_paper + project-init + 文档同步）",
+  "level": "L3",
+  "date": "2026-10-22",
+  "files_changed": [
+    ".gitignore",
+    "AGENTS.md",
+    "CLAUDE.md",
+    "OPS.md",
+    "_shared/scripts/data_executor.py",
+    "_shared/scripts/explore_paper.py",
+    "project-init/SKILL.md",
+    "tests/test_data_executor_artifacts.py",
+    "tests/test_explore_paper.py",
+    "evidence/meta.json",
+    "evidence/run.json",
+    "evidence/summary.md",
+    "evidence/test.log",
+    "evidence/red.log",
+    "evidence/review.json"
+  ],
+  "commands": [
+    {"cmd": "python tests/test_data_executor_artifacts.py", "stage": "red", "exit": 1, "note": "12 条断言红；原始输出见 evidence/red.log（HEAD d13b280 干净 worktree）"},
+    {"cmd": "python tests/test_explore_paper.py", "stage": "red", "exit": 1, "note": "11 条断言红（脚本尚不存在）；原始输出见 evidence/red.log"},
+    {"cmd": "python tests/test_data_executor_artifacts.py", "stage": "green", "exit": 0, "note": "19 条断言全过（含列数、路径含#）"},
+    {"cmd": "python tests/test_explore_paper.py", "stage": "green", "exit": 0, "note": "15 条断言全过"},
+    {"cmd": "python tests/test_gate_ir.py ... test_explore_paper.py（全量10个）", "stage": "regression", "exit": 0, "note": "ALL_FAIL=0"},
+    {"cmd": "python _shared/scripts/data_executor.py execute -c \"OUTPUT = dfs['p'][['合同号','设备名称','总价']]\" -d \"p=参考文件/设备抽取样本-261020.xlsx#2025设备推进\" -o evidence/explore/_smoke_sheet", "stage": "real_data", "exit": 0, "note": "rows=88, columns=3, sheet=2025设备推进, sha256 64位, code.py+run.json 已落 evidence/explore/_smoke_sheet"},
+    {"cmd": "python _shared/scripts/explore_paper.py check evidence/explore/2026-10-22_设备维修履历", "stage": "sample", "exit": 0, "note": "action=pass（0 block / 0 warn）；样例 result/facts 已用新执行器重跑，含 code.py+run.json"}
+  ],
+  "tests": {"total": 10, "passed": 10, "failed": 0},
+  "known_gaps": [
+    "CLAUDE-project.md（部署运行版）未同步新增脚本，部署前需补一行",
+    "口径卡第二批（row_formula/cross_table）未开工",
+    "样例底稿含真实公司数据，已由 .gitignore 挡住，仅留本地"
+  ],
+  "review_required": true,
+  "review_status": "pending"
+}
