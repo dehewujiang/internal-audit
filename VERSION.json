@@ -1,7 +1,7 @@
 {
-  "version": "2026-10-22-1",
-  "git_commit": "d13b280",
-  "updated_at": "2026-10-22T15:23:59+08:00",
+  "version": "2026-10-27-1",
+  "git_commit": "268d28a",
+  "updated_at": "2026-10-27T15:14:46+08:00",
   "changes": [
     {
       "type": "feat",
@@ -442,6 +442,11 @@
       "type": "docs",
       "file": "OPS.md+AGENTS.md+CLAUDE.md+project-init/SKILL.md+.gitignore",
       "summary": "同步探索车道命令与工具登记；新项目建evidence/explore+reconcile；证据产物忽略、测试日志白名单"
+    },
+    {
+      "type": "docs",
+      "file": "OPS.md",
+      "summary": "加一阶段一清小纸条"
     }
   ]
 }
