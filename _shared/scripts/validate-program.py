@@ -197,6 +197,37 @@ def check_column_consistency(text, config_path=None):
     return len(issues) == 0, "; ".join(issues) if issues else None
 
 
+def _find_fraud_must_path():
+    """定位 fraud_must_check.json（只读，找不到返回 None 不误拦）"""
+    here = Path(__file__).resolve()
+    for base in [here.parents[2], here.parents[1], Path.cwd()]:
+        cand = base / "internal-audit-program-generator" / "references" / "fraud_must_check.json"
+        if cand.is_file():
+            return cand
+    return None
+
+
+def check_fraud_must_cover(text):
+    """[M] 轨道B必查：有轨道B时扫22条关键词，缺了报warn（v1先不拦）"""
+    if not re.search(r'轨道\s*B[：:\s]|Track\s*B[：:\s]|## .*轨道\s*B', text):
+        return True, "无轨道B，跳过"
+    path = _find_fraud_must_path()
+    if path is None:
+        return True, "必查表缺失，跳过（不误拦）"
+    try:
+        data = json.loads(path.read_text(encoding="utf-8-sig"))
+    except Exception as e:
+        return True, f"必查表损坏跳过（{e}）"
+    missing = []
+    for item in data.get("checks", []):
+        kws = item.get("keywords", [])
+        if not any(kw and kw in text for kw in kws):
+            missing.append(item.get("id", "?"))
+    if missing:
+        return False, f"轨道B缺{len(missing)}条必查：{', '.join(missing[:10])}（见fraud_must_check.md补行，不重写）"
+    return True, f"轨道B必查全覆盖（{len(data.get('checks', []))}条）"
+
+
 # ── IR 结构化校验（--ir 模式）──────────────────────────
 
 # block 级检查（失败即阻断）。文本检查 + IR 检查统一在此声明。
@@ -424,6 +455,9 @@ def validate_program(text, filename="", ir=None, ledger_ctx=None):
 
     passed, msg = check_column_consistency(text)
     checks["column_consistency"] = {"passed": passed, "message": msg}
+
+    passed, msg = check_fraud_must_cover(text)
+    checks["fraud_must_cover"] = {"passed": passed, "message": msg}
 
     # IR 结构化检查（仅 --ir 模式）
     ir_error = None
