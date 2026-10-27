@@ -32,6 +32,7 @@
 - **程序特征**：数据分析 + 穿透核查 + 取证，每个风险生成1-2个程序
 - **必须包含**：量化阈值（my-config.md 实际数值）、明确取数系统、异常判定标准
 - **来源参考**：`automotive_reasoning_guide.md` + `fraud_investigation_methods.md`
+- **按图索骥（只读该读页）**：先查 `automotive_reasoning_guide.md` 文末映射表定位 1-2 个相关场景，只读该场景全文（含异常信号+动作指令），其他场景不读；`fraud_investigation_methods.md` 只读立项/取证对应章节，不整本倒进来。
 - **禁止**：不生成控制测试类程序（轨道A已覆盖）
 
 ---
