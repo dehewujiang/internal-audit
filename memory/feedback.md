@@ -20,6 +20,7 @@
 - **`bump-version.py` 每次调用都推进版本号**——连跑多次 `--add` 会把版本推高，事后须核对并改回本次序号。**连 `--help` 都会 bump**（2026-10-08 实测：想看用法跑了 `--help`，版本直接推高一次）。查用法先读代码，不跑脚本。
 - **`bump-version.py --commit` 只 add VERSION.json**——要"代码改动 + 版本号同一个 commit"时别用它，改为：`bump-version.py`（不带 --commit）→ 手动 `git add` 目标文件 → 手动 `git commit -m "业务关键词"`。
 - **任何涉及代码 / skill / 脚本的 commit 之前，先跑 `bump-version.py`**（纯文档 / 记忆更新不需要）。
+- **Edit 跨段落多行先确认行连续**（2026-10-28）：topic-wizard 三条禁令中间隔一行，首改锚点跨了不相邻两行而失败；重读行号后逐条改过。**硬规则**：多行锚点先 `Read` 核对连续，跨段分两次改。
 
 ## 验证类
 
