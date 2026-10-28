@@ -327,9 +327,9 @@ B) 否，重新输入（适用于多公司或多子公司场景）
 
 ## 禁止事项
 
-- ❌ 禁止自动修改用户已手动编辑过的 about-me.md 或 my-config.md
+- ❌ 未经用户确认，不得覆盖用户已手动编辑过的 about-me.md 或 my-config.md；允许按 `audit-topics/存货管理/my-config反写试点方案.md` 出带出处草稿 + 并排提示（不直接覆盖）
 - ❌ 禁止覆盖已存在的 topic.json 而不警告
-- ❌ 禁止在 about-me.md 或 my-config.md 中填入虚构的公司数据
+- ❌ 禁止在 about-me.md 或 my-config.md 中填入虚构的公司数据；没出处宁可空着（A 类要制度名+条款，B 类要谁+哪天说的）
 - ❌ 禁止跳过任何配置步骤（用户可选择"跳过"但 AI 不能自作主张）
 - ❌ 禁止将 about-me.md 或 my-config.md 转换为 JSON 格式
 - ❌ 禁止丢失 Markdown 中的任何用户输入内容
