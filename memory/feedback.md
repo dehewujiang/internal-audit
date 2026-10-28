@@ -48,6 +48,7 @@
 - **worktree 里的 `memory/` 是冻结的**（2026-09-14 定，用户选 A：开发分支只管代码）。做法：在 worktree 里对全部 memory 文件设 `git update-index --skip-worktree`。实测效果——本地改动 `git status` 看不见、也提交不上；而 `git merge master` **不会报错且文件内容照常跟上**（ff 合并实测通过）。因此约定：**记忆只在主目录改**；同步靠每次开发前的 `merge master`，无需手工搬。注意两点：①之后在 master 新增的 memory 文件不会自动带冻结标记，需要补设；②`git ls-files -v memory/` 里 `S` 开头的就是冻结项，出现 `H` 说明漏了。**别用 sparse-checkout 代替**——文件从 worktree 消失会让会话误判"memory 不存在"从而重新初始化一套。
 
 - **部署到已有项目的正确流程**：`update-project.ps1` → `create_evidence_dirs.py`。工具故障不是跳过关键步骤的借口——应告知用户并等待其处理。
+- **跑 update-project 之前，先查项目侧有没有金源没有的本地文件**（2026-10-28）：升级是整目录重拷（recopy），金源没有的文件会被抹掉——本次抹掉了项目本地的 `tools/make_chart.py`，`settings.json` 里后加的 hooks/permissions 也被清空（备份都在，可恢复，但吓人一跳）。**硬规则**：升级前先问"项目有没有本地独有的东西"；试点文件尽量放升级不碰的目录（`audit-topics/`/`memory/`）；不得不放时，升级后立即按 pilot 验收线核对一遍。
 - **constitution 级文件修改必须 `git diff` 审查后再提交**，并保留权威文本双份（2026-08-06 曾因编辑选区错误，连带删掉 11-14 条硬约束且无删除记录）。
 - **给 worker / subagent 派发任务时**：必须显式写"不要 git commit"（除非任务就是提交）；禁止绕过类操作要写"不得使用 XX"；只读型 agent 只派读类任务。
 
